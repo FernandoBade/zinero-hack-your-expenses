@@ -2,6 +2,18 @@ import { LanguageResource } from "../resourceTypes";
 
 const enUS: LanguageResource = {
     appName: "Zinero",
+    authLoginTitle: "Welcome back!",
+    authLoginSubtitle: "Log in to hack your money",
+    authLoginButton: "Log in",
+    authLoginEmailPlaceholder: "example@email.com",
+    authLoginSupport: "Any problem?",
+    authLoginDividerOr: "Or",
+    authLoginWithGoogle: "Continue with Google",
+    authSignupHint: "Don't have an account yet?",
+    authSignupAction: "Sign up",
+    authLoginIllustrationAlt: "People holding a bank card",
+    authShowPassword: "Show password",
+    authHidePassword: "Hide password",
     accountNotFound: "Account not found",
     categoryNotFound: "Category not found",
     categoryNotFoundOrInactive: "Category not found or inactive",
@@ -132,6 +144,7 @@ const enUS: LanguageResource = {
     phoneNumberInvalid: "Invalid phone number.",
     userNotFound: "User not found",
     validationError: "Validation error",
+    authLoginPasswordPlaceholder: "••••••••",
 };
 
 export default enUS;

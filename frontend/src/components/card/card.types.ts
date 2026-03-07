@@ -9,4 +9,5 @@ export interface CardProps {
     readonly description?: ResourceKey;
     readonly children: ComponentChildren;
     readonly compact?: boolean;
+    readonly bgColor?: string;
 }

@@ -1,6 +1,18 @@
 /** @summary Canonical i18n resource keys. */
 export enum ResourceKey {
     APP_NAME = 'appName',
+    AUTH_LOGIN_TITLE = 'authLoginTitle',
+    AUTH_LOGIN_SUBTITLE = 'authLoginSubtitle',
+    AUTH_LOGIN_BUTTON = 'authLoginButton',
+    AUTH_LOGIN_EMAIL_PLACEHOLDER = 'authLoginEmailPlaceholder',
+    AUTH_LOGIN_SUPPORT = 'authLoginSupport',
+    AUTH_LOGIN_DIVIDER_OR = 'authLoginDividerOr',
+    AUTH_LOGIN_WITH_GOOGLE = 'authLoginWithGoogle',
+    AUTH_SIGNUP_HINT = 'authSignupHint',
+    AUTH_SIGNUP_ACTION = 'authSignupAction',
+    AUTH_LOGIN_ILLUSTRATION_ALT = 'authLoginIllustrationAlt',
+    AUTH_SHOW_PASSWORD = 'authShowPassword',
+    AUTH_HIDE_PASSWORD = 'authHidePassword',
     ACCOUNT_NOT_FOUND = 'accountNotFound',
     CATEGORY_NOT_FOUND = 'categoryNotFound',
     CATEGORY_NOT_FOUND_OR_INACTIVE = 'categoryNotFoundOrInactive',
@@ -131,4 +143,5 @@ export enum ResourceKey {
     PHONE_NUMBER_INVALID = 'phoneNumberInvalid',
     USER_NOT_FOUND = 'userNotFound',
     VALIDATION_ERROR = 'validationError',
+    AUTH_LOGIN_PASSWORD_PLACEHOLDER = "authLoginPasswordPlaceholder",
 }

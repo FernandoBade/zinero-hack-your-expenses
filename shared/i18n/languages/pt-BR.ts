@@ -2,6 +2,18 @@ import { LanguageResource } from "../resourceTypes";
 
 const ptBR: LanguageResource = {
     appName: "Zinero",
+    authLoginTitle: "Bem-vindo de volta!",
+    authLoginSubtitle: "Entre para hackear seu dinheiro",
+    authLoginButton: "Entrar",
+    authLoginEmailPlaceholder: "exemplo@email.com",
+    authLoginSupport: "Algum problema?",
+    authLoginDividerOr: "Ou",
+    authLoginWithGoogle: "Continuar com Google",
+    authSignupHint: "Ainda nao tem uma conta?",
+    authSignupAction: "Cadastrar",
+    authLoginIllustrationAlt: "Pessoas segurando um cartao bancario",
+    authShowPassword: "Mostrar senha",
+    authHidePassword: "Ocultar senha",
     accountNotFound: "Conta nao encontrada",
     categoryNotFound: "Categoria nao encontrada",
     categoryNotFoundOrInactive: "Categoria nao encontrada ou inativa",
@@ -132,6 +144,8 @@ const ptBR: LanguageResource = {
     phoneNumberInvalid: "Telefone invalido.",
     userNotFound: "Usuario nao encontrado",
     validationError: "Erro de validacao",
+    authLoginPasswordPlaceholder: "••••••••",
+
 };
 
 export default ptBR;

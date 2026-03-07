@@ -2,6 +2,18 @@ import { LanguageResource } from "../resourceTypes";
 
 const esES: LanguageResource = {
     appName: "Zinero",
+    authLoginTitle: "Bienvenido de nuevo!",
+    authLoginSubtitle: "Inicia sesion para hackear tu dinero",
+    authLoginButton: "Iniciar sesion",
+    authLoginEmailPlaceholder: "ejemplo@email.com",
+    authLoginSupport: "Algun problema?",
+    authLoginDividerOr: "O",
+    authLoginWithGoogle: "Continuar con Google",
+    authSignupHint: "Todavia no tienes una cuenta?",
+    authSignupAction: "Registrate",
+    authLoginIllustrationAlt: "Personas sosteniendo una tarjeta bancaria",
+    authShowPassword: "Mostrar contrasena",
+    authHidePassword: "Ocultar contrasena",
     accountNotFound: "Cuenta no encontrada",
     categoryNotFound: "Categoria no encontrada",
     categoryNotFoundOrInactive: "Categoria no encontrada o inactiva",
@@ -132,6 +144,8 @@ const esES: LanguageResource = {
     phoneNumberInvalid: "Telefono invalido.",
     userNotFound: "Usuario no encontrado",
     validationError: "Error de validacion",
+    authLoginPasswordPlaceholder: "••••••••",
+
 };
 
 export default esES;
