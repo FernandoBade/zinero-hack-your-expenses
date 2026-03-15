@@ -4,10 +4,9 @@ import { CreditCardFlag } from '../../../../shared/enums/creditCard.enums';
 import { HTTPStatus } from '../../../../shared/enums/http-status.enums';
 import { LogCategory, LogOperation, LogType } from '../../../../shared/enums/log.enums';
 import { SortOrder } from '../../../../shared/enums/operator.enums';
-import { ResourceKey as Resource } from '../../../../shared/i18n/resource.keys';
+import { ErrorCode as Resource } from '../../../../shared/errors/error-codes';
 import * as commons from '../../../src/utils/commons';
 import { createMockRequest, createMockResponse, createNext } from '../../helpers/mockExpress';
-import { translateResource } from '../../../../shared/i18n/resource.utils';
 
 const authUser = { id: 999 };
 const DEFAULT_ISO_DATE = '2024-01-01T00:00:00.000Z';
@@ -67,7 +66,7 @@ describe('CreditCardController', () => {
       expect(res.json).toHaveBeenCalledWith(
         expect.objectContaining({
           success: false,
-          message: translateResource(Resource.VALIDATION_ERROR, 'en-US'),
+          errorCode: Resource.VALIDATION_ERROR,
         })
       );
 
@@ -75,9 +74,12 @@ describe('CreditCardController', () => {
       const payload = (res.json as jest.Mock).mock.calls[0][0];
       expect(payload.error).toBeDefined();
       expect(Array.isArray(payload.error)).toBe(true);
-      const flagError = (payload.error as Array<{ property?: string; error?: string }>).find((e) => e.property === 'flag');
+      const flagError = (payload.error as Array<{ field?: string; errorCode?: string; params?: Record<string, unknown> }>).find((e) => e.field === 'flag');
       expect(flagError).toBeDefined();
-      expect(flagError?.error).toContain('visa');
+      expect(flagError).toEqual(expect.objectContaining({
+        errorCode: Resource.INVALID_ENUM,
+        params: expect.objectContaining({ received: 'invalid' }),
+      }));
 
       expect(logSpy).not.toHaveBeenCalled();
       expect(next).not.toHaveBeenCalled();
@@ -109,7 +111,7 @@ describe('CreditCardController', () => {
       expect(res.json).toHaveBeenCalledWith(
         expect.objectContaining({
           success: false,
-          message: translateResource(Resource.USER_NOT_FOUND, 'en-US'),
+          errorCode: Resource.USER_NOT_FOUND,
         })
       );
       expect(logSpy).not.toHaveBeenCalled();
@@ -162,7 +164,7 @@ describe('CreditCardController', () => {
       expect(res.json).toHaveBeenCalledWith(
         expect.objectContaining({
           success: false,
-          message: translateResource(Resource.INTERNAL_SERVER_ERROR, 'en-US'),
+          errorCode: Resource.INTERNAL_SERVER_ERROR,
         })
       );
       expect(logSpy).toHaveBeenCalledWith(
@@ -224,7 +226,7 @@ describe('CreditCardController', () => {
       expect(res.json).toHaveBeenCalledWith(
         expect.objectContaining({
           success: false,
-          message: translateResource(Resource.INTERNAL_SERVER_ERROR, 'en-US'),
+          errorCode: Resource.INTERNAL_SERVER_ERROR,
         })
       );
       expect(logSpy).not.toHaveBeenCalled();
@@ -245,7 +247,7 @@ describe('CreditCardController', () => {
       expect(res.json).toHaveBeenCalledWith(
         expect.objectContaining({
           success: false,
-          message: translateResource(Resource.INTERNAL_SERVER_ERROR, 'en-US'),
+          errorCode: Resource.INTERNAL_SERVER_ERROR,
         })
       );
       expect(logSpy).not.toHaveBeenCalled();
@@ -264,7 +266,7 @@ describe('CreditCardController', () => {
       expect(res.json).toHaveBeenCalledWith(
         expect.objectContaining({
           success: false,
-          message: translateResource(Resource.INTERNAL_SERVER_ERROR, 'en-US'),
+          errorCode: Resource.INTERNAL_SERVER_ERROR,
         })
       );
       expect(logSpy).toHaveBeenCalledWith(
@@ -293,7 +295,7 @@ describe('CreditCardController', () => {
       expect(res.json).toHaveBeenCalledWith(
         expect.objectContaining({
           success: false,
-          message: translateResource(Resource.INVALID_CREDIT_CARD_ID, 'en-US'),
+          errorCode: Resource.INVALID_CREDIT_CARD_ID,
         })
       );
       expect(logSpy).not.toHaveBeenCalled();
@@ -311,7 +313,7 @@ describe('CreditCardController', () => {
       expect(res.json).toHaveBeenCalledWith(
         expect.objectContaining({
           success: false,
-          message: translateResource(Resource.NO_RECORDS_FOUND, 'en-US'),
+          errorCode: Resource.NO_RECORDS_FOUND,
         })
       );
       expect(logSpy).not.toHaveBeenCalled();
@@ -344,7 +346,7 @@ describe('CreditCardController', () => {
       expect(res.json).toHaveBeenCalledWith(
         expect.objectContaining({
           success: false,
-          message: translateResource(Resource.INTERNAL_SERVER_ERROR, 'en-US'),
+          errorCode: Resource.INTERNAL_SERVER_ERROR,
         })
       );
       expect(logSpy).toHaveBeenCalledWith(
@@ -373,7 +375,7 @@ describe('CreditCardController', () => {
       expect(res.json).toHaveBeenCalledWith(
         expect.objectContaining({
           success: false,
-          message: translateResource(Resource.INVALID_USER_ID, 'en-US'),
+          errorCode: Resource.INVALID_USER_ID,
         })
       );
       expect(logSpy).not.toHaveBeenCalled();
@@ -424,7 +426,7 @@ describe('CreditCardController', () => {
       expect(res.json).toHaveBeenCalledWith(
         expect.objectContaining({
           success: false,
-          message: translateResource(Resource.INTERNAL_SERVER_ERROR, 'en-US'),
+          errorCode: Resource.INTERNAL_SERVER_ERROR,
         })
       );
       expect(logSpy).not.toHaveBeenCalled();
@@ -443,7 +445,7 @@ describe('CreditCardController', () => {
       expect(res.json).toHaveBeenCalledWith(
         expect.objectContaining({
           success: false,
-          message: translateResource(Resource.INTERNAL_SERVER_ERROR, 'en-US'),
+          errorCode: Resource.INTERNAL_SERVER_ERROR,
         })
       );
       expect(logSpy).toHaveBeenCalledWith(
@@ -470,7 +472,7 @@ describe('CreditCardController', () => {
       expect(getSpy).not.toHaveBeenCalled();
       expect(res.status).toHaveBeenCalledWith(HTTPStatus.BAD_REQUEST);
       expect(res.json).toHaveBeenCalledWith(
-        expect.objectContaining({ success: false, message: translateResource(Resource.INVALID_CREDIT_CARD_ID, 'en-US') })
+        expect.objectContaining({ success: false, errorCode: Resource.INVALID_CREDIT_CARD_ID })
       );
       expect(logSpy).not.toHaveBeenCalled();
     });
@@ -485,7 +487,7 @@ describe('CreditCardController', () => {
 
       expect(res.status).toHaveBeenCalledWith(HTTPStatus.BAD_REQUEST);
       expect(res.json).toHaveBeenCalledWith(
-        expect.objectContaining({ success: false, message: translateResource(Resource.NO_RECORDS_FOUND, 'en-US') })
+        expect.objectContaining({ success: false, errorCode: Resource.NO_RECORDS_FOUND })
       );
       expect(logSpy).not.toHaveBeenCalled();
     });
@@ -503,7 +505,7 @@ describe('CreditCardController', () => {
       expect(updateSpy).not.toHaveBeenCalled();
       expect(res.status).toHaveBeenCalledWith(HTTPStatus.BAD_REQUEST);
       expect(res.json).toHaveBeenCalledWith(
-        expect.objectContaining({ success: false, message: translateResource(Resource.VALIDATION_ERROR, 'en-US') })
+        expect.objectContaining({ success: false, errorCode: Resource.VALIDATION_ERROR })
       );
       expect(logSpy).not.toHaveBeenCalled();
     });
@@ -520,7 +522,7 @@ describe('CreditCardController', () => {
 
       expect(res.status).toHaveBeenCalledWith(HTTPStatus.BAD_REQUEST);
       expect(res.json).toHaveBeenCalledWith(
-        expect.objectContaining({ success: false, message: translateResource(Resource.USER_NOT_FOUND, 'en-US') })
+        expect.objectContaining({ success: false, errorCode: Resource.USER_NOT_FOUND })
       );
       expect(logSpy).not.toHaveBeenCalled();
     });
@@ -566,7 +568,7 @@ describe('CreditCardController', () => {
       expect(res.json).toHaveBeenCalledWith(
         expect.objectContaining({
           success: false,
-          message: translateResource(Resource.INTERNAL_SERVER_ERROR, 'en-US'),
+          errorCode: Resource.INTERNAL_SERVER_ERROR,
         })
       );
       expect(logSpy).toHaveBeenCalledWith(
@@ -593,7 +595,7 @@ describe('CreditCardController', () => {
       expect(deleteSpy).not.toHaveBeenCalled();
       expect(res.status).toHaveBeenCalledWith(HTTPStatus.BAD_REQUEST);
       expect(res.json).toHaveBeenCalledWith(
-        expect.objectContaining({ success: false, message: translateResource(Resource.INVALID_CREDIT_CARD_ID, 'en-US') })
+        expect.objectContaining({ success: false, errorCode: Resource.INVALID_CREDIT_CARD_ID })
       );
       expect(logSpy).not.toHaveBeenCalled();
     });
@@ -609,7 +611,7 @@ describe('CreditCardController', () => {
 
       expect(res.status).toHaveBeenCalledWith(HTTPStatus.BAD_REQUEST);
       expect(res.json).toHaveBeenCalledWith(
-        expect.objectContaining({ success: false, message: translateResource(Resource.CREDIT_CARD_NOT_FOUND, 'en-US') })
+        expect.objectContaining({ success: false, errorCode: Resource.CREDIT_CARD_NOT_FOUND })
       );
       expect(logSpy).not.toHaveBeenCalled();
     });
@@ -660,7 +662,7 @@ describe('CreditCardController', () => {
       expect(res.json).toHaveBeenCalledWith(
         expect.objectContaining({
           success: false,
-          message: translateResource(Resource.INTERNAL_SERVER_ERROR, 'en-US'),
+          errorCode: Resource.INTERNAL_SERVER_ERROR,
         })
       );
       expect(logSpy).toHaveBeenCalledWith(

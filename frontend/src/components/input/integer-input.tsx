@@ -2,7 +2,7 @@ import type { JSX } from "preact";
 import { useEffect, useMemo, useRef, useState } from "preact/hooks";
 import { NumericInputValidationError } from "@shared/enums/input-validation.enums";
 import { InputType } from "@shared/enums/input.enums";
-import { ResourceKey } from "@shared/i18n/resource.keys";
+import type { I18nKey } from "@shared/i18n/types/i18n-key";
 import type { CanonicalInputValueChange } from "@/components/input/canonical-input.types";
 import { Input } from "@/components/input/input";
 import type { IntegerInputProps } from "@/components/input/integer-input.types";
@@ -16,12 +16,12 @@ import {
 
 const INTEGER_SCALE = 0;
 
-const DEFAULT_ERROR_BY_VALIDATION: Readonly<Record<NumericInputValidationError, ResourceKey>> = {
-    [NumericInputValidationError.REQUIRED]: ResourceKey.FIELD_REQUIRED_GENERIC,
-    [NumericInputValidationError.INVALID]: ResourceKey.INVALID_NUMBER_VALUE,
-    [NumericInputValidationError.MIN]: ResourceKey.VALUE_BELOW_MINIMUM,
-    [NumericInputValidationError.MAX]: ResourceKey.VALUE_ABOVE_MAXIMUM,
-    [NumericInputValidationError.GREATER_THAN_ZERO]: ResourceKey.VALUE_MUST_BE_GREATER_THAN_ZERO,
+const DEFAULT_ERROR_BY_VALIDATION: Readonly<Record<NumericInputValidationError, I18nKey>> = {
+    [NumericInputValidationError.REQUIRED]: 'error.field_required_generic',
+    [NumericInputValidationError.INVALID]: 'error.invalid_number_value',
+    [NumericInputValidationError.MIN]: 'error.value_below_minimum',
+    [NumericInputValidationError.MAX]: 'error.value_above_maximum',
+    [NumericInputValidationError.GREATER_THAN_ZERO]: 'error.value_must_be_greater_than_zero',
 };
 
 
@@ -45,8 +45,8 @@ function toIntegerCanonical(maskedValue: string, language: IntegerInputProps["la
 
 function resolveValidationErrorKey(
     canonicalValue: string,
-    props: Pick<IntegerInputProps, "required" | "min" | "max" | "validationResourceKeys">
-): ResourceKey | undefined {
+    props: Pick<IntegerInputProps, "required" | "min" | "max" | "validationI18nKeys">
+): I18nKey | undefined {
     const validationError = validateCanonicalDecimal(canonicalValue, {
         required: props.required,
         min: props.min,
@@ -57,14 +57,14 @@ function resolveValidationErrorKey(
         return undefined;
     }
 
-    return props.validationResourceKeys?.[validationError] ?? DEFAULT_ERROR_BY_VALIDATION[validationError];
+    return props.validationI18nKeys?.[validationError] ?? DEFAULT_ERROR_BY_VALIDATION[validationError];
 }
 
 
 function createValueChange(
     canonicalValue: string,
     displayValue: string,
-    error: ResourceKey | undefined
+    error: I18nKey | undefined
 ): CanonicalInputValueChange {
     return {
         canonicalValue,
@@ -85,7 +85,7 @@ export function IntegerInput({
     min,
     max,
     useThousandsSeparator = true,
-    validationResourceKeys,
+    validationI18nKeys,
     label,
     placeholder,
     hint,
@@ -118,12 +118,12 @@ export function IntegerInput({
     const lastLanguageRef = useRef<IntegerInputProps["language"]>(language);
     const onValueChangeRef = useRef<IntegerInputProps["onValueChange"]>(onValueChange);
     const validationPropsRef = useRef<
-        Pick<IntegerInputProps, "required" | "min" | "max" | "validationResourceKeys">
+        Pick<IntegerInputProps, "required" | "min" | "max" | "validationI18nKeys">
     >({
         required,
         min,
         max,
-        validationResourceKeys,
+        validationI18nKeys,
     });
     const isTouchedRef = useRef<boolean>(isTouched);
 
@@ -132,7 +132,7 @@ export function IntegerInput({
         required,
         min,
         max,
-        validationResourceKeys,
+        validationI18nKeys,
     };
     isTouchedRef.current = isTouched;
 
@@ -167,9 +167,9 @@ export function IntegerInput({
                 required,
                 min,
                 max,
-                validationResourceKeys,
+                validationI18nKeys,
             }),
-        [draftCanonicalValue, max, min, required, validationResourceKeys]
+        [draftCanonicalValue, max, min, required, validationI18nKeys]
     );
     const resolvedError = error ?? (isTouched ? computedValidationError : undefined);
 
@@ -231,7 +231,7 @@ export function IntegerInput({
             required,
             min,
             max,
-            validationResourceKeys,
+            validationI18nKeys,
         });
         const nextValue = createValueChange(
             normalizedCanonicalValue,
@@ -285,3 +285,4 @@ export function IntegerInput({
         />
     );
 }
+

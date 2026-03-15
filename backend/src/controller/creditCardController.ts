@@ -4,9 +4,9 @@ import { buildLogDelta, createLog, answerAPI, formatError, sanitizeLogDetail } f
 import { validateCreateCreditCard, validateUpdateCreditCard } from '../utils/validation/validateRequest';
 import { HTTPStatus } from '../../../shared/enums/http-status.enums';
 import { LogCategory, LogOperation, LogType } from '../../../shared/enums/log.enums';
-import { ResourceKey as Resource } from '../../../shared/i18n/resource.keys';
+import { ErrorCode } from '../../../shared/errors/error-codes';
 import { parsePagination, buildMeta } from '../utils/pagination';
-import { LanguageCode } from '../../../shared/i18n/resourceTypes';
+import { Locale } from '../../../shared/i18n/types/locale';
 
 /** @summary Orchestrates HTTP request flows for credit-card resource endpoints. */
 class CreditCardController {
@@ -15,7 +15,7 @@ class CreditCardController {
         const creditCardService = new CreditCardService();
 
         try {
-            const parseResult = validateCreateCreditCard(req.body, req.language as LanguageCode);
+            const parseResult = validateCreateCreditCard(req.body, req.language as Locale);
 
             if (!parseResult.success) {
                 return answerAPI(
@@ -23,7 +23,7 @@ class CreditCardController {
                     res,
                     HTTPStatus.BAD_REQUEST,
                     parseResult.errors,
-                    Resource.VALIDATION_ERROR
+                    ErrorCode.VALIDATION_ERROR
                 );
             }
 
@@ -37,7 +37,7 @@ class CreditCardController {
             return answerAPI(req, res, HTTPStatus.CREATED, created.data!);
         } catch (error) {
             await createLog(LogType.ERROR, LogOperation.CREATE, LogCategory.CREDIT_CARD, formatError(error), req.user?.id, next);
-            return answerAPI(req, res, HTTPStatus.INTERNAL_SERVER_ERROR, undefined, Resource.INTERNAL_SERVER_ERROR);
+            return answerAPI(req, res, HTTPStatus.INTERNAL_SERVER_ERROR, undefined, ErrorCode.INTERNAL_SERVER_ERROR);
         }
     }
 
@@ -66,7 +66,7 @@ class CreditCardController {
             });
         } catch (error) {
             await createLog(LogType.ERROR, LogOperation.CREATE, LogCategory.CREDIT_CARD, formatError(error), req.user?.id, next);
-            return answerAPI(req, res, HTTPStatus.INTERNAL_SERVER_ERROR, undefined, Resource.INTERNAL_SERVER_ERROR);
+            return answerAPI(req, res, HTTPStatus.INTERNAL_SERVER_ERROR, undefined, ErrorCode.INTERNAL_SERVER_ERROR);
         }
     }
 
@@ -74,7 +74,7 @@ class CreditCardController {
     static async getCreditCardById(req: Request, res: Response, next: NextFunction) {
         const id = Number(req.params.id);
         if (isNaN(id) || id <= 0) {
-            return answerAPI(req, res, HTTPStatus.BAD_REQUEST, undefined, Resource.INVALID_CREDIT_CARD_ID);
+            return answerAPI(req, res, HTTPStatus.BAD_REQUEST, undefined, ErrorCode.INVALID_CREDIT_CARD_ID);
         }
 
         const creditCardService = new CreditCardService();
@@ -89,7 +89,7 @@ class CreditCardController {
             return answerAPI(req, res, HTTPStatus.OK, creditCard.data);
         } catch (error) {
             await createLog(LogType.ERROR, LogOperation.CREATE, LogCategory.CREDIT_CARD, formatError(error), req.user?.id, next);
-            return answerAPI(req, res, HTTPStatus.INTERNAL_SERVER_ERROR, undefined, Resource.INTERNAL_SERVER_ERROR);
+            return answerAPI(req, res, HTTPStatus.INTERNAL_SERVER_ERROR, undefined, ErrorCode.INTERNAL_SERVER_ERROR);
         }
     }
 
@@ -97,7 +97,7 @@ class CreditCardController {
     static async getCreditCardsByUser(req: Request, res: Response, next: NextFunction) {
         const userId = Number(req.params.userId);
         if (isNaN(userId) || userId <= 0) {
-            return answerAPI(req, res, HTTPStatus.BAD_REQUEST, undefined, Resource.INVALID_USER_ID);
+            return answerAPI(req, res, HTTPStatus.BAD_REQUEST, undefined, ErrorCode.INVALID_USER_ID);
         }
 
         const creditCardService = new CreditCardService();
@@ -123,7 +123,7 @@ class CreditCardController {
             });
         } catch (error) {
             await createLog(LogType.ERROR, LogOperation.CREATE, LogCategory.CREDIT_CARD, formatError(error), req.user?.id, next);
-            return answerAPI(req, res, HTTPStatus.INTERNAL_SERVER_ERROR, undefined, Resource.INTERNAL_SERVER_ERROR);
+            return answerAPI(req, res, HTTPStatus.INTERNAL_SERVER_ERROR, undefined, ErrorCode.INTERNAL_SERVER_ERROR);
         }
     }
 
@@ -131,7 +131,7 @@ class CreditCardController {
     static async updateCreditCard(req: Request, res: Response, next: NextFunction) {
         const id = Number(req.params.id);
         if (isNaN(id) || id <= 0) {
-            return answerAPI(req, res, HTTPStatus.BAD_REQUEST, undefined, Resource.INVALID_CREDIT_CARD_ID);
+            return answerAPI(req, res, HTTPStatus.BAD_REQUEST, undefined, ErrorCode.INVALID_CREDIT_CARD_ID);
         }
 
         const creditCardService = new CreditCardService();
@@ -142,10 +142,10 @@ class CreditCardController {
                 return answerAPI(req, res, HTTPStatus.BAD_REQUEST, undefined, existing.error);
             }
 
-            const parseResult = validateUpdateCreditCard(req.body, req.language as LanguageCode);
+            const parseResult = validateUpdateCreditCard(req.body, req.language as Locale);
 
             if (!parseResult.success) {
-                return answerAPI(req, res, HTTPStatus.BAD_REQUEST, parseResult.errors, Resource.VALIDATION_ERROR);
+                return answerAPI(req, res, HTTPStatus.BAD_REQUEST, parseResult.errors, ErrorCode.VALIDATION_ERROR);
             }
 
             const updated = await creditCardService.updateCreditCard(id, parseResult.data);
@@ -158,7 +158,7 @@ class CreditCardController {
             return answerAPI(req, res, HTTPStatus.OK, updated.data!);
         } catch (error) {
             await createLog(LogType.ERROR, LogOperation.UPDATE, LogCategory.CREDIT_CARD, formatError(error), req.user?.id, next);
-            return answerAPI(req, res, HTTPStatus.INTERNAL_SERVER_ERROR, undefined, Resource.INTERNAL_SERVER_ERROR);
+            return answerAPI(req, res, HTTPStatus.INTERNAL_SERVER_ERROR, undefined, ErrorCode.INTERNAL_SERVER_ERROR);
         }
     }
 
@@ -167,7 +167,7 @@ class CreditCardController {
         const id = Number(req.params.id);
 
         if (isNaN(id) || id <= 0) {
-            return answerAPI(req, res, HTTPStatus.BAD_REQUEST, undefined, Resource.INVALID_CREDIT_CARD_ID);
+            return answerAPI(req, res, HTTPStatus.BAD_REQUEST, undefined, ErrorCode.INVALID_CREDIT_CARD_ID);
         }
 
         const creditCardService = new CreditCardService();
@@ -191,7 +191,7 @@ class CreditCardController {
             return answerAPI(req, res, HTTPStatus.OK, result.data);
         } catch (error) {
             await createLog(LogType.ERROR, LogOperation.DELETE, LogCategory.CREDIT_CARD, formatError(error), req.user?.id, next);
-            return answerAPI(req, res, HTTPStatus.INTERNAL_SERVER_ERROR, undefined, Resource.INTERNAL_SERVER_ERROR);
+            return answerAPI(req, res, HTTPStatus.INTERNAL_SERVER_ERROR, undefined, ErrorCode.INTERNAL_SERVER_ERROR);
         }
     }
 }

@@ -3,11 +3,10 @@ import { FeedbackService } from '../../../src/service/feedbackService';
 import { UserService } from '../../../src/service/userService';
 import { HTTPStatus } from '../../../../shared/enums/http-status.enums';
 import { LogCategory, LogOperation, LogType } from '../../../../shared/enums/log.enums';
-import { ResourceKey as Resource } from '../../../../shared/i18n/resource.keys';
+import { ErrorCode as Resource } from '../../../../shared/errors/error-codes';
 import * as commons from '../../../src/utils/commons';
 import { createMockRequest, createMockResponse, createNext } from '../../helpers/mockExpress';
 import { makeUser } from '../../helpers/factories';
-import { translateResource } from '../../../../shared/i18n/resource.utils';
 import type { Request } from 'express';
 
 const authUser = { id: 42 };
@@ -52,7 +51,7 @@ describe('FeedbackController', () => {
         expect(res.json).toHaveBeenCalledWith(
             expect.objectContaining({
                 success: false,
-                message: translateResource(Resource.VALIDATION_ERROR, 'en-US'),
+                errorCode: Resource.VALIDATION_ERROR,
             })
         );
         expect(logSpy).not.toHaveBeenCalled();
@@ -74,7 +73,7 @@ describe('FeedbackController', () => {
         expect(res.json).toHaveBeenCalledWith(
             expect.objectContaining({
                 success: false,
-                message: translateResource(Resource.VALIDATION_ERROR, 'en-US'),
+                errorCode: Resource.VALIDATION_ERROR,
             })
         );
     });

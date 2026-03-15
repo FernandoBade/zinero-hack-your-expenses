@@ -1,5 +1,5 @@
 import type { ComponentChildren } from "preact";
-import type { ResourceKey } from "@shared/i18n/resource.keys";
+import type { I18nKey } from "@shared/i18n/types/i18n-key";
 import { IconName } from "@shared/enums/icon.enums";
 import { AlertDirection, AlertStyle, AlertVariant } from "@shared/enums/ui.enums";
 
@@ -10,9 +10,9 @@ export interface AlertProps {
     readonly variant?: AlertVariant;
     readonly style?: AlertStyle;
     readonly direction?: AlertDirection;
-    readonly message?: ResourceKey;
-    readonly title?: ResourceKey;
-    readonly description?: ResourceKey;
+    readonly message?: I18nKey;
+    readonly title?: I18nKey;
+    readonly description?: I18nKey;
     readonly icon?: IconName;
     readonly hideIcon?: boolean;
     readonly actions?: ComponentChildren;

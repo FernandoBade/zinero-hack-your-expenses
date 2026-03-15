@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { answerAPI } from '../commons';
 import { HTTPStatus } from '../../../../shared/enums/http-status.enums';
-import { ResourceKey as Resource } from '../../../../shared/i18n/resource.keys';
+import { ErrorCode } from '../../../../shared/errors/error-codes';
 
 const RATE_LIMIT_MAX_ATTEMPTS = 5;
 const RATE_LIMIT_WINDOW_MS = 15 * 60 * 1000;
@@ -90,7 +90,7 @@ const resetFailures = (store: AttemptStore, key: string): void => {
 export const rateLimitLogin = (req: Request, res: Response, next: NextFunction) => {
     const key = buildKey('login', req);
     if (isRateLimited(loginAttempts, key)) {
-        answerAPI(req, res, HTTPStatus.TOO_MANY_REQUESTS, undefined, Resource.TOO_MANY_REQUESTS);
+        answerAPI(req, res, HTTPStatus.TOO_MANY_REQUESTS, undefined, ErrorCode.TOO_MANY_REQUESTS);
         return;
     }
     next();
@@ -102,7 +102,7 @@ export const rateLimitLogin = (req: Request, res: Response, next: NextFunction) 
 export const rateLimitRefresh = (req: Request, res: Response, next: NextFunction) => {
     const key = buildKey('refresh', req);
     if (isRateLimited(refreshAttempts, key)) {
-        answerAPI(req, res, HTTPStatus.TOO_MANY_REQUESTS, undefined, Resource.TOO_MANY_REQUESTS);
+        answerAPI(req, res, HTTPStatus.TOO_MANY_REQUESTS, undefined, ErrorCode.TOO_MANY_REQUESTS);
         return;
     }
     next();

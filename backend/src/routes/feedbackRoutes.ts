@@ -4,6 +4,7 @@ import { verifyToken } from '../utils/auth/verifyToken';
 import FeedbackController from '../controller/feedbackController';
 import { createLog, formatError } from '../utils/commons';
 import { LogCategory, LogOperation, LogType } from '../../../shared/enums/log.enums';
+import { FieldKey } from '../../../shared/fields/field-keys';
 import { UploadValidation } from '../utils/upload/upload.constants';
 import { handleMulterUploadError } from '../utils/upload/upload.middleware';
 
@@ -23,7 +24,7 @@ const handleFeedbackUpload = (req: Request, res: Response, next: NextFunction) =
         { name: 'audio', maxCount: 1 },
     ])(req, res, (error: unknown) => {
         const handled = handleMulterUploadError(req, res, error, {
-            defaultFieldName: 'file',
+            defaultFieldName: FieldKey.FILE,
             invalidTypeExpected: UploadValidation.FEEDBACK_ATTACHMENT_EXPECTED,
         });
         if (handled) {
@@ -53,4 +54,3 @@ router.post('/', verifyToken, handleFeedbackUpload, async (req: Request, res: Re
 });
 
 export default router;
-

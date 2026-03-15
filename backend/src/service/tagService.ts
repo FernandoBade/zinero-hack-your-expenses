@@ -1,7 +1,7 @@
 import { FilterOperator, SortOrder } from '../../../shared/enums/operator.enums';
 import { TagRepository } from '../repositories/tagRepository';
 import { UserService } from './userService';
-import { ResourceKey as Resource } from '../../../shared/i18n/resource.keys';
+import { ErrorCode } from '../../../shared/errors/error-codes';
 import { SelectTag, InsertTag } from '../db/schema';
 import { QueryOptions } from '../utils/pagination';
 import type { CreateTagInput, TagEntity, UpdateTagInput } from '../../../shared/domains/tag/tag.types';
@@ -35,12 +35,12 @@ export class TagService {
      * @param data - Tag creation data.
      * @returns The created tag record.
      */
-    async createTag(data: CreateTagInput): Promise<{ success: true; data: TagEntity } | { success: false; error: Resource }> {
+    async createTag(data: CreateTagInput): Promise<{ success: true; data: TagEntity } | { success: false; error: ErrorCode }> {
         const userService = new UserService();
         const user = await userService.getUserById(data.userId);
 
         if (!user.success || !user.data) {
-            return { success: false, error: Resource.USER_NOT_FOUND };
+            return { success: false, error: ErrorCode.USER_NOT_FOUND };
         }
 
         const existing = await this.tagRepository.findMany({
@@ -49,7 +49,7 @@ export class TagService {
         });
 
         if (existing.length > 0) {
-            return { success: false, error: Resource.DATA_ALREADY_EXISTS };
+            return { success: false, error: ErrorCode.DATA_ALREADY_EXISTS };
         }
 
         try {
@@ -60,7 +60,7 @@ export class TagService {
             } as InsertTag);
             return { success: true, data: this.toTagEntity(created) };
         } catch {
-            return { success: false, error: Resource.INTERNAL_SERVER_ERROR };
+            return { success: false, error: ErrorCode.INTERNAL_SERVER_ERROR };
         }
     }
 
@@ -70,7 +70,7 @@ export class TagService {
      * @returns A list of all tags.
      */
 
-    async getTags(options?: QueryOptions<SelectTag>): Promise<{ success: true; data: TagEntity[] } | { success: false; error: Resource }> {
+    async getTags(options?: QueryOptions<SelectTag>): Promise<{ success: true; data: TagEntity[] } | { success: false; error: ErrorCode }> {
         try {
             const tags = await this.tagRepository.findMany(undefined, {
                 limit: options?.limit,
@@ -80,7 +80,7 @@ export class TagService {
             });
             return { success: true, data: tags.map(tag => this.toTagEntity(tag)) };
         } catch {
-            return { success: false, error: Resource.INTERNAL_SERVER_ERROR };
+            return { success: false, error: ErrorCode.INTERNAL_SERVER_ERROR };
         }
     }
 
@@ -89,12 +89,12 @@ export class TagService {
      * @returns Total tag count.
      */
 
-    async countTags(): Promise<{ success: true; data: number } | { success: false; error: Resource }> {
+    async countTags(): Promise<{ success: true; data: number } | { success: false; error: ErrorCode }> {
         try {
             const count = await this.tagRepository.count();
             return { success: true, data: count };
         } catch {
-            return { success: false, error: Resource.INTERNAL_SERVER_ERROR };
+            return { success: false, error: ErrorCode.INTERNAL_SERVER_ERROR };
         }
     }
 
@@ -104,10 +104,10 @@ export class TagService {
      * @returns Tag record if found.
      */
 
-    async getTagById(id: number): Promise<{ success: true; data: TagEntity } | { success: false; error: Resource }> {
+    async getTagById(id: number): Promise<{ success: true; data: TagEntity } | { success: false; error: ErrorCode }> {
         const tag = await this.tagRepository.findById(id);
         if (!tag) {
-            return { success: false, error: Resource.TAG_NOT_FOUND };
+            return { success: false, error: ErrorCode.TAG_NOT_FOUND };
         }
         return { success: true, data: this.toTagEntity(tag) };
     }
@@ -118,7 +118,7 @@ export class TagService {
      * @returns A list of tags owned by the user.
      */
 
-    async getTagsByUser(userId: number, options?: QueryOptions<SelectTag>): Promise<{ success: true; data: TagEntity[] } | { success: false; error: Resource }> {
+    async getTagsByUser(userId: number, options?: QueryOptions<SelectTag>): Promise<{ success: true; data: TagEntity[] } | { success: false; error: ErrorCode }> {
         try {
             const tags = await this.tagRepository.findMany({
                 userId: { operator: FilterOperator.EQ, value: userId }
@@ -130,7 +130,7 @@ export class TagService {
             });
             return { success: true, data: tags.map(tag => this.toTagEntity(tag)) };
         } catch {
-            return { success: false, error: Resource.INTERNAL_SERVER_ERROR };
+            return { success: false, error: ErrorCode.INTERNAL_SERVER_ERROR };
         }
     }
 
@@ -140,14 +140,14 @@ export class TagService {
      * @returns Count of user's tags.
      */
 
-    async countTagsByUser(userId: number): Promise<{ success: true; data: number } | { success: false; error: Resource }> {
+    async countTagsByUser(userId: number): Promise<{ success: true; data: number } | { success: false; error: ErrorCode }> {
         try {
             const count = await this.tagRepository.count({
                 userId: { operator: FilterOperator.EQ, value: userId }
             });
             return { success: true, data: count };
         } catch {
-            return { success: false, error: Resource.INTERNAL_SERVER_ERROR };
+            return { success: false, error: ErrorCode.INTERNAL_SERVER_ERROR };
         }
     }
 
@@ -160,20 +160,20 @@ export class TagService {
      * @param data - Partial tag data to update.
      * @returns Updated tag record.
      */
-    async updateTag(id: number, data: UpdateTagInput): Promise<{ success: true; data: TagEntity } | { success: false; error: Resource }> {
+    async updateTag(id: number, data: UpdateTagInput): Promise<{ success: true; data: TagEntity } | { success: false; error: ErrorCode }> {
         if (data.userId !== undefined) {
             const userService = new UserService();
             const user = await userService.getUserById(data.userId);
 
             if (!user.success || !user.data) {
-                return { success: false, error: Resource.USER_NOT_FOUND };
+                return { success: false, error: ErrorCode.USER_NOT_FOUND };
             }
         }
 
         if (data.userId !== undefined || data.name !== undefined) {
             const current = await this.tagRepository.findById(id);
             if (!current) {
-                return { success: false, error: Resource.TAG_NOT_FOUND };
+                return { success: false, error: ErrorCode.TAG_NOT_FOUND };
             }
 
             const effectiveUserId = data.userId ?? current.userId;
@@ -185,7 +185,7 @@ export class TagService {
                     name: { operator: FilterOperator.EQ, value: effectiveName }
                 });
                 if (existing.length > 0 && existing[0].id !== id) {
-                    return { success: false, error: Resource.DATA_ALREADY_EXISTS };
+                    return { success: false, error: ErrorCode.DATA_ALREADY_EXISTS };
                 }
             }
         }
@@ -194,7 +194,7 @@ export class TagService {
             const updated = await this.tagRepository.update(id, data);
             return { success: true, data: this.toTagEntity(updated) };
         } catch {
-            return { success: false, error: Resource.INTERNAL_SERVER_ERROR };
+            return { success: false, error: ErrorCode.INTERNAL_SERVER_ERROR };
         }
     }
 
@@ -205,17 +205,17 @@ export class TagService {
      * @param id - ID of the tag to delete.
      * @returns Success with deleted ID, or error if tag does not exist.
      */
-    async deleteTag(id: number): Promise<{ success: true; data: { id: number } } | { success: false; error: Resource }> {
+    async deleteTag(id: number): Promise<{ success: true; data: { id: number } } | { success: false; error: ErrorCode }> {
         const existing = await this.tagRepository.findById(id);
         if (!existing) {
-            return { success: false, error: Resource.TAG_NOT_FOUND };
+            return { success: false, error: ErrorCode.TAG_NOT_FOUND };
         }
 
         try {
             await this.tagRepository.delete(id);
             return { success: true, data: { id } };
         } catch {
-            return { success: false, error: Resource.INTERNAL_SERVER_ERROR };
+            return { success: false, error: ErrorCode.INTERNAL_SERVER_ERROR };
         }
     }
 }

@@ -2,13 +2,10 @@ import { TokenService } from '../../../src/service/tokenService';
 import { TokenRepository } from '../../../src/repositories/tokenRepository';
 import { TokenType } from '../../../../shared/enums/auth.enums';
 import { LogCategory, LogOperation, LogType } from '../../../../shared/enums/log.enums';
-import { ResourceKey as Resource } from '../../../../shared/i18n/resource.keys';
+import { ErrorCode as Resource } from '../../../../shared/errors/error-codes';
 import { SelectToken, tokens } from '../../../src/db/schema';
 import { db } from '../../../src/db';
 import * as commons from '../../../src/utils/commons';
-import { translateResource } from '../../../../shared/i18n/resource.utils';
-
-const translate = (resource: Resource) => translateResource(resource, 'en-US');
 const isResource = (value: string): value is Resource => Object.values(Resource).includes(value as Resource);
 
 const makeToken = (overrides: Partial<SelectToken> = {}): SelectToken => {
@@ -76,7 +73,6 @@ describe('TokenService', () => {
             if (caught instanceof Error) {
                 expect(isResource(caught.message)).toBe(true);
                 if (isResource(caught.message)) {
-                    expect(translate(caught.message)).toBe(translate(Resource.INTERNAL_SERVER_ERROR));
                 }
             }
         });
@@ -94,7 +90,6 @@ describe('TokenService', () => {
             expect(result.success).toBe(false);
             if (!result.success) {
                 expect(result.error).toBe(Resource.TOKEN_NOT_FOUND);
-                expect(translate(result.error)).toBe(translate(Resource.TOKEN_NOT_FOUND));
             }
         });
 
@@ -124,7 +119,6 @@ describe('TokenService', () => {
             if (caught instanceof Error) {
                 expect(isResource(caught.message)).toBe(true);
                 if (isResource(caught.message)) {
-                    expect(translate(caught.message)).toBe(translate(Resource.INTERNAL_SERVER_ERROR));
                 }
             }
         });
@@ -154,7 +148,6 @@ describe('TokenService', () => {
             expect(result.success).toBe(false);
             if (!result.success) {
                 expect(result.error).toBe(Resource.INTERNAL_SERVER_ERROR);
-                expect(translate(result.error)).toBe(translate(Resource.INTERNAL_SERVER_ERROR));
             }
         });
     });
@@ -419,7 +412,6 @@ describe('TokenService', () => {
             if (caught instanceof Error) {
                 expect(isResource(caught.message)).toBe(true);
                 if (isResource(caught.message)) {
-                    expect(translate(caught.message)).toBe(translate(Resource.INTERNAL_SERVER_ERROR));
                 }
             }
         });
@@ -467,7 +459,6 @@ describe('TokenService', () => {
             if (caught instanceof Error) {
                 expect(isResource(caught.message)).toBe(true);
                 if (isResource(caught.message)) {
-                    expect(translate(caught.message)).toBe(translate(Resource.INTERNAL_SERVER_ERROR));
                 }
             }
         });
@@ -500,7 +491,6 @@ describe('TokenService', () => {
             if (caught instanceof Error) {
                 expect(isResource(caught.message)).toBe(true);
                 if (isResource(caught.message)) {
-                    expect(translate(caught.message)).toBe(translate(Resource.INTERNAL_SERVER_ERROR));
                 }
             }
         });
@@ -543,7 +533,6 @@ describe('TokenService', () => {
             expect(result.success).toBe(false);
             if (!result.success) {
                 expect(result.error).toBe(Resource.INTERNAL_SERVER_ERROR);
-                expect(translate(result.error)).toBe(translate(Resource.INTERNAL_SERVER_ERROR));
             }
             expect(logSpy).not.toHaveBeenCalled();
         });
@@ -575,7 +564,6 @@ describe('TokenService', () => {
             if (caught instanceof Error) {
                 expect(isResource(caught.message)).toBe(true);
                 if (isResource(caught.message)) {
-                    expect(translate(caught.message)).toBe(translate(Resource.INTERNAL_SERVER_ERROR));
                 }
             }
         });

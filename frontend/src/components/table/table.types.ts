@@ -1,12 +1,12 @@
 import type { ComponentChildren } from "preact";
-import type { ResourceKey } from "@shared/i18n/resource.keys";
+import type { I18nKey } from "@shared/i18n/types/i18n-key";
 
 /**
  * @summary Column definition for generic table rendering.
  */
 export interface TableColumn<TRow> {
     readonly key: string;
-    readonly header: ResourceKey;
+    readonly header: I18nKey;
     readonly render: (row: TRow, rowIndex: number) => ComponentChildren;
     readonly isNumeric?: boolean;
 }
@@ -19,6 +19,6 @@ export interface TableProps<TRow> {
     readonly rows: readonly TRow[];
     readonly getRowKey?: (row: TRow, rowIndex: number) => string;
     readonly onRowClick?: (row: TRow) => void;
-    readonly actionsLabel?: ResourceKey;
+    readonly actionsLabel?: I18nKey;
     readonly renderRowActions?: (row: TRow, rowIndex: number) => ComponentChildren;
 }

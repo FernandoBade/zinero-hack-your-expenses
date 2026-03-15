@@ -1,5 +1,4 @@
 import { AppRoutePath } from "@shared/enums/routes.enums";
-import { ResourceKey } from "@shared/i18n/resource.keys";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const navigateMock = vi.fn();
@@ -23,7 +22,6 @@ describe("login.controller", () => {
     it("navigates to dashboard on successful login", async () => {
         loginMock.mockResolvedValue({
             success: true,
-            messageKey: ResourceKey.EMAIL_VERIFICATION_SUCCESS,
         });
         const setError = vi.fn();
         const controller = createLoginController({ setError });
@@ -38,7 +36,7 @@ describe("login.controller", () => {
     it("uses returned semantic key when login fails", async () => {
         loginMock.mockResolvedValue({
             success: false,
-            messageKey: ResourceKey.EMAIL_NOT_VERIFIED,
+            messageKey: "error.email_not_verified",
         });
         const setError = vi.fn();
         const controller = createLoginController({ setError });
@@ -46,7 +44,7 @@ describe("login.controller", () => {
         await controller.onSubmit("user@example.com", "wrong");
 
         expect(setError).toHaveBeenCalledWith(null);
-        expect(setError).toHaveBeenCalledWith(ResourceKey.EMAIL_NOT_VERIFIED);
+        expect(setError).toHaveBeenCalledWith("error.email_not_verified");
         expect(navigateMock).not.toHaveBeenCalled();
     });
 
@@ -61,7 +59,7 @@ describe("login.controller", () => {
         await controller.onSubmit("user@example.com", "wrong");
 
         expect(setError).toHaveBeenCalledWith(null);
-        expect(setError).toHaveBeenCalledWith(ResourceKey.INVALID_CREDENTIALS);
+        expect(setError).toHaveBeenCalledWith("error.invalid_credentials");
         expect(navigateMock).not.toHaveBeenCalled();
     });
 });

@@ -1,6 +1,6 @@
 import { NumericInputValidationError } from "@shared/enums/input-validation.enums";
 import { Language } from "@shared/enums/user.enums";
-import type { ResourceKey } from "@shared/i18n/resource.keys";
+import type { I18nKey } from "@shared/i18n/types/i18n-key";
 import type { CanonicalInputBaseProps } from "@/components/input/canonical-input.types";
 
 /**
@@ -11,5 +11,6 @@ export interface IntegerInputProps extends CanonicalInputBaseProps {
     readonly min?: string;
     readonly max?: string;
     readonly useThousandsSeparator?: boolean;
-    readonly validationResourceKeys?: Partial<Record<NumericInputValidationError, ResourceKey>>;
+    readonly validationI18nKeys?: Partial<Record<NumericInputValidationError, I18nKey>>;
 }
+

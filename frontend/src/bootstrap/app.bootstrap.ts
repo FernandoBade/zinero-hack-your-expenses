@@ -1,28 +1,45 @@
-import { ResourceKey } from "@shared/i18n/resource.keys";
+import { preloadLocaleCatalog } from "@shared/i18n/translate";
 import { initializeAuthService } from "@/services/auth/auth.service";
+import { getLocale, subscribeLocale } from "@/state/locale.store";
 import { initializeThemeStore } from "@/state/theme.store";
 import { initializeUserPreferencesStore } from "@/state/userPreferences.store";
 import { t } from "@/utils/i18n/translate";
 
-let bootstrapped = false;
+let bootstrappedPromise: Promise<void> | null = null;
+let localeSubscriptionInitialized = false;
 
 /**
- * @summary Initializes app stores and mounts the root Preact application.
- * @returns No return value.
+ * @summary Initializes app stores and prepares locale catalogs before mounting the root Preact application.
  */
+async function runBootstrap(): Promise<void> {
+    await initializeUserPreferencesStore();
+    await preloadLocaleCatalog(getLocale());
 
-export function bootstrapApp(): void {
-    if (bootstrapped) {
-        return;
+    if (!localeSubscriptionInitialized) {
+        subscribeLocale((locale) => {
+            void preloadLocaleCatalog(locale);
+            if (typeof document !== "undefined") {
+                document.title = t("app.name");
+            }
+        });
+        localeSubscriptionInitialized = true;
     }
 
-    void initializeUserPreferencesStore();
     initializeThemeStore();
     initializeAuthService();
 
     if (typeof document !== "undefined") {
-        document.title = t(ResourceKey.APP_NAME);
+        document.title = t("app.name");
+    }
+}
+
+/**
+ * @summary Executes application bootstrap once and shares the same promise across callers.
+ */
+export async function bootstrapApp(): Promise<void> {
+    if (bootstrappedPromise === null) {
+        bootstrappedPromise = runBootstrap();
     }
 
-    bootstrapped = true;
+    return bootstrappedPromise;
 }

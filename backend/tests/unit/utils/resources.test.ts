@@ -1,34 +1,40 @@
-import { ResourceKey as Resource } from '../../../../shared/i18n/resource.keys';
-import type { LanguageCode } from '../../../../shared/i18n/resourceTypes';
-import { translateResource, translateResourceWithParams } from '../../../../shared/i18n/resource.utils';
 import { Language } from '../../../../shared/enums/language.enums';
+import { ErrorCode } from '../../../../shared/errors/error-codes';
+import { FieldKey } from '../../../../shared/fields/field-keys';
+import {
+    isLocaleCatalogLoaded,
+    preloadLocaleCatalog,
+    resolveLocale,
+    translate,
+    translateAsync,
+    translateError,
+    translateFieldLabel,
+} from '../../../../shared/i18n/translate';
+import { DEFAULT_LOCALE } from '../../../../shared/i18n/types/locale';
 
-describe('resource.utils', () => {
-
-    it('returns a value for each supported language', () => {
-        const languages: LanguageCode[] = [Language.EN_US, Language.PT_BR, Language.ES_ES];
-
-        languages.forEach((lang) => {
-            const result = translateResource(Resource.VALIDATION_ERROR, lang);
-            expect(typeof result).toBe('string');
-            expect(result.length).toBeGreaterThan(0);
-        });
+describe('shared i18n translate', () => {
+    it('resolves unknown locales to the default locale', () => {
+        expect(resolveLocale('fr-FR')).toBe(DEFAULT_LOCALE);
     });
 
-    it('falls back to default language for unknown language codes', () => {
-        const fallback = translateResource(Resource.VALIDATION_ERROR, Language.PT_BR);
-        const result = translateResource(Resource.VALIDATION_ERROR, 'fr-FR' as LanguageCode);
-
-        expect(result).toBe(fallback);
+    it('translates a known key in the default locale', () => {
+        expect(translate('error.validation_error', Language.PT_BR)).toBe('Erro de validacao');
     });
 
-    it('replaces params in translated messages', () => {
-        const result = translateResourceWithParams(Resource.INVALID_TYPE, Language.EN_US, {
-            path: 'amount',
-            expected: 'number',
-            received: 'text',
-        });
+    it('loads and translates the english locale asynchronously', async () => {
+        const value = await translateAsync('error.validation_error', Language.EN_US);
 
-        expect(result).toContain('amount');
+        expect(value).toBe('Validation error');
+        expect(isLocaleCatalogLoaded(Language.EN_US)).toBe(true);
+    });
+
+    it('translates error codes through the error-code map', async () => {
+        await preloadLocaleCatalog(Language.EN_US);
+        expect(translateError(ErrorCode.INVALID_CREDENTIALS, Language.EN_US)).toBe('Invalid credentials');
+    });
+
+    it('translates field labels through the typed field map', async () => {
+        await preloadLocaleCatalog(Language.EN_US);
+        expect(translateFieldLabel(FieldKey.USER_ID, Language.EN_US)).toBe('User');
     });
 });

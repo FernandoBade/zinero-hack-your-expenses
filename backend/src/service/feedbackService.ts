@@ -1,6 +1,6 @@
 import { sendFeedbackEmail, type FeedbackAttachmentInput } from '../utils/email/feedbackEmail';
-import { ResourceKey as Resource } from '../../../shared/i18n/resource.keys';
-import type { LanguageCode } from '../../../shared/i18n/resourceTypes';
+import { ErrorCode } from '../../../shared/errors/error-codes';
+import type { Locale } from '../../../shared/i18n/types/locale';
 import type { SendFeedbackOutput } from '../../../shared/domains/feedback/feedback.types';
 
 type FeedbackInput = {
@@ -8,7 +8,7 @@ type FeedbackInput = {
     userEmail: string;
     title: string;
     message: string;
-    language?: LanguageCode;
+    language?: Locale;
     attachments?: FeedbackAttachmentInput[];
 };
 
@@ -18,10 +18,10 @@ export class FeedbackService {
      */
     async sendFeedback(
         payload: FeedbackInput
-    ): Promise<{ success: true; data: SendFeedbackOutput } | { success: false; error: Resource }> {
+    ): Promise<{ success: true; data: SendFeedbackOutput } | { success: false; error: ErrorCode }> {
         const result = await sendFeedbackEmail(payload);
         if (!result.success) {
-            return { success: false, error: Resource.FEEDBACK_SEND_FAILED };
+            return { success: false, error: ErrorCode.FEEDBACK_SEND_FAILED };
         }
 
         return { success: true, data: { sent: true } };

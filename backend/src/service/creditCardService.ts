@@ -2,7 +2,7 @@ import { FilterOperator, SortOrder } from '../../../shared/enums/operator.enums'
 import { CreditCardRepository } from '../repositories/creditCardRepository';
 import { UserService } from './userService';
 import { AccountService } from './accountService';
-import { ResourceKey as Resource } from '../../../shared/i18n/resource.keys';
+import { ErrorCode } from '../../../shared/errors/error-codes';
 import { SelectCreditCard, InsertCreditCard } from '../db/schema';
 import { QueryOptions } from '../utils/pagination';
 import type { CreditCardEntity, CreateCreditCardInput, UpdateCreditCardInput } from '../../../shared/domains/creditCard/creditCard.types';
@@ -37,26 +37,26 @@ export class CreditCardService {
      * @param data - Credit card creation data.
      * @returns The created credit card record.
      */
-    async createCreditCard(data: CreateCreditCardInput): Promise<{ success: true; data: CreditCardEntity } | { success: false; error: Resource }> {
+    async createCreditCard(data: CreateCreditCardInput): Promise<{ success: true; data: CreditCardEntity } | { success: false; error: ErrorCode }> {
         const userService = new UserService();
         const user = await userService.getUserById(data.userId);
 
         if (!user.success || !user.data) {
-            return { success: false, error: Resource.USER_NOT_FOUND };
+            return { success: false, error: ErrorCode.USER_NOT_FOUND };
         }
 
         if (data.accountId !== undefined) {
             const accountService = new AccountService();
             const account = await accountService.getAccountById(data.accountId);
             if (!account.success || !account.data) {
-                return { success: false, error: Resource.ACCOUNT_NOT_FOUND };
+                return { success: false, error: ErrorCode.ACCOUNT_NOT_FOUND };
             }
 
             const existing = await this.creditCardRepository.findMany({
                 accountId: { operator: FilterOperator.EQ, value: data.accountId }
             });
             if (existing.length > 0) {
-                return { success: false, error: Resource.DATA_ALREADY_EXISTS };
+                return { success: false, error: ErrorCode.DATA_ALREADY_EXISTS };
             }
         }
 
@@ -73,7 +73,7 @@ export class CreditCardService {
             } as InsertCreditCard);
             return { success: true, data: this.toCreditCardEntity(created) };
         } catch {
-            return { success: false, error: Resource.INTERNAL_SERVER_ERROR };
+            return { success: false, error: ErrorCode.INTERNAL_SERVER_ERROR };
         }
     }
 
@@ -83,7 +83,7 @@ export class CreditCardService {
      * @returns A list of all credit cards.
      */
 
-    async getCreditCards(options?: QueryOptions<SelectCreditCard>): Promise<{ success: true; data: CreditCardEntity[] } | { success: false; error: Resource }> {
+    async getCreditCards(options?: QueryOptions<SelectCreditCard>): Promise<{ success: true; data: CreditCardEntity[] } | { success: false; error: ErrorCode }> {
         try {
             const creditCards = await this.creditCardRepository.findMany(undefined, {
                 limit: options?.limit,
@@ -93,7 +93,7 @@ export class CreditCardService {
             });
             return { success: true, data: creditCards.map(card => this.toCreditCardEntity(card)) };
         } catch {
-            return { success: false, error: Resource.INTERNAL_SERVER_ERROR };
+            return { success: false, error: ErrorCode.INTERNAL_SERVER_ERROR };
         }
     }
 
@@ -102,12 +102,12 @@ export class CreditCardService {
      * @returns Total credit card count.
      */
 
-    async countCreditCards(): Promise<{ success: true; data: number } | { success: false; error: Resource }> {
+    async countCreditCards(): Promise<{ success: true; data: number } | { success: false; error: ErrorCode }> {
         try {
             const count = await this.creditCardRepository.count();
             return { success: true, data: count };
         } catch {
-            return { success: false, error: Resource.INTERNAL_SERVER_ERROR };
+            return { success: false, error: ErrorCode.INTERNAL_SERVER_ERROR };
         }
     }
 
@@ -117,10 +117,10 @@ export class CreditCardService {
      * @returns Credit card record if found.
      */
 
-    async getCreditCardById(id: number): Promise<{ success: true; data: CreditCardEntity } | { success: false; error: Resource }> {
+    async getCreditCardById(id: number): Promise<{ success: true; data: CreditCardEntity } | { success: false; error: ErrorCode }> {
         const creditCard = await this.creditCardRepository.findById(id);
         if (!creditCard) {
-            return { success: false, error: Resource.CREDIT_CARD_NOT_FOUND };
+            return { success: false, error: ErrorCode.CREDIT_CARD_NOT_FOUND };
         }
         return { success: true, data: this.toCreditCardEntity(creditCard) };
     }
@@ -131,7 +131,7 @@ export class CreditCardService {
      * @returns A list of credit cards owned by the user.
      */
 
-    async getCreditCardsByUser(userId: number, options?: QueryOptions<SelectCreditCard>): Promise<{ success: true; data: CreditCardEntity[] } | { success: false; error: Resource }> {
+    async getCreditCardsByUser(userId: number, options?: QueryOptions<SelectCreditCard>): Promise<{ success: true; data: CreditCardEntity[] } | { success: false; error: ErrorCode }> {
         try {
             const creditCards = await this.creditCardRepository.findMany({
                 userId: { operator: FilterOperator.EQ, value: userId }
@@ -143,7 +143,7 @@ export class CreditCardService {
             });
             return { success: true, data: creditCards.map(card => this.toCreditCardEntity(card)) };
         } catch {
-            return { success: false, error: Resource.INTERNAL_SERVER_ERROR };
+            return { success: false, error: ErrorCode.INTERNAL_SERVER_ERROR };
         }
     }
 
@@ -153,14 +153,14 @@ export class CreditCardService {
      * @returns Count of user's credit cards.
      */
 
-    async countCreditCardsByUser(userId: number): Promise<{ success: true; data: number } | { success: false; error: Resource }> {
+    async countCreditCardsByUser(userId: number): Promise<{ success: true; data: number } | { success: false; error: ErrorCode }> {
         try {
             const count = await this.creditCardRepository.count({
                 userId: { operator: FilterOperator.EQ, value: userId }
             });
             return { success: true, data: count };
         } catch {
-            return { success: false, error: Resource.INTERNAL_SERVER_ERROR };
+            return { success: false, error: ErrorCode.INTERNAL_SERVER_ERROR };
         }
     }
 
@@ -172,14 +172,14 @@ export class CreditCardService {
      * @param data - Partial credit card data to update.
      * @returns Updated credit card record.
      */
-    async updateCreditCard(id: number, data: UpdateCreditCardInput): Promise<{ success: true; data: CreditCardEntity } | { success: false; error: Resource }> {
+    async updateCreditCard(id: number, data: UpdateCreditCardInput): Promise<{ success: true; data: CreditCardEntity } | { success: false; error: ErrorCode }> {
         const { balance, ...safeData } = data;
 
         if (data.userId !== undefined) {
             const userService = new UserService();
             const user = await userService.getUserById(data.userId);
             if (!user.success || !user.data) {
-                return { success: false, error: Resource.USER_NOT_FOUND };
+                return { success: false, error: ErrorCode.USER_NOT_FOUND };
             }
         }
 
@@ -190,14 +190,14 @@ export class CreditCardService {
                 const accountService = new AccountService();
                 const account = await accountService.getAccountById(safeData.accountId);
                 if (!account.success || !account.data) {
-                    return { success: false, error: Resource.ACCOUNT_NOT_FOUND };
+                    return { success: false, error: ErrorCode.ACCOUNT_NOT_FOUND };
                 }
 
                 const existing = await this.creditCardRepository.findMany({
                     accountId: { operator: FilterOperator.EQ, value: safeData.accountId }
                 });
                 if (existing.length > 0 && existing[0].id !== id) {
-                    return { success: false, error: Resource.DATA_ALREADY_EXISTS };
+                    return { success: false, error: ErrorCode.DATA_ALREADY_EXISTS };
                 }
             }
         }
@@ -210,7 +210,7 @@ export class CreditCardService {
             const updated = await this.creditCardRepository.update(id, dbData);
             return { success: true, data: this.toCreditCardEntity(updated) };
         } catch {
-            return { success: false, error: Resource.INTERNAL_SERVER_ERROR };
+            return { success: false, error: ErrorCode.INTERNAL_SERVER_ERROR };
         }
     }
 
@@ -221,17 +221,17 @@ export class CreditCardService {
      * @param id - ID of the credit card to delete.
      * @returns Success with deleted ID, or error if credit card does not exist.
      */
-    async deleteCreditCard(id: number): Promise<{ success: true; data: { id: number } } | { success: false; error: Resource }> {
+    async deleteCreditCard(id: number): Promise<{ success: true; data: { id: number } } | { success: false; error: ErrorCode }> {
         const existing = await this.creditCardRepository.findById(id);
         if (!existing) {
-            return { success: false, error: Resource.CREDIT_CARD_NOT_FOUND };
+            return { success: false, error: ErrorCode.CREDIT_CARD_NOT_FOUND };
         }
 
         try {
             await this.creditCardRepository.delete(id);
             return { success: true, data: { id } };
         } catch {
-            return { success: false, error: Resource.INTERNAL_SERVER_ERROR };
+            return { success: false, error: ErrorCode.INTERNAL_SERVER_ERROR };
         }
     }
 }

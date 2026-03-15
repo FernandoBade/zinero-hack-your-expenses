@@ -1,1 +1,1 @@
-export { TransactionErrorCode, TransactionSource, TransactionType } from "../../enums/transaction.enums";
+export { TransactionSource, TransactionType } from "../../enums/transaction.enums";

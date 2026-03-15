@@ -3,7 +3,7 @@ import { AuthService } from '../service/authService';
 import { answerAPI, formatError, createLog } from '../utils/commons';
 import { HTTPStatus } from '../../../shared/enums/http-status.enums';
 import { LogType, LogCategory, LogOperation } from '../../../shared/enums/log.enums';
-import { ResourceKey as Resource } from '../../../shared/i18n/resource.keys';
+import { ErrorCode } from '../../../shared/errors/error-codes';
 import { TokenCookie, ClearCookieOptions } from '../utils/auth/cookieConfig';
 import { recordLoginFailure, recordRefreshFailure, resetLoginRateLimit, resetRefreshRateLimit } from '../utils/auth/rateLimiter';
 import { isString, isValidEmail, hasMinLength } from '../utils/validation/guards';
@@ -22,7 +22,7 @@ export class AuthController {
         const password = req.body?.password as string | undefined;
 
         if (!email || !password) {
-            return answerAPI(req, res, HTTPStatus.BAD_REQUEST, undefined, Resource.INVALID_CREDENTIALS);
+            return answerAPI(req, res, HTTPStatus.BAD_REQUEST, undefined, ErrorCode.INVALID_CREDENTIALS);
         }
 
         const authService = new AuthService();
@@ -31,18 +31,18 @@ export class AuthController {
             const result = await authService.login(email, password);
 
             if (!result.success || !result.data) {
-                if (!result.success && result.error === Resource.INVALID_CREDENTIALS) {
+                if (!result.success && result.error === ErrorCode.INVALID_CREDENTIALS) {
                     recordLoginFailure(req);
-                    return answerAPI(req, res, HTTPStatus.UNAUTHORIZED, undefined, Resource.INVALID_CREDENTIALS);
+                    return answerAPI(req, res, HTTPStatus.UNAUTHORIZED, undefined, ErrorCode.INVALID_CREDENTIALS);
                 }
-                if (!result.success && result.error === Resource.EMAIL_NOT_VERIFIED) {
+                if (!result.success && result.error === ErrorCode.EMAIL_NOT_VERIFIED) {
                     return answerAPI(req, res, HTTPStatus.UNAUTHORIZED, {
                         email,
                         canResend: true,
                         verificationSent: true
-                    }, Resource.EMAIL_NOT_VERIFIED);
+                    }, ErrorCode.EMAIL_NOT_VERIFIED);
                 }
-                return answerAPI(req, res, HTTPStatus.UNAUTHORIZED, undefined, Resource.INVALID_CREDENTIALS);
+                return answerAPI(req, res, HTTPStatus.UNAUTHORIZED, undefined, ErrorCode.INVALID_CREDENTIALS);
             }
 
             resetLoginRateLimit(req);
@@ -74,7 +74,7 @@ export class AuthController {
                 undefined,
                 next
             );
-            return answerAPI(req, res, HTTPStatus.INTERNAL_SERVER_ERROR, undefined, Resource.INTERNAL_SERVER_ERROR);
+            return answerAPI(req, res, HTTPStatus.INTERNAL_SERVER_ERROR, undefined, ErrorCode.INTERNAL_SERVER_ERROR);
         }
     }
 
@@ -90,7 +90,7 @@ export class AuthController {
         const token = req.cookies?.[TokenCookie.name];
 
         if (!token) {
-            return answerAPI(req, res, HTTPStatus.UNAUTHORIZED, undefined, Resource.EXPIRED_OR_INVALID_TOKEN);
+            return answerAPI(req, res, HTTPStatus.UNAUTHORIZED, undefined, ErrorCode.EXPIRED_OR_INVALID_TOKEN);
         }
 
         const authService = new AuthService();
@@ -99,10 +99,10 @@ export class AuthController {
             const result = await authService.refresh(token);
 
             if (!result.success || !result.data) {
-                if (!result.success && result.error === Resource.EXPIRED_OR_INVALID_TOKEN) {
+                if (!result.success && result.error === ErrorCode.EXPIRED_OR_INVALID_TOKEN) {
                     recordRefreshFailure(req);
                 }
-                return answerAPI(req, res, HTTPStatus.UNAUTHORIZED, undefined, Resource.EXPIRED_OR_INVALID_TOKEN);
+                return answerAPI(req, res, HTTPStatus.UNAUTHORIZED, undefined, ErrorCode.EXPIRED_OR_INVALID_TOKEN);
             }
 
             resetRefreshRateLimit(req);
@@ -111,7 +111,7 @@ export class AuthController {
             return answerAPI(req, res, HTTPStatus.OK, { token: result.data.token });
         } catch (error) {
             await createLog(LogType.ERROR, LogOperation.UPDATE, LogCategory.AUTH, formatError(error), undefined, next);
-            return answerAPI(req, res, HTTPStatus.INTERNAL_SERVER_ERROR, undefined, Resource.INTERNAL_SERVER_ERROR);
+            return answerAPI(req, res, HTTPStatus.INTERNAL_SERVER_ERROR, undefined, ErrorCode.INTERNAL_SERVER_ERROR);
         }
     }
 
@@ -127,7 +127,7 @@ export class AuthController {
         const token = req.cookies?.[TokenCookie.name];
 
         if (!token) {
-            return answerAPI(req, res, HTTPStatus.BAD_REQUEST, undefined, Resource.TOKEN_NOT_FOUND);
+            return answerAPI(req, res, HTTPStatus.BAD_REQUEST, undefined, ErrorCode.TOKEN_NOT_FOUND);
         }
 
         const authService = new AuthService();
@@ -136,7 +136,7 @@ export class AuthController {
             const result = await authService.logout(token);
 
             if (!result.success || !result.data) {
-                return answerAPI(req, res, HTTPStatus.BAD_REQUEST, undefined, Resource.TOKEN_NOT_FOUND);
+                return answerAPI(req, res, HTTPStatus.BAD_REQUEST, undefined, ErrorCode.TOKEN_NOT_FOUND);
             }
 
             res.clearCookie(TokenCookie.name, ClearCookieOptions);
@@ -153,7 +153,7 @@ export class AuthController {
 
         } catch (error) {
             await createLog(LogType.ERROR, LogOperation.LOGOUT, LogCategory.AUTH, formatError(error), undefined, next);
-            return answerAPI(req, res, HTTPStatus.INTERNAL_SERVER_ERROR, undefined, Resource.INTERNAL_SERVER_ERROR);
+            return answerAPI(req, res, HTTPStatus.INTERNAL_SERVER_ERROR, undefined, ErrorCode.INTERNAL_SERVER_ERROR);
         }
     }
 
@@ -169,7 +169,7 @@ export class AuthController {
         const token = req.body?.token;
 
         if (!isString(token)) {
-            return answerAPI(req, res, HTTPStatus.BAD_REQUEST, undefined, Resource.EXPIRED_OR_INVALID_TOKEN);
+            return answerAPI(req, res, HTTPStatus.BAD_REQUEST, undefined, ErrorCode.EXPIRED_OR_INVALID_TOKEN);
         }
 
         const authService = new AuthService();
@@ -182,12 +182,12 @@ export class AuthController {
             }
 
             const message = result.data?.alreadyVerified
-                ? Resource.EMAIL_ALREADY_VERIFIED
-                : Resource.EMAIL_VERIFICATION_SUCCESS;
+                ? ErrorCode.EMAIL_ALREADY_VERIFIED
+                : ErrorCode.EMAIL_VERIFICATION_SUCCESS;
             return answerAPI(req, res, HTTPStatus.OK, result.data, message);
         } catch (error) {
             await createLog(LogType.ERROR, LogOperation.UPDATE, LogCategory.AUTH, formatError(error), undefined, next);
-            return answerAPI(req, res, HTTPStatus.INTERNAL_SERVER_ERROR, undefined, Resource.INTERNAL_SERVER_ERROR);
+            return answerAPI(req, res, HTTPStatus.INTERNAL_SERVER_ERROR, undefined, ErrorCode.INTERNAL_SERVER_ERROR);
         }
     }
 
@@ -203,7 +203,7 @@ export class AuthController {
         const email = req.body?.email;
 
         if (!isString(email) || !isValidEmail(email)) {
-            return answerAPI(req, res, HTTPStatus.BAD_REQUEST, undefined, Resource.EMAIL_INVALID);
+            return answerAPI(req, res, HTTPStatus.BAD_REQUEST, undefined, ErrorCode.EMAIL_INVALID);
         }
 
         const authService = new AuthService();
@@ -212,18 +212,18 @@ export class AuthController {
             const result = await authService.resendEmailVerification(email);
 
             if (!result.success) {
-                if (result.error === Resource.EMAIL_VERIFICATION_COOLDOWN) {
+                if (result.error === ErrorCode.EMAIL_VERIFICATION_COOLDOWN) {
                     return answerAPI(req, res, HTTPStatus.TOO_MANY_REQUESTS, {
                         cooldownSeconds: result.data?.cooldownSeconds ?? 0
-                    }, Resource.EMAIL_VERIFICATION_COOLDOWN);
+                    }, ErrorCode.EMAIL_VERIFICATION_COOLDOWN);
                 }
                 return answerAPI(req, res, HTTPStatus.INTERNAL_SERVER_ERROR, undefined, result.error);
             }
 
-            return answerAPI(req, res, HTTPStatus.OK, result.data, Resource.EMAIL_VERIFICATION_REQUESTED);
+            return answerAPI(req, res, HTTPStatus.OK, result.data, ErrorCode.EMAIL_VERIFICATION_REQUESTED);
         } catch (error) {
             await createLog(LogType.ERROR, LogOperation.UPDATE, LogCategory.AUTH, formatError(error), undefined, next);
-            return answerAPI(req, res, HTTPStatus.INTERNAL_SERVER_ERROR, undefined, Resource.INTERNAL_SERVER_ERROR);
+            return answerAPI(req, res, HTTPStatus.INTERNAL_SERVER_ERROR, undefined, ErrorCode.INTERNAL_SERVER_ERROR);
         }
     }
 
@@ -239,7 +239,7 @@ export class AuthController {
         const email = req.body?.email;
 
         if (!isString(email) || !isValidEmail(email)) {
-            return answerAPI(req, res, HTTPStatus.BAD_REQUEST, undefined, Resource.EMAIL_INVALID);
+            return answerAPI(req, res, HTTPStatus.BAD_REQUEST, undefined, ErrorCode.EMAIL_INVALID);
         }
 
         const authService = new AuthService();
@@ -251,10 +251,10 @@ export class AuthController {
                 return answerAPI(req, res, HTTPStatus.INTERNAL_SERVER_ERROR, undefined, result.error);
             }
 
-            return answerAPI(req, res, HTTPStatus.OK, result.data, Resource.PASSWORD_RESET_REQUESTED);
+            return answerAPI(req, res, HTTPStatus.OK, result.data, ErrorCode.PASSWORD_RESET_REQUESTED);
         } catch (error) {
             await createLog(LogType.ERROR, LogOperation.UPDATE, LogCategory.AUTH, formatError(error), undefined, next);
-            return answerAPI(req, res, HTTPStatus.INTERNAL_SERVER_ERROR, undefined, Resource.INTERNAL_SERVER_ERROR);
+            return answerAPI(req, res, HTTPStatus.INTERNAL_SERVER_ERROR, undefined, ErrorCode.INTERNAL_SERVER_ERROR);
         }
     }
 
@@ -271,11 +271,11 @@ export class AuthController {
         const password = req.body?.password;
 
         if (!isString(token)) {
-            return answerAPI(req, res, HTTPStatus.BAD_REQUEST, undefined, Resource.EXPIRED_OR_INVALID_TOKEN);
+            return answerAPI(req, res, HTTPStatus.BAD_REQUEST, undefined, ErrorCode.EXPIRED_OR_INVALID_TOKEN);
         }
 
         if (!isString(password) || !hasMinLength(password, 6)) {
-            return answerAPI(req, res, HTTPStatus.BAD_REQUEST, undefined, Resource.PASSWORD_TOO_SHORT);
+            return answerAPI(req, res, HTTPStatus.BAD_REQUEST, undefined, ErrorCode.PASSWORD_TOO_SHORT);
         }
 
         const authService = new AuthService();
@@ -284,14 +284,14 @@ export class AuthController {
             const result = await authService.resetPassword(token, password);
 
             if (!result.success) {
-                const status = result.error === Resource.INTERNAL_SERVER_ERROR ? HTTPStatus.INTERNAL_SERVER_ERROR : HTTPStatus.BAD_REQUEST;
+                const status = result.error === ErrorCode.INTERNAL_SERVER_ERROR ? HTTPStatus.INTERNAL_SERVER_ERROR : HTTPStatus.BAD_REQUEST;
                 return answerAPI(req, res, status, undefined, result.error);
             }
 
-            return answerAPI(req, res, HTTPStatus.OK, result.data, Resource.PASSWORD_RESET_SUCCESS);
+            return answerAPI(req, res, HTTPStatus.OK, result.data, ErrorCode.PASSWORD_RESET_SUCCESS);
         } catch (error) {
             await createLog(LogType.ERROR, LogOperation.UPDATE, LogCategory.AUTH, formatError(error), undefined, next);
-            return answerAPI(req, res, HTTPStatus.INTERNAL_SERVER_ERROR, undefined, Resource.INTERNAL_SERVER_ERROR);
+            return answerAPI(req, res, HTTPStatus.INTERNAL_SERVER_ERROR, undefined, ErrorCode.INTERNAL_SERVER_ERROR);
         }
     }
 }

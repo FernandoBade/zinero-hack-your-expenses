@@ -18,7 +18,7 @@ import { createLog, sendErrorResponse, requestTimer } from './utils/commons';
 import { HTTPStatus } from '../../shared/enums/http-status.enums';
 import { LogCategory, LogOperation, LogType } from '../../shared/enums/log.enums';
 import { ServerEnvKey, ServerHeaderValue, ServerHttpMethod, ServerRequestHeader, ServerResponseHeader, ServerRoutePath, ServerToken } from '../../shared/enums/server.enums';
-import { ResourceKey as Resource } from '../../shared/i18n/resource.keys';
+import { ErrorCode } from '../../shared/errors/error-codes';
 import { resolveRequestLanguage } from './utils/language';
 
 // #endregion Imports
@@ -85,7 +85,7 @@ app.use(ServerRoutePath.FEEDBACK, feedbackRoutes);
 /**
  * Global error handler to catch unhandled exceptions.
  *
- * @summary Normalizes uncaught request errors into translated API error responses.
+ * @summary Normalizes uncaught request errors into machine-stable API error responses.
  *
  * @param error - Any unhandled error.
  * @param req - Express request object.
@@ -95,13 +95,13 @@ app.use(ServerRoutePath.FEEDBACK, feedbackRoutes);
 function errorHandler(error: unknown, req: Request, res: Response, _next: NextFunction) {
     const isSyntaxError = error instanceof SyntaxError && ServerToken.ERROR_BODY_PROPERTY in error;
 
-    const resource = isSyntaxError
-        ? Resource.INVALID_JSON
-        : Resource.INTERNAL_SERVER_ERROR;
+    const errorCode = isSyntaxError
+        ? ErrorCode.INVALID_JSON
+        : ErrorCode.INTERNAL_SERVER_ERROR;
 
     const status = isSyntaxError ? HTTPStatus.BAD_REQUEST : HTTPStatus.INTERNAL_SERVER_ERROR;
 
-    return sendErrorResponse(req, res, status, resource, error);
+    return sendErrorResponse(req, res, status, errorCode, error);
 }
 
 app.use(errorHandler as unknown as express.ErrorRequestHandler);
@@ -124,5 +124,6 @@ function startServer() {
 }
 
 startServer();
+
 
 

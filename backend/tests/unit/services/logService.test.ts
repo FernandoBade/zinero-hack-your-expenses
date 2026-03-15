@@ -3,15 +3,12 @@ import { LogRepository } from '../../../src/repositories/logRepository';
 import { UserRepository } from '../../../src/repositories/userRepository';
 import { LogCategory, LogOperation, LogType } from '../../../../shared/enums/log.enums';
 import { FilterOperator } from '../../../../shared/enums/operator.enums';
-import { ResourceKey as Resource } from '../../../../shared/i18n/resource.keys';
+import { ErrorCode as Resource } from '../../../../shared/errors/error-codes';
 import { SelectLog } from '../../../src/db/schema';
 import { db } from '../../../src/db';
 import { logs } from '../../../src/db/schema';
 import * as commons from '../../../src/utils/commons';
 import { makeDbUser } from '../../helpers/factories';
-import { translateResource } from '../../../../shared/i18n/resource.utils';
-
-const translate = (resource: Resource) => translateResource(resource, 'en-US');
 const isResource = (value: string): value is Resource => Object.values(Resource).includes(value as Resource);
 
 const makeLog = (overrides: Partial<SelectLog> = {}): SelectLog => {
@@ -128,7 +125,6 @@ describe('LogService', () => {
             expect(result.success).toBe(false);
             if (!result.success) {
                 expect(result.error).toBe(Resource.INTERNAL_SERVER_ERROR);
-                expect(translate(result.error)).toBe(translate(Resource.INTERNAL_SERVER_ERROR));
             }
         });
 
@@ -148,7 +144,6 @@ describe('LogService', () => {
             if (caught instanceof Error) {
                 expect(isResource(caught.message)).toBe(true);
                 if (isResource(caught.message)) {
-                    expect(translate(caught.message)).toBe(translate(Resource.INTERNAL_SERVER_ERROR));
                 }
             }
         });
@@ -191,7 +186,6 @@ describe('LogService', () => {
             expect(result.success).toBe(false);
             if (!result.success) {
                 expect(result.error).toBe(Resource.INTERNAL_SERVER_ERROR);
-                expect(translate(result.error)).toBe(translate(Resource.INTERNAL_SERVER_ERROR));
             }
         });
     });
@@ -208,7 +202,6 @@ describe('LogService', () => {
             expect(result.success).toBe(false);
             if (!result.success) {
                 expect(result.error).toBe(Resource.INVALID_USER_ID);
-                expect(translate(result.error)).toBe(translate(Resource.INVALID_USER_ID));
             }
         });
 
@@ -233,7 +226,6 @@ describe('LogService', () => {
             expect(result.success).toBe(false);
             if (!result.success) {
                 expect(result.error).toBe(Resource.INTERNAL_SERVER_ERROR);
-                expect(translate(result.error)).toBe(translate(Resource.INTERNAL_SERVER_ERROR));
             }
         });
     });

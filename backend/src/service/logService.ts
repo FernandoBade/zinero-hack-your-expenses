@@ -2,7 +2,7 @@ import { LogType, LogOperation, LogCategory } from '../../../shared/enums/log.en
 import { FilterOperator } from '../../../shared/enums/operator.enums';
 import { LogRepository } from '../repositories/logRepository';
 import { UserRepository } from '../repositories/userRepository';
-import { ResourceKey as Resource } from '../../../shared/i18n/resource.keys';
+import { ErrorCode } from '../../../shared/errors/error-codes';
 import { SelectLog, InsertLog } from '../db/schema';
 import { createLog } from '../utils/commons';
 import { db } from '../db';
@@ -39,7 +39,7 @@ export class LogService {
         category: LogCategory,
         detail: string,
         userId?: number
-    ): Promise<{ success: true; data?: { id: number } } | { success: false; error: Resource }> {
+    ): Promise<{ success: true; data?: { id: number } } | { success: false; error: ErrorCode }> {
         if (!this.shouldPersistLog(type, operation, detail)) {
             return { success: true };
         }
@@ -56,7 +56,7 @@ export class LogService {
             } as InsertLog);
             return { success: true, data: { id: created.id } };
         } catch {
-            return { success: false, error: Resource.INTERNAL_SERVER_ERROR };
+            return { success: false, error: ErrorCode.INTERNAL_SERVER_ERROR };
         }
     }
 
@@ -135,7 +135,7 @@ export class LogService {
      * @summary Removes old log entries (older than 120 days).
      * @returns Total number of deleted entries or error on failure.
      */
-    async deleteOldLogs(): Promise<{ success: true; data: { deleted: number } } | { success: false; error: Resource }> {
+    async deleteOldLogs(): Promise<{ success: true; data: { deleted: number } } | { success: false; error: ErrorCode }> {
         try {
             const cutoffDate = new Date();
             cutoffDate.setDate(cutoffDate.getDate() - 120);
@@ -155,7 +155,7 @@ export class LogService {
 
             return { success: true, data: { deleted: total } };
         } catch {
-            return { success: false, error: Resource.INTERNAL_SERVER_ERROR };
+            return { success: false, error: ErrorCode.INTERNAL_SERVER_ERROR };
         }
     }
 
@@ -165,9 +165,9 @@ export class LogService {
      * @returns Array of logs or error if ID is invalid.
      */
 
-    async getLogsByUser(userId: number | null): Promise<{ success: true; data: SelectLog[] } | { success: false; error: Resource }> {
+    async getLogsByUser(userId: number | null): Promise<{ success: true; data: SelectLog[] } | { success: false; error: ErrorCode }> {
         if (userId === null || isNaN(userId) || userId <= 0) {
-            return { success: false, error: Resource.INVALID_USER_ID };
+            return { success: false, error: ErrorCode.INVALID_USER_ID };
         }
 
         try {
@@ -176,7 +176,7 @@ export class LogService {
             });
             return { success: true, data: logList };
         } catch {
-            return { success: false, error: Resource.INTERNAL_SERVER_ERROR };
+            return { success: false, error: ErrorCode.INTERNAL_SERVER_ERROR };
         }
     }
 }

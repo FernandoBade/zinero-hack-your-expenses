@@ -4,11 +4,10 @@ import { AuthService } from '../../../src/service/authService';
 import { HTTPStatus } from '../../../../shared/enums/http-status.enums';
 import { LogCategory, LogOperation, LogType } from '../../../../shared/enums/log.enums';
 import { TokenCookie } from '../../../src/utils/auth/cookieConfig';
-import { ResourceKey as Resource } from '../../../../shared/i18n/resource.keys';
+import { ErrorCode as Resource } from '../../../../shared/errors/error-codes';
 import * as commons from '../../../src/utils/commons';
 import { createMockRequest, createMockResponse, createNext } from '../../helpers/mockExpress';
 import * as rateLimiter from '../../../src/utils/auth/rateLimiter';
-import { translateResource } from '../../../../shared/i18n/resource.utils';
 
 describe('AuthController', () => {
     let logSpy: jest.SpyInstance;
@@ -38,8 +37,8 @@ describe('AuthController', () => {
             expect(res.json).toHaveBeenCalledWith(
                 expect.objectContaining({
                     success: false,
-                    resource: Resource.INVALID_CREDENTIALS,
-                    message: translateResource(Resource.INVALID_CREDENTIALS, 'en-US'),
+                    errorCode: Resource.INVALID_CREDENTIALS,
+                    
                 })
             );
             expect(logSpy).not.toHaveBeenCalled();
@@ -62,8 +61,8 @@ describe('AuthController', () => {
             expect(res.json).toHaveBeenCalledWith(
                 expect.objectContaining({
                     success: false,
-                    resource: Resource.INVALID_CREDENTIALS,
-                    message: translateResource(Resource.INVALID_CREDENTIALS, 'en-US'),
+                    errorCode: Resource.INVALID_CREDENTIALS,
+                    
                 })
             );
             expect(logSpy).not.toHaveBeenCalled();
@@ -85,8 +84,8 @@ describe('AuthController', () => {
             expect(res.json).toHaveBeenCalledWith(
                 expect.objectContaining({
                     success: false,
-                    resource: Resource.EMAIL_NOT_VERIFIED,
-                    message: translateResource(Resource.EMAIL_NOT_VERIFIED, 'en-US'),
+                    errorCode: Resource.EMAIL_NOT_VERIFIED,
+                    
                     error: expect.objectContaining({
                         email: 'user@example.com',
                         canResend: true,
@@ -144,7 +143,7 @@ describe('AuthController', () => {
             expect(res.json).toHaveBeenCalledWith(
                 expect.objectContaining({
                     success: false,
-                    message: translateResource(Resource.INTERNAL_SERVER_ERROR, 'en-US'),
+                    errorCode: Resource.INTERNAL_SERVER_ERROR,
                 })
             );
             expect(logSpy).toHaveBeenCalledWith(
@@ -175,7 +174,7 @@ describe('AuthController', () => {
             expect(res.json).toHaveBeenCalledWith(
                 expect.objectContaining({
                     success: false,
-                    message: translateResource(Resource.EXPIRED_OR_INVALID_TOKEN, 'en-US'),
+                    errorCode: Resource.EXPIRED_OR_INVALID_TOKEN,
                 })
             );
             expect(logSpy).not.toHaveBeenCalled();
@@ -197,7 +196,7 @@ describe('AuthController', () => {
             expect(res.json).toHaveBeenCalledWith(
                 expect.objectContaining({
                     success: false,
-                    message: translateResource(Resource.EXPIRED_OR_INVALID_TOKEN, 'en-US'),
+                    errorCode: Resource.EXPIRED_OR_INVALID_TOKEN,
                 })
             );
             expect(logSpy).not.toHaveBeenCalled();
@@ -235,7 +234,7 @@ describe('AuthController', () => {
             expect(res.json).toHaveBeenCalledWith(
                 expect.objectContaining({
                     success: false,
-                    message: translateResource(Resource.INTERNAL_SERVER_ERROR, 'en-US'),
+                    errorCode: Resource.INTERNAL_SERVER_ERROR,
                 })
             );
             expect(logSpy).toHaveBeenCalledWith(
@@ -264,7 +263,7 @@ describe('AuthController', () => {
             expect(res.json).toHaveBeenCalledWith(
                 expect.objectContaining({
                     success: false,
-                    message: translateResource(Resource.TOKEN_NOT_FOUND, 'en-US'),
+                    errorCode: Resource.TOKEN_NOT_FOUND,
                 })
             );
             expect(next).not.toHaveBeenCalled();
@@ -283,7 +282,7 @@ describe('AuthController', () => {
             expect(res.json).toHaveBeenCalledWith(
                 expect.objectContaining({
                     success: false,
-                    message: translateResource(Resource.TOKEN_NOT_FOUND, 'en-US'),
+                    errorCode: Resource.TOKEN_NOT_FOUND,
                 })
             );
             expect(logSpy).not.toHaveBeenCalled();
@@ -324,7 +323,7 @@ describe('AuthController', () => {
             expect(res.json).toHaveBeenCalledWith(
                 expect.objectContaining({
                     success: false,
-                    message: translateResource(Resource.INTERNAL_SERVER_ERROR, 'en-US'),
+                    errorCode: Resource.INTERNAL_SERVER_ERROR,
                 })
             );
             expect(logSpy).toHaveBeenCalledWith(
@@ -353,7 +352,7 @@ describe('AuthController', () => {
             expect(res.json).toHaveBeenCalledWith(
                 expect.objectContaining({
                     success: false,
-                    message: translateResource(Resource.EXPIRED_OR_INVALID_TOKEN, 'en-US'),
+                    errorCode: Resource.EXPIRED_OR_INVALID_TOKEN,
                 })
             );
         });
@@ -372,7 +371,6 @@ describe('AuthController', () => {
                 expect.objectContaining({
                     success: true,
                     data: { verified: true, alreadyVerified: false },
-                    message: translateResource(Resource.EMAIL_VERIFICATION_SUCCESS, 'en-US'),
                 })
             );
             expect(next).not.toHaveBeenCalled();
@@ -394,7 +392,6 @@ describe('AuthController', () => {
                 expect.objectContaining({
                     success: true,
                     data: { verified: true, alreadyVerified: true },
-                    message: translateResource(Resource.EMAIL_ALREADY_VERIFIED, 'en-US'),
                 })
             );
             expect(next).not.toHaveBeenCalled();
@@ -415,7 +412,7 @@ describe('AuthController', () => {
             expect(res.json).toHaveBeenCalledWith(
                 expect.objectContaining({
                     success: false,
-                    message: translateResource(Resource.EMAIL_INVALID, 'en-US'),
+                    errorCode: Resource.EMAIL_INVALID,
                 })
             );
             expect(next).not.toHaveBeenCalled();
@@ -438,8 +435,8 @@ describe('AuthController', () => {
             expect(res.json).toHaveBeenCalledWith(
                 expect.objectContaining({
                     success: false,
-                    resource: Resource.EMAIL_VERIFICATION_COOLDOWN,
-                    message: translateResource(Resource.EMAIL_VERIFICATION_COOLDOWN, 'en-US'),
+                    errorCode: Resource.EMAIL_VERIFICATION_COOLDOWN,
+                    
                     error: expect.objectContaining({
                         cooldownSeconds: 30,
                     }),
@@ -465,7 +462,6 @@ describe('AuthController', () => {
                 expect.objectContaining({
                     success: true,
                     data: { sent: true },
-                    message: translateResource(Resource.EMAIL_VERIFICATION_REQUESTED, 'en-US'),
                 })
             );
             expect(next).not.toHaveBeenCalled();
@@ -486,7 +482,7 @@ describe('AuthController', () => {
             expect(res.json).toHaveBeenCalledWith(
                 expect.objectContaining({
                     success: false,
-                    message: translateResource(Resource.EMAIL_INVALID, 'en-US'),
+                    errorCode: Resource.EMAIL_INVALID,
                 })
             );
         });
@@ -505,7 +501,6 @@ describe('AuthController', () => {
                 expect.objectContaining({
                     success: true,
                     data: { sent: true },
-                    message: translateResource(Resource.PASSWORD_RESET_REQUESTED, 'en-US'),
                 })
             );
         });
@@ -522,7 +517,7 @@ describe('AuthController', () => {
             expect(res.json).toHaveBeenCalledWith(
                 expect.objectContaining({
                     success: false,
-                    message: translateResource(Resource.INTERNAL_SERVER_ERROR, 'en-US'),
+                    errorCode: Resource.INTERNAL_SERVER_ERROR,
                 })
             );
             expect(logSpy).toHaveBeenCalledWith(
@@ -551,7 +546,7 @@ describe('AuthController', () => {
             expect(res.json).toHaveBeenCalledWith(
                 expect.objectContaining({
                     success: false,
-                    message: translateResource(Resource.EXPIRED_OR_INVALID_TOKEN, 'en-US'),
+                    errorCode: Resource.EXPIRED_OR_INVALID_TOKEN,
                 })
             );
         });
@@ -569,7 +564,7 @@ describe('AuthController', () => {
             expect(res.json).toHaveBeenCalledWith(
                 expect.objectContaining({
                     success: false,
-                    message: translateResource(Resource.PASSWORD_TOO_SHORT, 'en-US'),
+                    errorCode: Resource.PASSWORD_TOO_SHORT,
                 })
             );
         });
@@ -588,7 +583,6 @@ describe('AuthController', () => {
                 expect.objectContaining({
                     success: true,
                     data: { reset: true },
-                    message: translateResource(Resource.PASSWORD_RESET_SUCCESS, 'en-US'),
                 })
             );
         });

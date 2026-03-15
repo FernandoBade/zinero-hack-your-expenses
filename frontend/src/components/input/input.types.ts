@@ -1,5 +1,5 @@
 import type { ComponentChildren, HTMLAttributes, Ref } from "preact";
-import type { ResourceKey } from "@shared/i18n/resource.keys";
+import type { I18nKey } from "@shared/i18n/types/i18n-key";
 import { IconPosition } from "@shared/enums/icon-position.enums";
 import { IconName } from "@shared/enums/icon.enums";
 import { InputType } from "@shared/enums/input.enums";
@@ -8,10 +8,10 @@ import { InputType } from "@shared/enums/input.enums";
  * @summary Typed input props for reusable form controls.
  */
 export interface InputProps {
-    readonly label?: ResourceKey;
-    readonly placeholder?: ResourceKey;
+    readonly label?: I18nKey;
+    readonly placeholder?: I18nKey;
     readonly placeholderText?: string;
-    readonly hint?: ResourceKey;
+    readonly hint?: I18nKey;
     readonly type?: InputType;
     readonly value?: string;
     readonly required?: boolean;
@@ -20,11 +20,11 @@ export interface InputProps {
     readonly name?: string;
     readonly id?: string;
     readonly autoComplete?: string;
-    readonly error?: ResourceKey;
+    readonly error?: I18nKey;
     readonly icon?: IconName;
     readonly iconPosition?: IconPosition;
-    readonly prefixText?: ResourceKey;
-    readonly suffixText?: ResourceKey;
+    readonly prefixText?: I18nKey;
+    readonly suffixText?: I18nKey;
     readonly rightSlot?: ComponentChildren;
     readonly leftSlot?: ComponentChildren;
     readonly maxLength?: number;

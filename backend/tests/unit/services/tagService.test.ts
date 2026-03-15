@@ -2,13 +2,10 @@ import { TagService } from '../../../src/service/tagService';
 import { TagRepository } from '../../../src/repositories/tagRepository';
 import { UserService } from '../../../src/service/userService';
 import { SortOrder } from '../../../../shared/enums/operator.enums';
-import { ResourceKey as Resource } from '../../../../shared/i18n/resource.keys';
+import { ErrorCode as Resource } from '../../../../shared/errors/error-codes';
 import type { TagEntity } from '../../../../shared/domains/tag/tag.types';
 import { SelectTag } from '../../../src/db/schema';
 import { makeSanitizedUser } from '../../helpers/factories';
-import { translateResource } from '../../../../shared/i18n/resource.utils';
-
-const translate = (resource: Resource) => translateResource(resource, 'en-US');
 const isResource = (value: string): value is Resource => Object.values(Resource).includes(value as Resource);
 
 const DEFAULT_ISO_DATE = new Date('2024-01-01T00:00:00Z').toISOString();
@@ -61,7 +58,6 @@ describe('TagService', () => {
             expect(result.success).toBe(false);
             if (!result.success) {
                 expect(result.error).toBe(Resource.USER_NOT_FOUND);
-                expect(translate(result.error)).toBe(translate(Resource.USER_NOT_FOUND));
             }
         });
 
@@ -162,7 +158,6 @@ describe('TagService', () => {
             if (caught instanceof Error) {
                 expect(isResource(caught.message)).toBe(true);
                 if (isResource(caught.message)) {
-                    expect(translate(caught.message)).toBe(translate(Resource.INTERNAL_SERVER_ERROR));
                 }
             }
         });

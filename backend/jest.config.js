@@ -3,7 +3,7 @@
 module.exports = {
     testEnvironment: 'node',
     testMatch: ['**/tests/**/*.test.ts'],
-    moduleFileExtensions: ['ts', 'js', 'json'],
+    moduleFileExtensions: ['ts', 'js', 'mjs', 'json'],
     clearMocks: true,
 
     transform: {
@@ -13,7 +13,9 @@ module.exports = {
                 tsconfig: 'tsconfig.test.json',
             },
         ],
+        '^.+\\.[cm]?js$': 'babel-jest',
     },
+    transformIgnorePatterns: ['/node_modules/(?!(intl-messageformat|@formatjs)/)'],
 
     collectCoverageFrom: [
         'src/**/*.{ts,js}',

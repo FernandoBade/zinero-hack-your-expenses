@@ -1,1 +1,1 @@
-export { Currency, Language, Profile, Theme, UserErrorCode } from "../../enums/user.enums";
+export { Currency, Language, Profile, Theme } from "../../enums/user.enums";

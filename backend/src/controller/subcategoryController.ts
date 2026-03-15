@@ -4,8 +4,8 @@ import { validateCreateSubcategory, validateUpdateSubcategory } from '../utils/v
 import { buildLogDelta, createLog, answerAPI, formatError, sanitizeLogDetail } from '../utils/commons';
 import { HTTPStatus } from '../../../shared/enums/http-status.enums';
 import { LogCategory, LogOperation, LogType } from '../../../shared/enums/log.enums';
-import { ResourceKey as Resource } from '../../../shared/i18n/resource.keys';
-import { LanguageCode } from '../../../shared/i18n/resourceTypes';
+import { ErrorCode } from '../../../shared/errors/error-codes';
+import { Locale } from '../../../shared/i18n/types/locale';
 import { parsePagination, buildMeta } from '../utils/pagination';
 
 /** @summary Orchestrates HTTP request flows for subcategory resource endpoints. */
@@ -22,10 +22,10 @@ class SubcategoryController {
         const subcategoryService = new SubcategoryService();
 
         try {
-            const parseResult = validateCreateSubcategory(req.body, req.language as LanguageCode);
+            const parseResult = validateCreateSubcategory(req.body, req.language as Locale);
 
             if (!parseResult.success) {
-                return answerAPI(req, res, HTTPStatus.BAD_REQUEST, parseResult.errors, Resource.VALIDATION_ERROR);
+                return answerAPI(req, res, HTTPStatus.BAD_REQUEST, parseResult.errors, ErrorCode.VALIDATION_ERROR);
             }
 
             const created = await subcategoryService.createSubcategory(parseResult.data, (req.body as { userId?: number }).userId);
@@ -38,7 +38,7 @@ class SubcategoryController {
             return answerAPI(req, res, HTTPStatus.CREATED, created.data!);
         } catch (error) {
             await createLog(LogType.ERROR, LogOperation.CREATE, LogCategory.CATEGORY, formatError(error), req.user?.id, next);
-            return answerAPI(req, res, HTTPStatus.INTERNAL_SERVER_ERROR, undefined, Resource.INTERNAL_SERVER_ERROR);
+            return answerAPI(req, res, HTTPStatus.INTERNAL_SERVER_ERROR, undefined, ErrorCode.INTERNAL_SERVER_ERROR);
         }
     }
 
@@ -73,7 +73,7 @@ class SubcategoryController {
             });
         } catch (error) {
             await createLog(LogType.ERROR, LogOperation.CREATE, LogCategory.CATEGORY, formatError(error), req.user?.id, next);
-            return answerAPI(req, res, HTTPStatus.INTERNAL_SERVER_ERROR, undefined, Resource.INTERNAL_SERVER_ERROR);
+            return answerAPI(req, res, HTTPStatus.INTERNAL_SERVER_ERROR, undefined, ErrorCode.INTERNAL_SERVER_ERROR);
         }
     }
 
@@ -88,7 +88,7 @@ class SubcategoryController {
     static async getSubcategoriesByCategory(req: Request, res: Response, next: NextFunction) {
         const categoryId = Number(req.params.categoryId);
         if (isNaN(categoryId) || categoryId <= 0) {
-            return answerAPI(req, res, HTTPStatus.BAD_REQUEST, undefined, Resource.INVALID_CATEGORY_ID);
+            return answerAPI(req, res, HTTPStatus.BAD_REQUEST, undefined, ErrorCode.INVALID_CATEGORY_ID);
         }
 
         const subcategoryService = new SubcategoryService();
@@ -114,7 +114,7 @@ class SubcategoryController {
             });
         } catch (error) {
             await createLog(LogType.ERROR, LogOperation.CREATE, LogCategory.CATEGORY, formatError(error), req.user?.id, next);
-            return answerAPI(req, res, HTTPStatus.INTERNAL_SERVER_ERROR, undefined, Resource.INTERNAL_SERVER_ERROR);
+            return answerAPI(req, res, HTTPStatus.INTERNAL_SERVER_ERROR, undefined, ErrorCode.INTERNAL_SERVER_ERROR);
         }
     }
 
@@ -129,7 +129,7 @@ class SubcategoryController {
     static async getSubcategoryById(req: Request, res: Response, next: NextFunction) {
         const id = Number(req.params.id);
         if (isNaN(id) || id <= 0) {
-            return answerAPI(req, res, HTTPStatus.BAD_REQUEST, undefined, Resource.INVALID_SUBCATEGORY_ID);
+            return answerAPI(req, res, HTTPStatus.BAD_REQUEST, undefined, ErrorCode.INVALID_SUBCATEGORY_ID);
         }
 
         const subcategoryService = new SubcategoryService();
@@ -144,7 +144,7 @@ class SubcategoryController {
             return answerAPI(req, res, HTTPStatus.OK, result.data);
         } catch (error) {
             await createLog(LogType.ERROR, LogOperation.CREATE, LogCategory.CATEGORY, formatError(error), req.user?.id, next);
-            return answerAPI(req, res, HTTPStatus.INTERNAL_SERVER_ERROR, undefined, Resource.INTERNAL_SERVER_ERROR);
+            return answerAPI(req, res, HTTPStatus.INTERNAL_SERVER_ERROR, undefined, ErrorCode.INTERNAL_SERVER_ERROR);
         }
     }
 
@@ -159,7 +159,7 @@ class SubcategoryController {
     static async getSubcategoriesByUser(req: Request, res: Response, next: NextFunction) {
         const userId = Number(req.params.userId);
         if (isNaN(userId) || userId <= 0) {
-            return answerAPI(req, res, HTTPStatus.BAD_REQUEST, undefined, Resource.INVALID_USER_ID);
+            return answerAPI(req, res, HTTPStatus.BAD_REQUEST, undefined, ErrorCode.INVALID_USER_ID);
         }
 
         const subcategoryService = new SubcategoryService();
@@ -185,7 +185,7 @@ class SubcategoryController {
             });
         } catch (error) {
             await createLog(LogType.ERROR, LogOperation.CREATE, LogCategory.CATEGORY, formatError(error), req.user?.id, next);
-            return answerAPI(req, res, HTTPStatus.INTERNAL_SERVER_ERROR, undefined, Resource.INTERNAL_SERVER_ERROR);
+            return answerAPI(req, res, HTTPStatus.INTERNAL_SERVER_ERROR, undefined, ErrorCode.INTERNAL_SERVER_ERROR);
         }
     }
 
@@ -200,7 +200,7 @@ class SubcategoryController {
     static async updateSubcategory(req: Request, res: Response, next: NextFunction) {
         const id = Number(req.params.id);
         if (isNaN(id) || id <= 0) {
-            return answerAPI(req, res, HTTPStatus.BAD_REQUEST, undefined, Resource.INVALID_SUBCATEGORY_ID);
+            return answerAPI(req, res, HTTPStatus.BAD_REQUEST, undefined, ErrorCode.INVALID_SUBCATEGORY_ID);
         }
 
         const subcategoryService = new SubcategoryService();
@@ -211,10 +211,10 @@ class SubcategoryController {
                 return answerAPI(req, res, HTTPStatus.BAD_REQUEST, undefined, existing.error);
             }
 
-            const parseResult = validateUpdateSubcategory(req.body, req.language as LanguageCode);
+            const parseResult = validateUpdateSubcategory(req.body, req.language as Locale);
 
             if (!parseResult.success) {
-                return answerAPI(req, res, HTTPStatus.BAD_REQUEST, parseResult.errors, Resource.VALIDATION_ERROR);
+                return answerAPI(req, res, HTTPStatus.BAD_REQUEST, parseResult.errors, ErrorCode.VALIDATION_ERROR);
             }
 
             const updated = await subcategoryService.updateSubcategory(id, parseResult.data, req.body.userId);
@@ -228,7 +228,7 @@ class SubcategoryController {
             return answerAPI(req, res, HTTPStatus.OK, updated.data!);
         } catch (error) {
             await createLog(LogType.ERROR, LogOperation.UPDATE, LogCategory.CATEGORY, formatError(error), req.user?.id, next);
-            return answerAPI(req, res, HTTPStatus.INTERNAL_SERVER_ERROR, undefined, Resource.INTERNAL_SERVER_ERROR);
+            return answerAPI(req, res, HTTPStatus.INTERNAL_SERVER_ERROR, undefined, ErrorCode.INTERNAL_SERVER_ERROR);
         }
     }
 
@@ -244,7 +244,7 @@ class SubcategoryController {
         const id = Number(req.params.id);
 
         if (isNaN(id) || id <= 0) {
-            return answerAPI(req, res, HTTPStatus.BAD_REQUEST, undefined, Resource.INVALID_SUBCATEGORY_ID);
+            return answerAPI(req, res, HTTPStatus.BAD_REQUEST, undefined, ErrorCode.INVALID_SUBCATEGORY_ID);
         }
 
         const subcategoryService = new SubcategoryService();
@@ -268,7 +268,7 @@ class SubcategoryController {
             return answerAPI(req, res, HTTPStatus.OK, result.data);
         } catch (error) {
             await createLog(LogType.ERROR, LogOperation.DELETE, LogCategory.CATEGORY, formatError(error), req.user?.id, next);
-            return answerAPI(req, res, HTTPStatus.INTERNAL_SERVER_ERROR, undefined, Resource.INTERNAL_SERVER_ERROR);
+            return answerAPI(req, res, HTTPStatus.INTERNAL_SERVER_ERROR, undefined, ErrorCode.INTERNAL_SERVER_ERROR);
         }
     }
 }

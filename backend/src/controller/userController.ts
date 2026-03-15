@@ -6,10 +6,9 @@ import { LogCategory, LogOperation, LogType } from '../../../shared/enums/log.en
 import { Profile } from '../../../shared/enums/user.enums';
 import { validateCreateUser, validateUpdateUser } from '../utils/validation/validateRequest';
 import { createValidationError, ValidationError } from '../utils/validation/errors';
-import { ResourceKey as Resource } from '../../../shared/i18n/resource.keys';
-import { LanguageCode } from '../../../shared/i18n/resourceTypes';
+import { ErrorCode } from '../../../shared/errors/error-codes';
+import { Locale } from '../../../shared/i18n/types/locale';
 import { parsePagination, buildMeta } from '../utils/pagination';
-import { translateResourceWithParams } from '../../../shared/i18n/resource.utils';
 import { ALLOWED_IMAGE_MIME_TYPES } from '../../../shared/enums/upload.enums';
 import { UploadValidation } from '../utils/upload/upload.constants';
 
@@ -40,7 +39,7 @@ class UserController {
         const userService = new UserService();
 
         try {
-            const parseResult = validateCreateUser(req.body, req.language as LanguageCode);
+            const parseResult = validateCreateUser(req.body, req.language as Locale);
 
             if (!parseResult.success) {
                 return answerAPI(
@@ -48,25 +47,25 @@ class UserController {
                     res,
                     HTTPStatus.BAD_REQUEST,
                     parseResult.errors,
-                    Resource.VALIDATION_ERROR
+                    ErrorCode.VALIDATION_ERROR
                 );
             }
 
             const newUser = await userService.createUser(parseResult.data);
 
             if (!newUser.success) {
-                if (newUser.error === Resource.EMAIL_NOT_VERIFIED) {
+                if (newUser.error === ErrorCode.EMAIL_NOT_VERIFIED) {
                     return answerAPI(req, res, HTTPStatus.BAD_REQUEST, {
                         email: parseResult.data.email,
                         canResend: true,
                         verificationSent: true
-                    }, Resource.EMAIL_NOT_VERIFIED);
+                    }, ErrorCode.EMAIL_NOT_VERIFIED);
                 }
                 return answerAPI(req, res, HTTPStatus.BAD_REQUEST, undefined, newUser.error);
             }
 
             await createLog(LogType.SUCCESS, LogOperation.CREATE, LogCategory.USER, newUser.data, newUser.data!.id);
-            return answerAPI(req, res, HTTPStatus.CREATED, newUser.data!, Resource.EMAIL_VERIFICATION_REQUIRED);
+            return answerAPI(req, res, HTTPStatus.CREATED, newUser.data!, ErrorCode.EMAIL_VERIFICATION_REQUIRED);
         } catch (error) {
             await createLog(
                 LogType.ERROR,
@@ -76,7 +75,7 @@ class UserController {
                 req.user?.id,
                 next
             );
-            return answerAPI(req, res, HTTPStatus.INTERNAL_SERVER_ERROR, undefined, Resource.INTERNAL_SERVER_ERROR);
+            return answerAPI(req, res, HTTPStatus.INTERNAL_SERVER_ERROR, undefined, ErrorCode.INTERNAL_SERVER_ERROR);
         }
     }
 
@@ -112,7 +111,7 @@ class UserController {
             });
         } catch (error) {
             await createLog(LogType.ERROR, LogOperation.CREATE, LogCategory.USER, formatError(error), req.user?.id, next);
-            return answerAPI(req, res, HTTPStatus.INTERNAL_SERVER_ERROR, undefined, Resource.INTERNAL_SERVER_ERROR);
+            return answerAPI(req, res, HTTPStatus.INTERNAL_SERVER_ERROR, undefined, ErrorCode.INTERNAL_SERVER_ERROR);
         }
     }
 
@@ -127,11 +126,11 @@ class UserController {
     static async getUserById(req: Request, res: Response, next: NextFunction) {
         const userId = Number(req.params.id);
         if (isNaN(userId) || userId <= 0) {
-            return answerAPI(req, res, HTTPStatus.BAD_REQUEST, undefined, Resource.INVALID_USER_ID);
+            return answerAPI(req, res, HTTPStatus.BAD_REQUEST, undefined, ErrorCode.INVALID_USER_ID);
         }
 
         if (!canAccessRequestedUser(req.user, userId)) {
-            return answerAPI(req, res, HTTPStatus.FORBIDDEN, undefined, Resource.UNAUTHORIZED_OPERATION);
+            return answerAPI(req, res, HTTPStatus.FORBIDDEN, undefined, ErrorCode.UNAUTHORIZED_OPERATION);
         }
 
         const userService = new UserService();
@@ -145,7 +144,7 @@ class UserController {
             return answerAPI(req, res, HTTPStatus.OK, user.data);
         } catch (error) {
             await createLog(LogType.ERROR, LogOperation.CREATE, LogCategory.USER, formatError(error), req.user?.id, next);
-            return answerAPI(req, res, HTTPStatus.INTERNAL_SERVER_ERROR, undefined, Resource.INTERNAL_SERVER_ERROR);
+            return answerAPI(req, res, HTTPStatus.INTERNAL_SERVER_ERROR, undefined, ErrorCode.INTERNAL_SERVER_ERROR);
         }
     }
 
@@ -161,7 +160,7 @@ class UserController {
         const searchTerm = req.query.email as string;
 
         if (!searchTerm || searchTerm.length < 3) {
-            return answerAPI(req, res, HTTPStatus.BAD_REQUEST, undefined, Resource.SEARCH_TERM_TOO_SHORT);
+            return answerAPI(req, res, HTTPStatus.BAD_REQUEST, undefined, ErrorCode.SEARCH_TERM_TOO_SHORT);
         }
 
         const userService = new UserService();
@@ -187,7 +186,7 @@ class UserController {
             });
         } catch (error) {
             await createLog(LogType.ERROR, LogOperation.CREATE, LogCategory.USER, formatError(error), req.user?.id, next);
-            return answerAPI(req, res, HTTPStatus.INTERNAL_SERVER_ERROR, undefined, Resource.INTERNAL_SERVER_ERROR);
+            return answerAPI(req, res, HTTPStatus.INTERNAL_SERVER_ERROR, undefined, ErrorCode.INTERNAL_SERVER_ERROR);
         }
     }
 
@@ -202,7 +201,7 @@ class UserController {
     static async updateUser(req: Request, res: Response, next: NextFunction) {
         const userId = Number(req.params.id);
         if (isNaN(userId) || userId <= 0) {
-            return answerAPI(req, res, HTTPStatus.BAD_REQUEST, undefined, Resource.INVALID_USER_ID);
+            return answerAPI(req, res, HTTPStatus.BAD_REQUEST, undefined, ErrorCode.INVALID_USER_ID);
         }
 
         const userService = new UserService();
@@ -213,10 +212,10 @@ class UserController {
                 return answerAPI(req, res, HTTPStatus.BAD_REQUEST, undefined, existingUser.error);
             }
 
-            const parseResult = validateUpdateUser(req.body, req.language as LanguageCode);
+            const parseResult = validateUpdateUser(req.body, req.language as Locale);
 
             if (!parseResult.success) {
-                return answerAPI(req, res, HTTPStatus.BAD_REQUEST, parseResult.errors, Resource.VALIDATION_ERROR);
+                return answerAPI(req, res, HTTPStatus.BAD_REQUEST, parseResult.errors, ErrorCode.VALIDATION_ERROR);
             }
 
             const updatedUser = await userService.updateUser(userId, parseResult.data);
@@ -229,7 +228,7 @@ class UserController {
             return answerAPI(req, res, HTTPStatus.OK, updatedUser.data!);
         } catch (error) {
             await createLog(LogType.ERROR, LogOperation.UPDATE, LogCategory.USER, formatError(error), req.user?.id, next);
-            return answerAPI(req, res, HTTPStatus.INTERNAL_SERVER_ERROR, undefined, Resource.INTERNAL_SERVER_ERROR);
+            return answerAPI(req, res, HTTPStatus.INTERNAL_SERVER_ERROR, undefined, ErrorCode.INTERNAL_SERVER_ERROR);
         }
     }
 
@@ -245,7 +244,7 @@ class UserController {
         const userId = Number(req.params.id);
 
         if (isNaN(userId) || userId <= 0) {
-            return answerAPI(req, res, HTTPStatus.BAD_REQUEST, undefined, Resource.INVALID_USER_ID);
+            return answerAPI(req, res, HTTPStatus.BAD_REQUEST, undefined, ErrorCode.INVALID_USER_ID);
         }
 
         const userService = new UserService();
@@ -269,7 +268,7 @@ class UserController {
             return answerAPI(req, res, HTTPStatus.OK, result.data);
         } catch (error) {
             await createLog(LogType.ERROR, LogOperation.DELETE, LogCategory.USER, formatError(error), req.user?.id, next);
-            return answerAPI(req, res, HTTPStatus.INTERNAL_SERVER_ERROR, undefined, Resource.INTERNAL_SERVER_ERROR);
+            return answerAPI(req, res, HTTPStatus.INTERNAL_SERVER_ERROR, undefined, ErrorCode.INTERNAL_SERVER_ERROR);
         }
     }
 
@@ -284,37 +283,36 @@ class UserController {
     static async uploadAvatar(req: Request, res: Response, next: NextFunction) {
         const userId = req.user?.id;
         if (!userId) {
-            return answerAPI(req, res, HTTPStatus.UNAUTHORIZED, undefined, Resource.EXPIRED_OR_INVALID_TOKEN);
+            return answerAPI(req, res, HTTPStatus.UNAUTHORIZED, undefined, ErrorCode.EXPIRED_OR_INVALID_TOKEN);
         }
 
-        const language = req.language as LanguageCode;
         const errors: ValidationError[] = [];
         const file = req.file;
 
         if (!file) {
-            errors.push(createValidationError('avatar', translateResourceWithParams(Resource.FIELD_REQUIRED, language, {
+            errors.push(createValidationError('avatar', ErrorCode.FIELD_REQUIRED, {
                 field: 'avatar'
-            })));
+            }));
         } else {
             if (!ALLOWED_IMAGE_MIME_TYPES.has(file.mimetype)) {
-                errors.push(createValidationError('avatar', translateResourceWithParams(Resource.INVALID_TYPE, language, {
+                errors.push(createValidationError('avatar', ErrorCode.INVALID_TYPE, {
                     path: 'avatar',
                     expected: UploadValidation.AVATAR_IMAGE_MIME_EXPECTED,
                     received: file.mimetype,
-                })));
+                }));
             }
 
             if (file.size > UploadValidation.MAX_FILE_SIZE_BYTES) {
-                errors.push(createValidationError('avatar', translateResourceWithParams(Resource.INVALID_TYPE, language, {
+                errors.push(createValidationError('avatar', ErrorCode.INVALID_TYPE, {
                     path: 'avatar',
                     expected: UploadValidation.FILE_SIZE_EXPECTED,
                     received: `${(file.size / 1024 / 1024).toFixed(2)}MB`,
-                })));
+                }));
             }
         }
 
         if (errors.length > 0) {
-            return answerAPI(req, res, HTTPStatus.BAD_REQUEST, errors, Resource.VALIDATION_ERROR);
+            return answerAPI(req, res, HTTPStatus.BAD_REQUEST, errors, ErrorCode.VALIDATION_ERROR);
         }
 
         const userService = new UserService();
@@ -323,7 +321,7 @@ class UserController {
             const result = await userService.uploadAvatar(userId, file as Express.Multer.File);
 
             if (!result.success) {
-                const status = result.error === Resource.INTERNAL_SERVER_ERROR
+                const status = result.error === ErrorCode.INTERNAL_SERVER_ERROR
                     ? HTTPStatus.INTERNAL_SERVER_ERROR
                     : HTTPStatus.BAD_REQUEST;
                 return answerAPI(req, res, status, undefined, result.error);
@@ -333,7 +331,7 @@ class UserController {
             return answerAPI(req, res, HTTPStatus.OK, result.data);
         } catch (error) {
             await createLog(LogType.ERROR, LogOperation.UPDATE, LogCategory.USER, formatError(error), userId, next);
-            return answerAPI(req, res, HTTPStatus.INTERNAL_SERVER_ERROR, undefined, Resource.INTERNAL_SERVER_ERROR);
+            return answerAPI(req, res, HTTPStatus.INTERNAL_SERVER_ERROR, undefined, ErrorCode.INTERNAL_SERVER_ERROR);
         }
     }
 }

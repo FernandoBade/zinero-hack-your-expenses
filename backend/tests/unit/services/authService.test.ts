@@ -7,12 +7,11 @@ import { TokenType } from '../../../../shared/enums/auth.enums';
 import { LogCategory, LogOperation, LogType } from '../../../../shared/enums/log.enums';
 import { TokenUtils } from '../../../src/utils/auth/tokenUtils';
 import { PERSISTED_TOKEN_TTL_DAYS, SESSION_TTL_DAYS } from '../../../src/utils/auth/tokenConfig';
-import { ResourceKey as Resource } from '../../../../shared/i18n/resource.keys';
+import { ErrorCode as Resource } from '../../../../shared/errors/error-codes';
 import { SelectToken } from '../../../src/db/schema';
 import * as commons from '../../../src/utils/commons';
 import { makeSanitizedUser, makeUser } from '../../helpers/factories';
 import { sendEmailVerificationEmail, sendPasswordResetEmail } from '../../../src/utils/email/authEmail';
-import { translateResource } from '../../../../shared/i18n/resource.utils';
 
 jest.mock('bcrypt', () => ({
     hash: jest.fn(),
@@ -27,8 +26,6 @@ jest.mock('../../../src/utils/email/authEmail', () => ({
 type CompareFn = (data: string | Buffer, encrypted: string) => Promise<boolean>;
 
 const compareMock = bcrypt.compare as jest.MockedFunction<CompareFn>;
-
-const translate = (resource: Resource) => translateResource(resource, 'en-US');
 const isResource = (value: string): value is Resource => Object.values(Resource).includes(value as Resource);
 const SESSION_ID = '00000000-0000-4000-8000-000000000000';
 const sendEmailVerificationMock = sendEmailVerificationEmail as jest.MockedFunction<typeof sendEmailVerificationEmail>;
@@ -76,7 +73,6 @@ describe('AuthService', () => {
             expect(result.success).toBe(false);
             if (!result.success) {
                 expect(result.error).toBe(Resource.INVALID_CREDENTIALS);
-                expect(translate(result.error)).toBe(translate(Resource.INVALID_CREDENTIALS));
             }
             expect(logSpy).not.toHaveBeenCalled();
         });
@@ -97,7 +93,6 @@ describe('AuthService', () => {
             expect(result.success).toBe(false);
             if (!result.success) {
                 expect(result.error).toBe(Resource.INVALID_CREDENTIALS);
-                expect(translate(result.error)).toBe(translate(Resource.INVALID_CREDENTIALS));
             }
             expect(logSpy).not.toHaveBeenCalled();
         });
@@ -118,7 +113,6 @@ describe('AuthService', () => {
             expect(result.success).toBe(false);
             if (!result.success) {
                 expect(result.error).toBe(Resource.INVALID_CREDENTIALS);
-                expect(translate(result.error)).toBe(translate(Resource.INVALID_CREDENTIALS));
             }
             expect(logSpy).not.toHaveBeenCalled();
         });
@@ -137,7 +131,6 @@ describe('AuthService', () => {
             expect(result.success).toBe(false);
             if (!result.success) {
                 expect(result.error).toBe(Resource.INVALID_CREDENTIALS);
-                expect(translate(result.error)).toBe(translate(Resource.INVALID_CREDENTIALS));
             }
             expect(logSpy).not.toHaveBeenCalled();
         });
@@ -157,7 +150,6 @@ describe('AuthService', () => {
             expect(result.success).toBe(false);
             if (!result.success) {
                 expect(result.error).toBe(Resource.EMAIL_NOT_VERIFIED);
-                expect(translate(result.error)).toBe(translate(Resource.EMAIL_NOT_VERIFIED));
             }
             expect(logSpy).not.toHaveBeenCalled();
         });
@@ -177,7 +169,6 @@ describe('AuthService', () => {
             expect(result.success).toBe(false);
             if (!result.success) {
                 expect(result.error).toBe(Resource.INVALID_CREDENTIALS);
-                expect(translate(result.error)).toBe(translate(Resource.INVALID_CREDENTIALS));
             }
             expect(logSpy).not.toHaveBeenCalled();
         });
@@ -214,7 +205,6 @@ describe('AuthService', () => {
             expect(result.success).toBe(false);
             if (!result.success) {
                 expect(result.error).toBe(Resource.INTERNAL_SERVER_ERROR);
-                expect(translate(result.error)).toBe(translate(Resource.INTERNAL_SERVER_ERROR));
             }
             expect(logSpy).not.toHaveBeenCalled();
         });
@@ -292,7 +282,6 @@ describe('AuthService', () => {
             if (caught instanceof Error) {
                 expect(isResource(caught.message)).toBe(true);
                 if (isResource(caught.message)) {
-                    expect(translate(caught.message)).toBe(translate(Resource.INTERNAL_SERVER_ERROR));
                 }
             }
             expect(logSpy).not.toHaveBeenCalled();
@@ -318,7 +307,6 @@ describe('AuthService', () => {
             expect(result.success).toBe(false);
             if (!result.success) {
                 expect(result.error).toBe(Resource.EXPIRED_OR_INVALID_TOKEN);
-                expect(translate(result.error)).toBe(translate(Resource.EXPIRED_OR_INVALID_TOKEN));
             }
             expect(logSpy).not.toHaveBeenCalled();
         });
@@ -342,7 +330,6 @@ describe('AuthService', () => {
             expect(result.success).toBe(false);
             if (!result.success) {
                 expect(result.error).toBe(Resource.EXPIRED_OR_INVALID_TOKEN);
-                expect(translate(result.error)).toBe(translate(Resource.EXPIRED_OR_INVALID_TOKEN));
             }
             expect(logSpy).not.toHaveBeenCalled();
         });
@@ -394,7 +381,6 @@ describe('AuthService', () => {
             expect(result.success).toBe(false);
             if (!result.success) {
                 expect(result.error).toBe(Resource.EXPIRED_OR_INVALID_TOKEN);
-                expect(translate(result.error)).toBe(translate(Resource.EXPIRED_OR_INVALID_TOKEN));
             }
             expect(logSpy).not.toHaveBeenCalled();
         });
@@ -574,7 +560,6 @@ describe('AuthService', () => {
             if (caught instanceof Error) {
                 expect(isResource(caught.message)).toBe(true);
                 if (isResource(caught.message)) {
-                    expect(translate(caught.message)).toBe(translate(Resource.INTERNAL_SERVER_ERROR));
                 }
             }
             expect(logSpy).not.toHaveBeenCalled();
@@ -600,7 +585,6 @@ describe('AuthService', () => {
             expect(result.success).toBe(false);
             if (!result.success) {
                 expect(result.error).toBe(Resource.TOKEN_NOT_FOUND);
-                expect(translate(result.error)).toBe(translate(Resource.TOKEN_NOT_FOUND));
             }
             expect(logSpy).toHaveBeenCalledWith(
                 LogType.ALERT,
@@ -653,7 +637,6 @@ describe('AuthService', () => {
             if (caught instanceof Error) {
                 expect(isResource(caught.message)).toBe(true);
                 if (isResource(caught.message)) {
-                    expect(translate(caught.message)).toBe(translate(Resource.INTERNAL_SERVER_ERROR));
                 }
             }
             expect(logSpy).not.toHaveBeenCalled();
@@ -768,7 +751,12 @@ describe('AuthService', () => {
                 const result = await service.resendEmailVerification(user.email);
 
                 expect(deleteSpy).toHaveBeenCalledWith(user.id, TokenType.EMAIL_VERIFICATION);
-                expect(sendEmailVerificationMock).toHaveBeenCalledWith(user.email, 'verify-token', user.id);
+                expect(sendEmailVerificationMock).toHaveBeenCalledWith(
+                    user.email,
+                    'verify-token',
+                    user.id,
+                    user.language
+                );
                 expect(result).toEqual({ success: true, data: { sent: true } });
             } finally {
                 jest.useRealTimers();
@@ -806,7 +794,12 @@ describe('AuthService', () => {
             const service = new AuthService();
             const result = await service.requestPasswordReset(user.email);
 
-            expect(sendPasswordResetMock).toHaveBeenCalledWith(user.email, 'reset-token', user.id);
+            expect(sendPasswordResetMock).toHaveBeenCalledWith(
+                user.email,
+                'reset-token',
+                user.id,
+                user.language
+            );
             expect(result).toEqual({ success: true, data: { sent: true } });
         });
 
@@ -825,7 +818,12 @@ describe('AuthService', () => {
             const service = new AuthService();
             const result = await service.requestPasswordReset(user.email);
 
-            expect(sendPasswordResetMock).toHaveBeenCalledWith(user.email, 'reset-token', user.id);
+            expect(sendPasswordResetMock).toHaveBeenCalledWith(
+                user.email,
+                'reset-token',
+                user.id,
+                user.language
+            );
             expect(result).toEqual({ success: true, data: { sent: true } });
         });
     });

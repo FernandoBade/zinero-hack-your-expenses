@@ -1,6 +1,7 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import multer from 'multer';
 import { LogType, LogOperation, LogCategory } from '../../../shared/enums/log.enums';
+import { FieldKey } from '../../../shared/fields/field-keys';
 import { createLog, formatError } from '../utils/commons';
 import { verifyToken } from '../utils/auth/verifyToken';
 import UserController from '../controller/userController';
@@ -19,7 +20,7 @@ const avatarUpload = multer({
 const handleAvatarUpload = (req: Request, res: Response, next: NextFunction) => {
     avatarUpload.single('avatar')(req, res, (error: unknown) => {
         const handled = handleMulterUploadError(req, res, error, {
-            defaultFieldName: 'avatar',
+            defaultFieldName: FieldKey.AVATAR,
             invalidTypeExpected: UploadValidation.AVATAR_FILE_EXPECTED,
         });
         if (handled) {
@@ -163,4 +164,3 @@ router.delete('/:id', verifyToken, async (req: Request, res: Response, next: Nex
 });
 
 export default router;
-

@@ -1,17 +1,17 @@
-import type { ResourceKey } from "@shared/i18n/resource.keys";
+import type { I18nKey } from "@shared/i18n/types/i18n-key";
 import { FilterFieldType } from "@shared/enums/filter.enums";
 import { IconName } from "@shared/enums/icon.enums";
 import { InputType } from "@shared/enums/input.enums";
 
 export interface FilterOption {
-    readonly label: ResourceKey;
+    readonly label: I18nKey;
     readonly value: string;
 }
 
 interface BaseFieldConfig<TValues extends Record<string, unknown>, TKey extends keyof TValues> {
     readonly name: TKey;
-    readonly label: ResourceKey;
-    readonly placeholder?: ResourceKey;
+    readonly label: I18nKey;
+    readonly placeholder?: I18nKey;
     readonly icon?: IconName;
     readonly required?: boolean;
     readonly parse: (rawValue: string) => TValues[TKey];
@@ -47,8 +47,8 @@ export interface FilterBarProps<TValues extends Record<string, unknown>> {
     readonly values: Partial<TValues>;
     readonly onChange: (values: Partial<TValues>) => void;
     readonly columns?: 1 | 2 | 3;
-    readonly submitButtonLabel?: ResourceKey;
-    readonly clearButtonLabel?: ResourceKey;
+    readonly submitButtonLabel?: I18nKey;
+    readonly clearButtonLabel?: I18nKey;
     readonly onSubmit?: () => void;
     readonly onClear?: () => void;
 }

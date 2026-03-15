@@ -3,10 +3,9 @@ import { TagService } from '../../../src/service/tagService';
 import { HTTPStatus } from '../../../../shared/enums/http-status.enums';
 import { LogCategory, LogOperation, LogType } from '../../../../shared/enums/log.enums';
 import { SortOrder } from '../../../../shared/enums/operator.enums';
-import { ResourceKey as Resource } from '../../../../shared/i18n/resource.keys';
+import { ErrorCode as Resource } from '../../../../shared/errors/error-codes';
 import * as commons from '../../../src/utils/commons';
 import { createMockRequest, createMockResponse, createNext } from '../../helpers/mockExpress';
-import { translateResource } from '../../../../shared/i18n/resource.utils';
 import type { TagEntity } from '../../../../shared/domains/tag/tag.types';
 
 const authUser = { id: 999 };
@@ -51,7 +50,7 @@ describe('TagController', () => {
             expect(res.json).toHaveBeenCalledWith(
                 expect.objectContaining({
                     success: false,
-                    message: translateResource(Resource.VALIDATION_ERROR, 'en-US'),
+                    errorCode: Resource.VALIDATION_ERROR,
                 })
             );
             expect(logSpy).not.toHaveBeenCalled();
@@ -73,7 +72,7 @@ describe('TagController', () => {
             expect(res.json).toHaveBeenCalledWith(
                 expect.objectContaining({
                     success: false,
-                    message: translateResource(Resource.USER_NOT_FOUND, 'en-US'),
+                    errorCode: Resource.USER_NOT_FOUND,
                 })
             );
             expect(logSpy).not.toHaveBeenCalled();
@@ -168,7 +167,7 @@ describe('TagController', () => {
 
             expect(res.status).toHaveBeenCalledWith(HTTPStatus.BAD_REQUEST);
             expect(res.json).toHaveBeenCalledWith(
-                expect.objectContaining({ success: false, message: translateResource(Resource.INTERNAL_SERVER_ERROR, 'en-US') })
+                expect.objectContaining({ success: false, errorCode: Resource.INTERNAL_SERVER_ERROR })
             );
         });
 
@@ -184,7 +183,7 @@ describe('TagController', () => {
 
             expect(res.status).toHaveBeenCalledWith(HTTPStatus.BAD_REQUEST);
             expect(res.json).toHaveBeenCalledWith(
-                expect.objectContaining({ success: false, message: translateResource(Resource.INTERNAL_SERVER_ERROR, 'en-US') })
+                expect.objectContaining({ success: false, errorCode: Resource.INTERNAL_SERVER_ERROR })
             );
         });
     });
@@ -200,7 +199,7 @@ describe('TagController', () => {
 
                 expect(res.status).toHaveBeenCalledWith(HTTPStatus.BAD_REQUEST);
                 expect(res.json).toHaveBeenCalledWith(
-                    expect.objectContaining({ success: false, message: translateResource(Resource.INVALID_USER_ID, 'en-US') })
+                    expect.objectContaining({ success: false, errorCode: Resource.INVALID_USER_ID })
                 );
             });
 
@@ -216,7 +215,7 @@ describe('TagController', () => {
 
                 expect(res.status).toHaveBeenCalledWith(HTTPStatus.BAD_REQUEST);
                 expect(res.json).toHaveBeenCalledWith(
-                    expect.objectContaining({ success: false, message: translateResource(Resource.INTERNAL_SERVER_ERROR, 'en-US') })
+                    expect.objectContaining({ success: false, errorCode: Resource.INTERNAL_SERVER_ERROR })
                 );
             });
         });
@@ -232,7 +231,7 @@ describe('TagController', () => {
             expect(getSpy).not.toHaveBeenCalled();
             expect(res.status).toHaveBeenCalledWith(HTTPStatus.BAD_REQUEST);
             expect(res.json).toHaveBeenCalledWith(
-                expect.objectContaining({ success: false, message: translateResource(Resource.INVALID_TAG_ID, 'en-US') })
+                expect.objectContaining({ success: false, errorCode: Resource.INVALID_TAG_ID })
             );
             expect(logSpy).not.toHaveBeenCalled();
         });
@@ -262,7 +261,7 @@ describe('TagController', () => {
 
             expect(res.status).toHaveBeenCalledWith(HTTPStatus.BAD_REQUEST);
             expect(res.json).toHaveBeenCalledWith(
-                expect.objectContaining({ success: false, message: translateResource(Resource.TAG_NOT_FOUND, 'en-US') })
+                expect.objectContaining({ success: false, errorCode: Resource.TAG_NOT_FOUND })
             );
             expect(logSpy).not.toHaveBeenCalled();
         });
@@ -295,7 +294,7 @@ describe('TagController', () => {
 
             expect(res.status).toHaveBeenCalledWith(HTTPStatus.BAD_REQUEST);
             expect(res.json).toHaveBeenCalledWith(
-                expect.objectContaining({ success: false, message: translateResource(Resource.TAG_NOT_FOUND, 'en-US') })
+                expect.objectContaining({ success: false, errorCode: Resource.TAG_NOT_FOUND })
             );
         });
 
@@ -325,7 +324,7 @@ describe('TagController', () => {
 
             expect(res.status).toHaveBeenCalledWith(HTTPStatus.BAD_REQUEST);
             expect(res.json).toHaveBeenCalledWith(
-                expect.objectContaining({ success: false, message: translateResource(Resource.INVALID_TAG_ID, 'en-US') })
+                expect.objectContaining({ success: false, errorCode: Resource.INVALID_TAG_ID })
             );
             expect(logSpy).not.toHaveBeenCalled();
         });
@@ -343,7 +342,7 @@ describe('TagController', () => {
             expect(updateSpy).not.toHaveBeenCalled();
             expect(res.status).toHaveBeenCalledWith(HTTPStatus.BAD_REQUEST);
             expect(res.json).toHaveBeenCalledWith(
-                expect.objectContaining({ success: false, message: translateResource(Resource.VALIDATION_ERROR, 'en-US') })
+                expect.objectContaining({ success: false, errorCode: Resource.VALIDATION_ERROR })
             );
             expect(logSpy).not.toHaveBeenCalled();
         });
@@ -389,7 +388,7 @@ describe('TagController', () => {
 
             expect(res.status).toHaveBeenCalledWith(HTTPStatus.BAD_REQUEST);
             expect(res.json).toHaveBeenCalledWith(
-                expect.objectContaining({ success: false, message: translateResource(Resource.INTERNAL_SERVER_ERROR, 'en-US') })
+                expect.objectContaining({ success: false, errorCode: Resource.INTERNAL_SERVER_ERROR })
             );
             expect(logSpy).not.toHaveBeenCalled();
         });

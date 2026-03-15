@@ -1,23 +1,27 @@
-/**
- * Validation error types and helpers.
- */
+import type { ErrorCode } from "../../../../shared/errors/error-codes";
+import type { FieldKey } from "../../../../shared/fields/field-keys";
+import type { TranslationParams } from "../../../../shared/i18n/types/catalog";
 
 /**
  * Represents a validation error for a specific field.
  */
 export interface ValidationError {
-    property: string;
-    error: string;
+    field: FieldKey;
+    errorCode: ErrorCode;
+    params?: TranslationParams;
 }
 
 /**
- * Creates a validation error object.
- *
- * @summary Creates a validation error.
- * @param property - Field name that failed validation.
- * @param error - Error message.
- * @returns Validation error object.
+ * @summary Creates a structured validation error payload with machine-stable error identity.
  */
-export function createValidationError(property: string, error: string): ValidationError {
-    return { property, error };
+export function createValidationError(
+    field: FieldKey,
+    errorCode: ErrorCode,
+    params?: TranslationParams
+): ValidationError {
+    return {
+        field,
+        errorCode,
+        ...(params ? { params } : {}),
+    };
 }

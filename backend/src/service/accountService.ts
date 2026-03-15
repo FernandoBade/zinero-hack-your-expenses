@@ -1,7 +1,7 @@
 import { FilterOperator, SortOrder } from '../../../shared/enums/operator.enums';
 import { AccountRepository } from '../repositories/accountRepository';
 import { UserService } from './userService';
-import { ResourceKey as Resource } from '../../../shared/i18n/resource.keys';
+import { ErrorCode } from '../../../shared/errors/error-codes';
 import { SelectAccount, InsertAccount } from '../db/schema';
 import { QueryOptions } from '../utils/pagination';
 import type { AccountEntity, CreateAccountInput, UpdateAccountInput } from '../../../shared/domains/account/account.types';
@@ -36,12 +36,12 @@ export class AccountService {
      * @param data - Account creation data.
      * @returns The created account record.
      */
-    async createAccount(data: CreateAccountInput): Promise<{ success: true; data: AccountEntity } | { success: false; error: Resource }> {
+    async createAccount(data: CreateAccountInput): Promise<{ success: true; data: AccountEntity } | { success: false; error: ErrorCode }> {
         const userService = new UserService();
         const user = await userService.getUserById(data.userId);
 
         if (!user.success || !user.data) {
-            return { success: false, error: Resource.USER_NOT_FOUND };
+            return { success: false, error: ErrorCode.USER_NOT_FOUND };
         }
 
         try {
@@ -56,7 +56,7 @@ export class AccountService {
             } as InsertAccount);
             return { success: true, data: this.toAccountEntity(created) };
         } catch {
-            return { success: false, error: Resource.INTERNAL_SERVER_ERROR };
+            return { success: false, error: ErrorCode.INTERNAL_SERVER_ERROR };
         }
     }
 
@@ -66,7 +66,7 @@ export class AccountService {
      * @returns A list of all account records.
      */
 
-    async getAccounts(options?: QueryOptions<SelectAccount>): Promise<{ success: true; data: AccountEntity[] } | { success: false; error: Resource }> {
+    async getAccounts(options?: QueryOptions<SelectAccount>): Promise<{ success: true; data: AccountEntity[] } | { success: false; error: ErrorCode }> {
         try {
             const accounts = await this.accountRepository.findMany(undefined, {
                 limit: options?.limit,
@@ -76,7 +76,7 @@ export class AccountService {
             });
             return { success: true, data: accounts.map(account => this.toAccountEntity(account)) };
         } catch {
-            return { success: false, error: Resource.INTERNAL_SERVER_ERROR };
+            return { success: false, error: ErrorCode.INTERNAL_SERVER_ERROR };
         }
     }
 
@@ -85,12 +85,12 @@ export class AccountService {
      * @returns Total account count.
      */
 
-    async countAccounts(): Promise<{ success: true; data: number } | { success: false; error: Resource }> {
+    async countAccounts(): Promise<{ success: true; data: number } | { success: false; error: ErrorCode }> {
         try {
             const count = await this.accountRepository.count();
             return { success: true, data: count };
         } catch {
-            return { success: false, error: Resource.INTERNAL_SERVER_ERROR };
+            return { success: false, error: ErrorCode.INTERNAL_SERVER_ERROR };
         }
     }
 
@@ -100,10 +100,10 @@ export class AccountService {
      * @returns Account record if found.
      */
 
-    async getAccountById(id: number): Promise<{ success: true; data: AccountEntity } | { success: false; error: Resource }> {
+    async getAccountById(id: number): Promise<{ success: true; data: AccountEntity } | { success: false; error: ErrorCode }> {
         const account = await this.accountRepository.findById(id);
         if (!account) {
-            return { success: false, error: Resource.NO_RECORDS_FOUND };
+            return { success: false, error: ErrorCode.NO_RECORDS_FOUND };
         }
         return { success: true, data: this.toAccountEntity(account) };
     }
@@ -114,7 +114,7 @@ export class AccountService {
      * @returns A list of accounts owned by the user.
      */
 
-    async getAccountsByUser(userId: number, options?: QueryOptions<SelectAccount>): Promise<{ success: true; data: AccountEntity[] } | { success: false; error: Resource }> {
+    async getAccountsByUser(userId: number, options?: QueryOptions<SelectAccount>): Promise<{ success: true; data: AccountEntity[] } | { success: false; error: ErrorCode }> {
         try {
             const accounts = await this.accountRepository.findMany({
                 userId: { operator: FilterOperator.EQ, value: userId }
@@ -126,7 +126,7 @@ export class AccountService {
             });
             return { success: true, data: accounts.map(account => this.toAccountEntity(account)) };
         } catch {
-            return { success: false, error: Resource.INTERNAL_SERVER_ERROR };
+            return { success: false, error: ErrorCode.INTERNAL_SERVER_ERROR };
         }
     }
 
@@ -136,14 +136,14 @@ export class AccountService {
      * @returns Count of user's accounts.
      */
 
-    async countAccountsByUser(userId: number): Promise<{ success: true; data: number } | { success: false; error: Resource }> {
+    async countAccountsByUser(userId: number): Promise<{ success: true; data: number } | { success: false; error: ErrorCode }> {
         try {
             const count = await this.accountRepository.count({
                 userId: { operator: FilterOperator.EQ, value: userId }
             });
             return { success: true, data: count };
         } catch {
-            return { success: false, error: Resource.INTERNAL_SERVER_ERROR };
+            return { success: false, error: ErrorCode.INTERNAL_SERVER_ERROR };
         }
     }
 
@@ -156,13 +156,13 @@ export class AccountService {
      * @param data - Partial account data to update.
      * @returns Updated account record.
      */
-    async updateAccount(id: number, data: UpdateAccountInput): Promise<{ success: true; data: AccountEntity } | { success: false; error: Resource }> {
+    async updateAccount(id: number, data: UpdateAccountInput): Promise<{ success: true; data: AccountEntity } | { success: false; error: ErrorCode }> {
         if (data.userId !== undefined) {
             const userService = new UserService();
             const user = await userService.getUserById(data.userId);
 
             if (!user.success || !user.data) {
-                return { success: false, error: Resource.USER_NOT_FOUND };
+                return { success: false, error: ErrorCode.USER_NOT_FOUND };
             }
         }
 
@@ -170,7 +170,7 @@ export class AccountService {
             const updated = await this.accountRepository.update(id, data as Partial<InsertAccount>);
             return { success: true, data: this.toAccountEntity(updated) };
         } catch {
-            return { success: false, error: Resource.INTERNAL_SERVER_ERROR };
+            return { success: false, error: ErrorCode.INTERNAL_SERVER_ERROR };
         }
     }
 
@@ -181,17 +181,17 @@ export class AccountService {
      * @param id - ID of the account to delete.
      * @returns Success with deleted ID, or error if account does not exist.
      */
-    async deleteAccount(id: number): Promise<{ success: true; data: { id: number } } | { success: false; error: Resource }> {
+    async deleteAccount(id: number): Promise<{ success: true; data: { id: number } } | { success: false; error: ErrorCode }> {
         const existing = await this.accountRepository.findById(id);
         if (!existing) {
-            return { success: false, error: Resource.ACCOUNT_NOT_FOUND };
+            return { success: false, error: ErrorCode.ACCOUNT_NOT_FOUND };
         }
 
         try {
             await this.accountRepository.delete(id);
             return { success: true, data: { id } };
         } catch {
-            return { success: false, error: Resource.INTERNAL_SERVER_ERROR };
+            return { success: false, error: ErrorCode.INTERNAL_SERVER_ERROR };
         }
     }
 }

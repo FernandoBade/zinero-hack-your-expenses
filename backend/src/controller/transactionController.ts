@@ -7,8 +7,8 @@ import { HTTPStatus } from '../../../shared/enums/http-status.enums';
 import { LogCategory, LogOperation, LogType } from '../../../shared/enums/log.enums';
 import { FilterOperator } from '../../../shared/enums/operator.enums';
 import { TransactionSource, TransactionType } from '../../../shared/enums/transaction.enums';
-import { ResourceKey as Resource } from '../../../shared/i18n/resource.keys';
-import { LanguageCode } from '../../../shared/i18n/resourceTypes';
+import { ErrorCode } from '../../../shared/errors/error-codes';
+import { Locale } from '../../../shared/i18n/types/locale';
 import { parsePagination, buildMeta } from '../utils/pagination';
 // #endregion Imports
 
@@ -55,7 +55,7 @@ class TransactionController {
 
         try {
 
-            const parseResult = validateCreateTransaction(req.body, req.language as LanguageCode);
+            const parseResult = validateCreateTransaction(req.body, req.language as Locale);
 
             if (!parseResult.success) {
                 return answerAPI(
@@ -63,7 +63,7 @@ class TransactionController {
                     res,
                     HTTPStatus.BAD_REQUEST,
                     parseResult.errors,
-                    Resource.VALIDATION_ERROR
+                    ErrorCode.VALIDATION_ERROR
                 );
             }
 
@@ -83,7 +83,7 @@ class TransactionController {
             return answerAPI(req, res, HTTPStatus.CREATED, created.data!);
         } catch (error) {
             await createLog(LogType.ERROR, LogOperation.CREATE, LogCategory.TRANSACTION, formatError(error), req.user?.id, next);
-            return answerAPI(req, res, HTTPStatus.INTERNAL_SERVER_ERROR, undefined, Resource.INTERNAL_SERVER_ERROR);
+            return answerAPI(req, res, HTTPStatus.INTERNAL_SERVER_ERROR, undefined, ErrorCode.INTERNAL_SERVER_ERROR);
         }
     }
 
@@ -166,7 +166,7 @@ class TransactionController {
             });
         } catch (error) {
             await createLog(LogType.ERROR, LogOperation.CREATE, LogCategory.TRANSACTION, formatError(error), req.user?.id, next);
-            return answerAPI(req, res, HTTPStatus.INTERNAL_SERVER_ERROR, undefined, Resource.INTERNAL_SERVER_ERROR);
+            return answerAPI(req, res, HTTPStatus.INTERNAL_SERVER_ERROR, undefined, ErrorCode.INTERNAL_SERVER_ERROR);
         }
     }
 
@@ -181,7 +181,7 @@ class TransactionController {
     static async getTransactionById(req: Request, res: Response, next: NextFunction) {
         const id = Number(req.params.id);
         if (isNaN(id) || id <= 0) {
-            return answerAPI(req, res, HTTPStatus.BAD_REQUEST, undefined, Resource.INVALID_TRANSACTION_ID);
+            return answerAPI(req, res, HTTPStatus.BAD_REQUEST, undefined, ErrorCode.INVALID_TRANSACTION_ID);
         }
 
         const transactionService = new TransactionService();
@@ -196,7 +196,7 @@ class TransactionController {
             return answerAPI(req, res, HTTPStatus.OK, transaction.data);
         } catch (error) {
             await createLog(LogType.ERROR, LogOperation.CREATE, LogCategory.TRANSACTION, formatError(error), req.user?.id, next);
-            return answerAPI(req, res, HTTPStatus.INTERNAL_SERVER_ERROR, undefined, Resource.INTERNAL_SERVER_ERROR);
+            return answerAPI(req, res, HTTPStatus.INTERNAL_SERVER_ERROR, undefined, ErrorCode.INTERNAL_SERVER_ERROR);
         }
     }
 
@@ -211,7 +211,7 @@ class TransactionController {
     static async getTransactionsByAccount(req: Request, res: Response, next: NextFunction) {
         const accountId = Number(req.params.accountId);
         if (isNaN(accountId) || accountId <= 0) {
-            return answerAPI(req, res, HTTPStatus.BAD_REQUEST, undefined, Resource.INVALID_ACCOUNT_ID);
+            return answerAPI(req, res, HTTPStatus.BAD_REQUEST, undefined, ErrorCode.INVALID_ACCOUNT_ID);
         }
 
         const transactionService = new TransactionService();
@@ -237,7 +237,7 @@ class TransactionController {
             });
         } catch (error) {
             await createLog(LogType.ERROR, LogOperation.CREATE, LogCategory.TRANSACTION, formatError(error), req.user?.id, next);
-            return answerAPI(req, res, HTTPStatus.INTERNAL_SERVER_ERROR, undefined, Resource.INTERNAL_SERVER_ERROR);
+            return answerAPI(req, res, HTTPStatus.INTERNAL_SERVER_ERROR, undefined, ErrorCode.INTERNAL_SERVER_ERROR);
         }
     }
 
@@ -252,7 +252,7 @@ class TransactionController {
     static async getTransactionsByUser(req: Request, res: Response, next: NextFunction) {
         const userId = Number(req.params.userId);
         if (isNaN(userId) || userId <= 0) {
-            return answerAPI(req, res, HTTPStatus.BAD_REQUEST, undefined, Resource.INVALID_USER_ID);
+            return answerAPI(req, res, HTTPStatus.BAD_REQUEST, undefined, ErrorCode.INVALID_USER_ID);
         }
 
         const transactionService = new TransactionService();
@@ -278,7 +278,7 @@ class TransactionController {
             });
         } catch (error) {
             await createLog(LogType.ERROR, LogOperation.CREATE, LogCategory.TRANSACTION, formatError(error), req.user?.id, next);
-            return answerAPI(req, res, HTTPStatus.INTERNAL_SERVER_ERROR, undefined, Resource.INTERNAL_SERVER_ERROR);
+            return answerAPI(req, res, HTTPStatus.INTERNAL_SERVER_ERROR, undefined, ErrorCode.INTERNAL_SERVER_ERROR);
         }
     }
 
@@ -293,7 +293,7 @@ class TransactionController {
     static async updateTransaction(req: Request, res: Response, next: NextFunction) {
         const id = Number(req.params.id);
         if (isNaN(id) || id <= 0) {
-            return answerAPI(req, res, HTTPStatus.BAD_REQUEST, undefined, Resource.INVALID_TRANSACTION_ID);
+            return answerAPI(req, res, HTTPStatus.BAD_REQUEST, undefined, ErrorCode.INVALID_TRANSACTION_ID);
         }
 
         const transactionService = new TransactionService();
@@ -304,10 +304,10 @@ class TransactionController {
                 return answerAPI(req, res, HTTPStatus.BAD_REQUEST, undefined, existing.error);
             }
 
-            const parseResult = validateUpdateTransaction(req.body, req.language as LanguageCode);
+            const parseResult = validateUpdateTransaction(req.body, req.language as Locale);
 
             if (!parseResult.success) {
-                return answerAPI(req, res, HTTPStatus.BAD_REQUEST, parseResult.errors, Resource.VALIDATION_ERROR);
+                return answerAPI(req, res, HTTPStatus.BAD_REQUEST, parseResult.errors, ErrorCode.VALIDATION_ERROR);
             }
 
             const updated = await transactionService.updateTransaction(id, {
@@ -322,7 +322,7 @@ class TransactionController {
             return answerAPI(req, res, HTTPStatus.OK, updated.data!);
         } catch (error) {
             await createLog(LogType.ERROR, LogOperation.UPDATE, LogCategory.TRANSACTION, formatError(error), req.user?.id, next);
-            return answerAPI(req, res, HTTPStatus.INTERNAL_SERVER_ERROR, undefined, Resource.INTERNAL_SERVER_ERROR);
+            return answerAPI(req, res, HTTPStatus.INTERNAL_SERVER_ERROR, undefined, ErrorCode.INTERNAL_SERVER_ERROR);
         }
     }
 
@@ -338,7 +338,7 @@ class TransactionController {
         const id = Number(req.params.id);
 
         if (isNaN(id) || id <= 0) {
-            return answerAPI(req, res, HTTPStatus.BAD_REQUEST, undefined, Resource.INVALID_TRANSACTION_ID);
+            return answerAPI(req, res, HTTPStatus.BAD_REQUEST, undefined, ErrorCode.INVALID_TRANSACTION_ID);
         }
 
         const transactionService = new TransactionService();
@@ -362,7 +362,7 @@ class TransactionController {
             return answerAPI(req, res, HTTPStatus.OK, result.data);
         } catch (error) {
             await createLog(LogType.ERROR, LogOperation.DELETE, LogCategory.TRANSACTION, formatError(error), req.user?.id, next);
-            return answerAPI(req, res, HTTPStatus.INTERNAL_SERVER_ERROR, undefined, Resource.INTERNAL_SERVER_ERROR);
+            return answerAPI(req, res, HTTPStatus.INTERNAL_SERVER_ERROR, undefined, ErrorCode.INTERNAL_SERVER_ERROR);
         }
     }
 }

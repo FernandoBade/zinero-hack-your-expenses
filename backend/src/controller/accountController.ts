@@ -4,9 +4,9 @@ import { buildLogDelta, createLog, answerAPI, formatError, sanitizeLogDetail } f
 import { validateCreateAccount, validateUpdateAccount } from '../utils/validation/validateRequest';
 import { HTTPStatus } from '../../../shared/enums/http-status.enums';
 import { LogCategory, LogOperation, LogType } from '../../../shared/enums/log.enums';
-import { ResourceKey as Resource } from '../../../shared/i18n/resource.keys';
+import { ErrorCode } from '../../../shared/errors/error-codes';
 import { parsePagination, buildMeta } from '../utils/pagination';
-import { LanguageCode } from '../../../shared/i18n/resourceTypes';
+import { Locale } from '../../../shared/i18n/types/locale';
 
 /** @summary Orchestrates HTTP request flows for account resource endpoints. */
 class AccountController {
@@ -23,7 +23,7 @@ class AccountController {
 
         try {
 
-            const parseResult = validateCreateAccount(req.body, req.language as LanguageCode);
+            const parseResult = validateCreateAccount(req.body, req.language as Locale);
 
             if (!parseResult.success) {
                 return answerAPI(
@@ -31,7 +31,7 @@ class AccountController {
                     res,
                     HTTPStatus.BAD_REQUEST,
                     parseResult.errors,
-                    Resource.VALIDATION_ERROR
+                    ErrorCode.VALIDATION_ERROR
                 );
             }
 
@@ -45,7 +45,7 @@ class AccountController {
             return answerAPI(req, res, HTTPStatus.CREATED, created.data!);
         } catch (error) {
             await createLog(LogType.ERROR, LogOperation.CREATE, LogCategory.ACCOUNT, formatError(error), req.user?.id, next);
-            return answerAPI(req, res, HTTPStatus.INTERNAL_SERVER_ERROR, undefined, Resource.INTERNAL_SERVER_ERROR);
+            return answerAPI(req, res, HTTPStatus.INTERNAL_SERVER_ERROR, undefined, ErrorCode.INTERNAL_SERVER_ERROR);
         }
     }
 
@@ -80,7 +80,7 @@ class AccountController {
             });
         } catch (error) {
             await createLog(LogType.ERROR, LogOperation.CREATE, LogCategory.ACCOUNT, formatError(error), req.user?.id, next);
-            return answerAPI(req, res, HTTPStatus.INTERNAL_SERVER_ERROR, undefined, Resource.INTERNAL_SERVER_ERROR);
+            return answerAPI(req, res, HTTPStatus.INTERNAL_SERVER_ERROR, undefined, ErrorCode.INTERNAL_SERVER_ERROR);
         }
     }
 
@@ -95,7 +95,7 @@ class AccountController {
     static async getAccountById(req: Request, res: Response, next: NextFunction) {
         const id = Number(req.params.id);
         if (isNaN(id) || id <= 0) {
-            return answerAPI(req, res, HTTPStatus.BAD_REQUEST, undefined, Resource.INVALID_ACCOUNT_ID);
+            return answerAPI(req, res, HTTPStatus.BAD_REQUEST, undefined, ErrorCode.INVALID_ACCOUNT_ID);
         }
 
         const accountService = new AccountService();
@@ -110,7 +110,7 @@ class AccountController {
             return answerAPI(req, res, HTTPStatus.OK, account.data);
         } catch (error) {
             await createLog(LogType.ERROR, LogOperation.CREATE, LogCategory.ACCOUNT, formatError(error), req.user?.id, next);
-            return answerAPI(req, res, HTTPStatus.INTERNAL_SERVER_ERROR, undefined, Resource.INTERNAL_SERVER_ERROR);
+            return answerAPI(req, res, HTTPStatus.INTERNAL_SERVER_ERROR, undefined, ErrorCode.INTERNAL_SERVER_ERROR);
         }
     }
 
@@ -125,7 +125,7 @@ class AccountController {
     static async getAccountsByUser(req: Request, res: Response, next: NextFunction) {
         const userId = Number(req.params.userId);
         if (isNaN(userId) || userId <= 0) {
-            return answerAPI(req, res, HTTPStatus.BAD_REQUEST, undefined, Resource.INVALID_USER_ID);
+            return answerAPI(req, res, HTTPStatus.BAD_REQUEST, undefined, ErrorCode.INVALID_USER_ID);
         }
 
         const accountService = new AccountService();
@@ -151,7 +151,7 @@ class AccountController {
             });
         } catch (error) {
             await createLog(LogType.ERROR, LogOperation.CREATE, LogCategory.ACCOUNT, formatError(error), req.user?.id, next);
-            return answerAPI(req, res, HTTPStatus.INTERNAL_SERVER_ERROR, undefined, Resource.INTERNAL_SERVER_ERROR);
+            return answerAPI(req, res, HTTPStatus.INTERNAL_SERVER_ERROR, undefined, ErrorCode.INTERNAL_SERVER_ERROR);
         }
     }
 
@@ -166,7 +166,7 @@ class AccountController {
     static async updateAccount(req: Request, res: Response, next: NextFunction) {
         const id = Number(req.params.id);
         if (isNaN(id) || id <= 0) {
-            return answerAPI(req, res, HTTPStatus.BAD_REQUEST, undefined, Resource.INVALID_ACCOUNT_ID);
+            return answerAPI(req, res, HTTPStatus.BAD_REQUEST, undefined, ErrorCode.INVALID_ACCOUNT_ID);
         }
 
         const accountService = new AccountService();
@@ -177,7 +177,7 @@ class AccountController {
                 return answerAPI(req, res, HTTPStatus.BAD_REQUEST, undefined, existing.error);
             }
 
-            const parseResult = validateUpdateAccount(req.body, req.language as LanguageCode);
+            const parseResult = validateUpdateAccount(req.body, req.language as Locale);
 
             if (!parseResult.success) {
                 return answerAPI(
@@ -185,7 +185,7 @@ class AccountController {
                     res,
                     HTTPStatus.BAD_REQUEST,
                     parseResult.errors,
-                    Resource.VALIDATION_ERROR
+                    ErrorCode.VALIDATION_ERROR
                 );
             }
 
@@ -199,7 +199,7 @@ class AccountController {
             return answerAPI(req, res, HTTPStatus.OK, updated.data!);
         } catch (error) {
             await createLog(LogType.ERROR, LogOperation.UPDATE, LogCategory.ACCOUNT, formatError(error), req.user?.id, next);
-            return answerAPI(req, res, HTTPStatus.INTERNAL_SERVER_ERROR, undefined, Resource.INTERNAL_SERVER_ERROR);
+            return answerAPI(req, res, HTTPStatus.INTERNAL_SERVER_ERROR, undefined, ErrorCode.INTERNAL_SERVER_ERROR);
         }
     }
 
@@ -215,7 +215,7 @@ class AccountController {
         const id = Number(req.params.id);
 
         if (isNaN(id) || id <= 0) {
-            return answerAPI(req, res, HTTPStatus.BAD_REQUEST, undefined, Resource.INVALID_ACCOUNT_ID);
+            return answerAPI(req, res, HTTPStatus.BAD_REQUEST, undefined, ErrorCode.INVALID_ACCOUNT_ID);
         }
 
         const accountService = new AccountService();
@@ -239,7 +239,7 @@ class AccountController {
             return answerAPI(req, res, HTTPStatus.OK, result.data);
         } catch (error) {
             await createLog(LogType.ERROR, LogOperation.DELETE, LogCategory.ACCOUNT, formatError(error), req.user?.id, next);
-            return answerAPI(req, res, HTTPStatus.INTERNAL_SERVER_ERROR, undefined, Resource.INTERNAL_SERVER_ERROR);
+            return answerAPI(req, res, HTTPStatus.INTERNAL_SERVER_ERROR, undefined, ErrorCode.INTERNAL_SERVER_ERROR);
         }
     }
 }

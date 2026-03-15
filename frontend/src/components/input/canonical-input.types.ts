@@ -1,4 +1,4 @@
-import type { ResourceKey } from "@shared/i18n/resource.keys";
+import type { I18nKey } from "@shared/i18n/types/i18n-key";
 import type { InputProps } from "@/components/input/input.types";
 
 /**
@@ -7,7 +7,7 @@ import type { InputProps } from "@/components/input/input.types";
 export interface CanonicalInputValueChange {
     readonly canonicalValue: string;
     readonly displayValue: string;
-    readonly error?: ResourceKey;
+    readonly error?: I18nKey;
 }
 
 /**
@@ -16,7 +16,7 @@ export interface CanonicalInputValueChange {
 export interface CanonicalInputBaseProps
     extends Omit<InputProps, "type" | "value" | "error" | "inputMode" | "onChange" | "onBlur"> {
     readonly canonicalValue: string;
-    readonly error?: ResourceKey;
+    readonly error?: I18nKey;
     readonly onValueChange?: (value: CanonicalInputValueChange) => void;
     readonly onValueBlur?: (value: CanonicalInputValueChange) => void;
 }

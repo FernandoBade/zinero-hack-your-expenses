@@ -1,9 +1,9 @@
 import type { ComponentChildren } from "preact";
-import type { ResourceKey } from "@shared/i18n/resource.keys";
+import type { I18nKey } from "@shared/i18n/types/i18n-key";
 
 export interface AccordionItem {
     readonly id: string;
-    readonly title: ResourceKey;
+    readonly title: I18nKey;
     readonly content: ComponentChildren;
     readonly openByDefault?: boolean;
 }

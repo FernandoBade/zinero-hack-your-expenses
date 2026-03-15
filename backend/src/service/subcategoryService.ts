@@ -1,7 +1,7 @@
 import { FilterOperator, SortOrder } from '../../../shared/enums/operator.enums';
 import { SubcategoryRepository } from '../repositories/subcategoryRepository';
 import { CategoryService } from './categoryService';
-import { ResourceKey as Resource } from '../../../shared/i18n/resource.keys';
+import { ErrorCode } from '../../../shared/errors/error-codes';
 import { SelectSubcategory, InsertSubcategory } from '../db/schema';
 import { QueryOptions } from '../utils/pagination';
 import type { CreateSubcategoryInput, SubcategoryEntity, UpdateSubcategoryInput } from '../../../shared/domains/subcategory/subcategory.types';
@@ -37,16 +37,16 @@ export class SubcategoryService {
      * @param userId - Optional ID of the user performing the operation.
      * @returns The created subcategory record.
      */
-    async createSubcategory(data: CreateSubcategoryInput, userId?: number): Promise<{ success: true; data: SubcategoryEntity } | { success: false; error: Resource }> {
+    async createSubcategory(data: CreateSubcategoryInput, userId?: number): Promise<{ success: true; data: SubcategoryEntity } | { success: false; error: ErrorCode }> {
         const categoryService = new CategoryService();
         const category = await categoryService.getCategoryById(data.categoryId);
 
         if (!category.success || !category.data?.active) {
-            return { success: false, error: Resource.CATEGORY_NOT_FOUND_OR_INACTIVE };
+            return { success: false, error: ErrorCode.CATEGORY_NOT_FOUND_OR_INACTIVE };
         }
 
         if (userId !== undefined && category.data.userId !== userId) {
-            return { success: false, error: Resource.UNAUTHORIZED_OPERATION };
+            return { success: false, error: ErrorCode.UNAUTHORIZED_OPERATION };
         }
 
         try {
@@ -56,7 +56,7 @@ export class SubcategoryService {
             } as InsertSubcategory);
             return { success: true, data: this.toSubcategoryEntity(created) };
         } catch {
-            return { success: false, error: Resource.INTERNAL_SERVER_ERROR };
+            return { success: false, error: ErrorCode.INTERNAL_SERVER_ERROR };
         }
     }
 
@@ -66,7 +66,7 @@ export class SubcategoryService {
      * @returns A list of all subcategories.
      */
 
-    async getSubcategories(options?: QueryOptions<SelectSubcategory>): Promise<{ success: true; data: SubcategoryEntity[] } | { success: false; error: Resource }> {
+    async getSubcategories(options?: QueryOptions<SelectSubcategory>): Promise<{ success: true; data: SubcategoryEntity[] } | { success: false; error: ErrorCode }> {
         try {
             const subcategories = await this.subcategoryRepository.findMany(undefined, {
                 limit: options?.limit,
@@ -76,7 +76,7 @@ export class SubcategoryService {
             });
             return { success: true, data: subcategories.map(subcategory => this.toSubcategoryEntity(subcategory)) };
         } catch {
-            return { success: false, error: Resource.INTERNAL_SERVER_ERROR };
+            return { success: false, error: ErrorCode.INTERNAL_SERVER_ERROR };
         }
     }
 
@@ -85,12 +85,12 @@ export class SubcategoryService {
      * @returns Total subcategory count.
      */
 
-    async countSubcategories(): Promise<{ success: true; data: number } | { success: false; error: Resource }> {
+    async countSubcategories(): Promise<{ success: true; data: number } | { success: false; error: ErrorCode }> {
         try {
             const count = await this.subcategoryRepository.count();
             return { success: true, data: count };
         } catch {
-            return { success: false, error: Resource.INTERNAL_SERVER_ERROR };
+            return { success: false, error: ErrorCode.INTERNAL_SERVER_ERROR };
         }
     }
 
@@ -100,7 +100,7 @@ export class SubcategoryService {
      * @returns A list of subcategories under the specified category.
      */
 
-    async getSubcategoriesByCategory(categoryId: number, options?: QueryOptions<SelectSubcategory>): Promise<{ success: true; data: SubcategoryEntity[] } | { success: false; error: Resource }> {
+    async getSubcategoriesByCategory(categoryId: number, options?: QueryOptions<SelectSubcategory>): Promise<{ success: true; data: SubcategoryEntity[] } | { success: false; error: ErrorCode }> {
         try {
             const subcategories = await this.subcategoryRepository.findMany({
                 categoryId: { operator: FilterOperator.EQ, value: categoryId }
@@ -112,7 +112,7 @@ export class SubcategoryService {
             });
             return { success: true, data: subcategories.map(subcategory => this.toSubcategoryEntity(subcategory)) };
         } catch {
-            return { success: false, error: Resource.INTERNAL_SERVER_ERROR };
+            return { success: false, error: ErrorCode.INTERNAL_SERVER_ERROR };
         }
     }
 
@@ -122,14 +122,14 @@ export class SubcategoryService {
      * @returns Count of subcategories.
      */
 
-    async countSubcategoriesByCategory(categoryId: number): Promise<{ success: true; data: number } | { success: false; error: Resource }> {
+    async countSubcategoriesByCategory(categoryId: number): Promise<{ success: true; data: number } | { success: false; error: ErrorCode }> {
         try {
             const count = await this.subcategoryRepository.count({
                 categoryId: { operator: FilterOperator.EQ, value: categoryId }
             });
             return { success: true, data: count };
         } catch {
-            return { success: false, error: Resource.INTERNAL_SERVER_ERROR };
+            return { success: false, error: ErrorCode.INTERNAL_SERVER_ERROR };
         }
     }
 
@@ -139,10 +139,10 @@ export class SubcategoryService {
      * @returns Subcategory record if found.
      */
 
-    async getSubcategoryById(id: number): Promise<{ success: true; data: SubcategoryEntity } | { success: false; error: Resource }> {
+    async getSubcategoryById(id: number): Promise<{ success: true; data: SubcategoryEntity } | { success: false; error: ErrorCode }> {
         const subcategory = await this.subcategoryRepository.findById(id);
         if (!subcategory) {
-            return { success: false, error: Resource.NO_RECORDS_FOUND };
+            return { success: false, error: ErrorCode.NO_RECORDS_FOUND };
         }
         return { success: true, data: this.toSubcategoryEntity(subcategory) };
     }
@@ -153,12 +153,12 @@ export class SubcategoryService {
      * @returns A list of subcategories across all categories owned by the user.
      */
 
-    async getSubcategoriesByUser(userId: number, options?: QueryOptions<SelectSubcategory>): Promise<{ success: true; data: SubcategoryEntity[] } | { success: false; error: Resource }> {
+    async getSubcategoriesByUser(userId: number, options?: QueryOptions<SelectSubcategory>): Promise<{ success: true; data: SubcategoryEntity[] } | { success: false; error: ErrorCode }> {
         const categoryService = new CategoryService();
         const userCategories = await categoryService.getCategoriesByUser(userId);
 
         if (!userCategories.success || !userCategories.data?.length) {
-            return { success: false, error: Resource.NO_RECORDS_FOUND };
+            return { success: false, error: ErrorCode.NO_RECORDS_FOUND };
         }
 
         const categoryIds = userCategories.data.map(c => c.id);
@@ -185,7 +185,7 @@ export class SubcategoryService {
 
             return { success: true, data: allSubcategories.map(subcategory => this.toSubcategoryEntity(subcategory)) };
         } catch {
-            return { success: false, error: Resource.INTERNAL_SERVER_ERROR };
+            return { success: false, error: ErrorCode.INTERNAL_SERVER_ERROR };
         }
     }
 
@@ -195,12 +195,12 @@ export class SubcategoryService {
      * @returns Count of subcategories.
      */
 
-    async countSubcategoriesByUser(userId: number): Promise<{ success: true; data: number } | { success: false; error: Resource }> {
+    async countSubcategoriesByUser(userId: number): Promise<{ success: true; data: number } | { success: false; error: ErrorCode }> {
         const categoryService = new CategoryService();
         const userCategories = await categoryService.getCategoriesByUser(userId);
 
         if (!userCategories.success || !userCategories.data?.length) {
-            return { success: false, error: Resource.NO_RECORDS_FOUND };
+            return { success: false, error: ErrorCode.NO_RECORDS_FOUND };
         }
 
         const categoryIds = userCategories.data.map(c => c.id);
@@ -211,7 +211,7 @@ export class SubcategoryService {
             });
             return { success: true, data: total };
         } catch {
-            return { success: false, error: Resource.INTERNAL_SERVER_ERROR };
+            return { success: false, error: ErrorCode.INTERNAL_SERVER_ERROR };
         }
     }
 
@@ -225,17 +225,17 @@ export class SubcategoryService {
      * @param userId - Optional ID of the user performing the operation.
      * @returns Updated subcategory record.
      */
-    async updateSubcategory(id: number, data: UpdateSubcategoryInput, userId?: number): Promise<{ success: true; data: SubcategoryEntity } | { success: false; error: Resource }> {
+    async updateSubcategory(id: number, data: UpdateSubcategoryInput, userId?: number): Promise<{ success: true; data: SubcategoryEntity } | { success: false; error: ErrorCode }> {
         if (data.categoryId !== undefined) {
             const categoryService = new CategoryService();
             const category = await categoryService.getCategoryById(data.categoryId);
 
             if (!category.success || !category.data?.active) {
-                return { success: false, error: Resource.CATEGORY_NOT_FOUND_OR_INACTIVE };
+                return { success: false, error: ErrorCode.CATEGORY_NOT_FOUND_OR_INACTIVE };
             }
 
             if (userId !== undefined && category.data.userId !== userId) {
-                return { success: false, error: Resource.UNAUTHORIZED_OPERATION };
+                return { success: false, error: ErrorCode.UNAUTHORIZED_OPERATION };
             }
         }
 
@@ -243,7 +243,7 @@ export class SubcategoryService {
             const updated = await this.subcategoryRepository.update(id, data);
             return { success: true, data: this.toSubcategoryEntity(updated) };
         } catch {
-            return { success: false, error: Resource.INTERNAL_SERVER_ERROR };
+            return { success: false, error: ErrorCode.INTERNAL_SERVER_ERROR };
         }
     }
 
@@ -254,17 +254,17 @@ export class SubcategoryService {
      * @param id - ID of the subcategory.
      * @returns Success with deleted ID, or error if subcategory does not exist.
      */
-    async deleteSubcategory(id: number): Promise<{ success: true; data: { id: number } } | { success: false; error: Resource }> {
+    async deleteSubcategory(id: number): Promise<{ success: true; data: { id: number } } | { success: false; error: ErrorCode }> {
         const existing = await this.subcategoryRepository.findById(id);
         if (!existing) {
-            return { success: false, error: Resource.SUBCATEGORY_NOT_FOUND };
+            return { success: false, error: ErrorCode.SUBCATEGORY_NOT_FOUND };
         }
 
         try {
             await this.subcategoryRepository.delete(id);
             return { success: true, data: { id } };
         } catch {
-            return { success: false, error: Resource.INTERNAL_SERVER_ERROR };
+            return { success: false, error: ErrorCode.INTERNAL_SERVER_ERROR };
         }
     }
 }

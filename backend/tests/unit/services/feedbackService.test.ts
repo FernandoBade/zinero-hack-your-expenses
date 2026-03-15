@@ -1,6 +1,6 @@
 import { FeedbackService } from '../../../src/service/feedbackService';
 import { sendFeedbackEmail } from '../../../src/utils/email/feedbackEmail';
-import { ResourceKey as Resource } from '../../../../shared/i18n/resource.keys';
+import { ErrorCode as Resource } from '../../../../shared/errors/error-codes';
 
 jest.mock('../../../src/utils/email/feedbackEmail', () => ({
     sendFeedbackEmail: jest.fn(),

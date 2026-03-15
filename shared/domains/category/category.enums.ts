@@ -1,1 +1,1 @@
-export { CategoryColor, CategoryErrorCode, CategoryType } from "../../enums/category.enums";
+export { CategoryColor, CategoryType } from "../../enums/category.enums";

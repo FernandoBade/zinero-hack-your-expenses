@@ -4,11 +4,10 @@ import { HTTPStatus } from '../../../../shared/enums/http-status.enums';
 import { LogCategory, LogOperation, LogType } from '../../../../shared/enums/log.enums';
 import { SortOrder } from '../../../../shared/enums/operator.enums';
 import { Profile } from '../../../../shared/enums/user.enums';
-import { ResourceKey as Resource } from '../../../../shared/i18n/resource.keys';
+import { ErrorCode as Resource } from '../../../../shared/errors/error-codes';
 import * as commons from '../../../src/utils/commons';
 import { createMockRequest, createMockResponse, createNext } from '../../helpers/mockExpress';
 import { makeCreateUserInput, makeSanitizedUser, makeUser } from '../../helpers/factories';
-import { translateResource } from '../../../../shared/i18n/resource.utils';
 
 describe('UserController', () => {
     let logSpy: jest.SpyInstance;
@@ -44,7 +43,6 @@ describe('UserController', () => {
                 expect.objectContaining({
                     success: true,
                     data: sanitized,
-                    message: translateResource(Resource.EMAIL_VERIFICATION_REQUIRED, 'en-US'),
                 })
             );
             expect(logSpy).toHaveBeenCalledWith(
@@ -72,12 +70,12 @@ describe('UserController', () => {
             expect(res.json).toHaveBeenCalledWith(
                 expect.objectContaining({
                     success: false,
-                    message: translateResource(Resource.VALIDATION_ERROR, 'en-US'),
+                    errorCode: Resource.VALIDATION_ERROR,
                     error: expect.arrayContaining([
-                        expect.objectContaining({ property: 'firstName', error: 'First name must be at least 2 characters.' }),
-                        expect.objectContaining({ property: 'lastName', error: 'Last name must be at least 2 characters.' }),
-                        expect.objectContaining({ property: 'email', error: 'Invalid email address.' }),
-                        expect.objectContaining({ property: 'password', error: 'Password must be at least 6 characters.' }),
+                        expect.objectContaining({ field: 'firstName', errorCode: Resource.FIRST_NAME_TOO_SHORT }),
+                        expect.objectContaining({ field: 'lastName', errorCode: Resource.LAST_NAME_TOO_SHORT }),
+                        expect.objectContaining({ field: 'email', errorCode: Resource.EMAIL_INVALID }),
+                        expect.objectContaining({ field: 'password', errorCode: Resource.PASSWORD_TOO_SHORT }),
                     ]),
                 })
             );
@@ -100,7 +98,7 @@ describe('UserController', () => {
             expect(res.json).toHaveBeenCalledWith(
                 expect.objectContaining({
                     success: false,
-                    message: translateResource(Resource.EMAIL_IN_USE, 'en-US'),
+                    errorCode: Resource.EMAIL_IN_USE,
                 })
             );
             expect(logSpy).not.toHaveBeenCalled();
@@ -122,8 +120,8 @@ describe('UserController', () => {
             expect(res.json).toHaveBeenCalledWith(
                 expect.objectContaining({
                     success: false,
-                    resource: Resource.EMAIL_NOT_VERIFIED,
-                    message: translateResource(Resource.EMAIL_NOT_VERIFIED, 'en-US'),
+                    errorCode: Resource.EMAIL_NOT_VERIFIED,
+                    
                     error: expect.objectContaining({
                         email: 'user@example.com',
                         canResend: true,
@@ -148,7 +146,7 @@ describe('UserController', () => {
             expect(res.status).toHaveBeenCalledWith(HTTPStatus.INTERNAL_SERVER_ERROR);
             expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
                 success: false,
-                message: translateResource(Resource.INTERNAL_SERVER_ERROR, 'en-US'),
+                errorCode: Resource.INTERNAL_SERVER_ERROR,
             }));
             expect(logSpy).toHaveBeenCalledWith(
                 LogType.ERROR,
@@ -211,7 +209,7 @@ describe('UserController', () => {
             expect(res.json).toHaveBeenCalledWith(
                 expect.objectContaining({
                     success: false,
-                    message: translateResource(Resource.INTERNAL_SERVER_ERROR, 'en-US'),
+                    errorCode: Resource.INTERNAL_SERVER_ERROR,
                 })
             );
             expect(logSpy).not.toHaveBeenCalled();
@@ -233,7 +231,7 @@ describe('UserController', () => {
             expect(res.json).toHaveBeenCalledWith(
                 expect.objectContaining({
                     success: false,
-                    message: translateResource(Resource.INTERNAL_SERVER_ERROR, 'en-US'),
+                    errorCode: Resource.INTERNAL_SERVER_ERROR,
                 })
             );
             expect(logSpy).not.toHaveBeenCalled();
@@ -252,7 +250,7 @@ describe('UserController', () => {
             expect(res.status).toHaveBeenCalledWith(HTTPStatus.INTERNAL_SERVER_ERROR);
             expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
                 success: false,
-                message: translateResource(Resource.INTERNAL_SERVER_ERROR, 'en-US'),
+                errorCode: Resource.INTERNAL_SERVER_ERROR,
             }));
             expect(logSpy).toHaveBeenCalledWith(
                 LogType.ERROR,
@@ -279,7 +277,7 @@ describe('UserController', () => {
             expect(res.json).toHaveBeenCalledWith(
                 expect.objectContaining({
                     success: false,
-                    message: translateResource(Resource.INVALID_USER_ID, 'en-US'),
+                    errorCode: Resource.INVALID_USER_ID,
                 })
             );
             expect(logSpy).not.toHaveBeenCalled();
@@ -301,7 +299,7 @@ describe('UserController', () => {
             expect(res.json).toHaveBeenCalledWith(
                 expect.objectContaining({
                     success: false,
-                    message: translateResource(Resource.UNAUTHORIZED_OPERATION, 'en-US'),
+                    errorCode: Resource.UNAUTHORIZED_OPERATION,
                 })
             );
             expect(logSpy).not.toHaveBeenCalled();
@@ -322,7 +320,7 @@ describe('UserController', () => {
             expect(res.status).toHaveBeenCalledWith(HTTPStatus.FORBIDDEN);
             expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
                 success: false,
-                message: translateResource(Resource.UNAUTHORIZED_OPERATION, 'en-US'),
+                errorCode: Resource.UNAUTHORIZED_OPERATION,
             }));
         });
 
@@ -359,7 +357,7 @@ describe('UserController', () => {
             expect(res.json).toHaveBeenCalledWith(
                 expect.objectContaining({
                     success: false,
-                    message: translateResource(Resource.USER_NOT_FOUND, 'en-US'),
+                    errorCode: Resource.USER_NOT_FOUND,
                 })
             );
             expect(logSpy).not.toHaveBeenCalled();
@@ -394,7 +392,7 @@ describe('UserController', () => {
             expect(res.json).toHaveBeenCalledWith(
                 expect.objectContaining({
                     success: false,
-                    message: translateResource(Resource.INTERNAL_SERVER_ERROR, 'en-US'),
+                    errorCode: Resource.INTERNAL_SERVER_ERROR,
                 })
             );
             expect(logSpy).toHaveBeenCalledWith(
@@ -423,7 +421,7 @@ describe('UserController', () => {
             expect(res.json).toHaveBeenCalledWith(
                 expect.objectContaining({
                     success: false,
-                    message: translateResource(Resource.SEARCH_TERM_TOO_SHORT, 'en-US'),
+                    errorCode: Resource.SEARCH_TERM_TOO_SHORT,
                 })
             );
             expect(logSpy).not.toHaveBeenCalled();
@@ -481,7 +479,7 @@ describe('UserController', () => {
             expect(res.status).toHaveBeenCalledWith(HTTPStatus.BAD_REQUEST);
             expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
                 success: false,
-                message: translateResource(Resource.INTERNAL_SERVER_ERROR, 'en-US'),
+                errorCode: Resource.INTERNAL_SERVER_ERROR,
             }));
         });
 
@@ -501,7 +499,7 @@ describe('UserController', () => {
             expect(res.json).toHaveBeenCalledWith(
                 expect.objectContaining({
                     success: false,
-                    message: translateResource(Resource.INTERNAL_SERVER_ERROR, 'en-US'),
+                    errorCode: Resource.INTERNAL_SERVER_ERROR,
                 })
             );
             expect(logSpy).not.toHaveBeenCalled();
@@ -520,7 +518,7 @@ describe('UserController', () => {
             expect(res.status).toHaveBeenCalledWith(HTTPStatus.INTERNAL_SERVER_ERROR);
             expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
                 success: false,
-                message: translateResource(Resource.INTERNAL_SERVER_ERROR, 'en-US'),
+                errorCode: Resource.INTERNAL_SERVER_ERROR,
             }));
             expect(logSpy).toHaveBeenCalledWith(
                 LogType.ERROR,
@@ -544,7 +542,7 @@ describe('UserController', () => {
 
             expect(findOneSpy).not.toHaveBeenCalled();
             expect(res.status).toHaveBeenCalledWith(HTTPStatus.BAD_REQUEST);
-            expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ success: false, message: translateResource(Resource.INVALID_USER_ID, 'en-US') }));
+            expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ success: false, errorCode: Resource.INVALID_USER_ID }));
             expect(logSpy).not.toHaveBeenCalled();
         });
 
@@ -557,7 +555,7 @@ describe('UserController', () => {
             await UserController.updateUser(req, res, next);
 
             expect(res.status).toHaveBeenCalledWith(HTTPStatus.BAD_REQUEST);
-            expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ success: false, message: translateResource(Resource.USER_NOT_FOUND, 'en-US') }));
+            expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ success: false, errorCode: Resource.USER_NOT_FOUND }));
             expect(logSpy).not.toHaveBeenCalled();
         });
 
@@ -575,7 +573,7 @@ describe('UserController', () => {
             expect(res.json).toHaveBeenCalledWith(
                 expect.objectContaining({
                     success: false,
-                    message: translateResource(Resource.VALIDATION_ERROR, 'en-US'),
+                    errorCode: Resource.VALIDATION_ERROR,
                 })
             );
             expect(logSpy).not.toHaveBeenCalled();
@@ -626,7 +624,7 @@ describe('UserController', () => {
             expect(res.status).toHaveBeenCalledWith(HTTPStatus.BAD_REQUEST);
             expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
                 success: false,
-                message: translateResource(Resource.INTERNAL_SERVER_ERROR, 'en-US'),
+                errorCode: Resource.INTERNAL_SERVER_ERROR,
             }));
             expect(logSpy).not.toHaveBeenCalled();
         });
@@ -643,7 +641,7 @@ describe('UserController', () => {
             expect(res.status).toHaveBeenCalledWith(HTTPStatus.INTERNAL_SERVER_ERROR);
             expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
                 success: false,
-                message: translateResource(Resource.INTERNAL_SERVER_ERROR, 'en-US'),
+                errorCode: Resource.INTERNAL_SERVER_ERROR,
             }));
             expect(logSpy).toHaveBeenCalledWith(
                 LogType.ERROR,
@@ -667,7 +665,7 @@ describe('UserController', () => {
 
             expect(deleteSpy).not.toHaveBeenCalled();
             expect(res.status).toHaveBeenCalledWith(HTTPStatus.BAD_REQUEST);
-            expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ success: false, message: translateResource(Resource.INVALID_USER_ID, 'en-US') }));
+            expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ success: false, errorCode: Resource.INVALID_USER_ID }));
             expect(logSpy).not.toHaveBeenCalled();
         });
 
@@ -681,7 +679,7 @@ describe('UserController', () => {
             await UserController.deleteUser(req, res, next);
 
             expect(res.status).toHaveBeenCalledWith(HTTPStatus.BAD_REQUEST);
-            expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ success: false, message: translateResource(Resource.USER_NOT_FOUND, 'en-US') }));
+            expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ success: false, errorCode: Resource.USER_NOT_FOUND }));
             expect(logSpy).not.toHaveBeenCalled();
         });
 
@@ -725,7 +723,7 @@ describe('UserController', () => {
             expect(res.status).toHaveBeenCalledWith(HTTPStatus.INTERNAL_SERVER_ERROR);
             expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
                 success: false,
-                message: translateResource(Resource.INTERNAL_SERVER_ERROR, 'en-US'),
+                errorCode: Resource.INTERNAL_SERVER_ERROR,
             }));
             expect(logSpy).toHaveBeenCalledWith(
                 LogType.ERROR,
@@ -752,7 +750,7 @@ describe('UserController', () => {
             expect(res.json).toHaveBeenCalledWith(
                 expect.objectContaining({
                     success: false,
-                    message: translateResource(Resource.EXPIRED_OR_INVALID_TOKEN, 'en-US'),
+                    errorCode: Resource.EXPIRED_OR_INVALID_TOKEN,
                 })
             );
         });
@@ -770,9 +768,9 @@ describe('UserController', () => {
             expect(res.json).toHaveBeenCalledWith(
                 expect.objectContaining({
                     success: false,
-                    message: translateResource(Resource.VALIDATION_ERROR, 'en-US'),
+                    errorCode: Resource.VALIDATION_ERROR,
                     error: expect.arrayContaining([
-                        expect.objectContaining({ property: 'avatar' }),
+                        expect.objectContaining({ field: 'avatar', errorCode: Resource.FIELD_REQUIRED }),
                     ]),
                 })
             );
@@ -818,8 +816,8 @@ describe('UserController', () => {
             expect(res.status).toHaveBeenCalledWith(HTTPStatus.BAD_REQUEST);
             expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
                 success: false,
-                message: translateResource(Resource.VALIDATION_ERROR, 'en-US'),
-                error: expect.arrayContaining([expect.objectContaining({ property: 'avatar' })]),
+                errorCode: Resource.VALIDATION_ERROR,
+                error: expect.arrayContaining([expect.objectContaining({ field: 'avatar', errorCode: Resource.INVALID_TYPE })]),
             }));
         });
 
@@ -838,8 +836,8 @@ describe('UserController', () => {
             expect(res.status).toHaveBeenCalledWith(HTTPStatus.BAD_REQUEST);
             expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
                 success: false,
-                message: translateResource(Resource.VALIDATION_ERROR, 'en-US'),
-                error: expect.arrayContaining([expect.objectContaining({ property: 'avatar' })]),
+                errorCode: Resource.VALIDATION_ERROR,
+                error: expect.arrayContaining([expect.objectContaining({ field: 'avatar', errorCode: Resource.INVALID_TYPE })]),
             }));
         });
 
@@ -860,7 +858,7 @@ describe('UserController', () => {
             expect(res.status).toHaveBeenCalledWith(HTTPStatus.BAD_REQUEST);
             expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
                 success: false,
-                message: translateResource(Resource.USER_NOT_FOUND, 'en-US'),
+                errorCode: Resource.USER_NOT_FOUND,
             }));
         });
 
@@ -881,7 +879,7 @@ describe('UserController', () => {
             expect(res.status).toHaveBeenCalledWith(HTTPStatus.INTERNAL_SERVER_ERROR);
             expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
                 success: false,
-                message: translateResource(Resource.INTERNAL_SERVER_ERROR, 'en-US'),
+                errorCode: Resource.INTERNAL_SERVER_ERROR,
             }));
         });
 
@@ -899,7 +897,7 @@ describe('UserController', () => {
             expect(res.status).toHaveBeenCalledWith(HTTPStatus.INTERNAL_SERVER_ERROR);
             expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
                 success: false,
-                message: translateResource(Resource.INTERNAL_SERVER_ERROR, 'en-US'),
+                errorCode: Resource.INTERNAL_SERVER_ERROR,
             }));
             expect(logSpy).toHaveBeenCalledWith(
                 LogType.ERROR,

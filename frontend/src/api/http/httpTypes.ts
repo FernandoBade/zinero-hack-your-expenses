@@ -1,4 +1,6 @@
-import type { ResourceKey } from "@shared/i18n/resource.keys";
+import type { ErrorCode } from "@shared/errors/error-codes";
+import type { FieldKey } from "@shared/fields/field-keys";
+import type { TranslationParams } from "@shared/i18n/types/catalog";
 
 interface ApiResponseMeta {
     error?: unknown;
@@ -6,20 +8,20 @@ interface ApiResponseMeta {
     pageSize?: number;
     totalItems?: number;
     pageCount?: number;
+    elapsedTime?: string | number;
 }
 
 export type ApiErrorResponse = ApiResponseMeta & {
     success: false;
-    resource: ResourceKey;
-    message: string;
+    errorCode: ErrorCode;
+    params?: TranslationParams;
+    field?: FieldKey;
     data?: never;
 };
 
 export type ApiSuccessResponse<T> = ApiResponseMeta & {
     success: true;
     data?: T;
-    resource?: ResourceKey;
-    message?: string;
 };
 
 export type ApiResponse<T> = ApiSuccessResponse<T> | ApiErrorResponse;

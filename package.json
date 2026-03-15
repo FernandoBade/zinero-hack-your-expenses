@@ -7,34 +7,29 @@
     ],
     "scripts": {
         "dev": "npm run dev:full",
-
         "dev:backend": "npm run dev -w backend",
         "dev:frontend": "npm run dev -w frontend",
         "dev:frontend:old": "npm --prefix frontend_old run dev",
-
         "dev:full": "npm run db:migrate && concurrently -n api,web -c green,blue \"npm run dev:backend\" \"npm run dev:frontend\"",
         "dev:full:old": "npm run db:migrate && concurrently -n api,web_old -c green,yellow \"npm run dev:backend\" \"npm run dev:frontend:old\"",
-
         "db:migrate": "npm run db:migrate -w backend",
         "db:sync": "npm run db:sync -w backend",
-
         "seed": "npm run seed -w backend",
         "seed:10": "npm run seed:10 -w backend",
         "seed:100": "npm run seed:100 -w backend",
         "seed:1000": "npm run seed:1000 -w backend",
-
-        "lint": "npm run lint -ws",
-
-        "build": "npm run lint && npm run build -ws",
-
+        "lint": "npm -w backend run lint && npm -w frontend run lint",
+        "typecheck": "npm -w backend run typecheck && npm -w frontend run typecheck",
+        "build": "npm run lint && npm -w backend run build && npm -w frontend run build",
         "build:backend": "npm run build -w backend",
         "build:frontend": "npm run build -w frontend",
-
-        "test:": "node -e \"const { spawnSync } = require('node:child_process'); const result = spawnSync('npm run test:coverage', { stdio: 'inherit', shell: true }); if (result.error) throw result.error; process.exit(result.status ?? 1);\"",
-        "test": "npm run test -ws",
-        "test:coverage": "npm run test:coverage -ws"
+        "test": "npm -w backend run test && npm -w frontend run test",
+        "test:coverage": "npm -w backend run test:coverage && npm -w frontend run test:coverage"
     },
     "devDependencies": {
         "concurrently": "^9.2.1"
+    },
+    "dependencies": {
+        "intl-messageformat": "^11.1.2"
     }
 }

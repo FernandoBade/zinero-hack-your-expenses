@@ -1,1 +1,1 @@
-export { AuthErrorCode, TokenType } from "../../enums/auth.enums";
+export { TokenType } from "../../enums/auth.enums";

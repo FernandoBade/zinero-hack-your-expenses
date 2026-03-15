@@ -11,16 +11,13 @@ import { CategoryColor, CategoryType } from '../../../../shared/enums/category.e
 import { CreditCardFlag } from '../../../../shared/enums/creditCard.enums';
 import { FilterOperator, SortOrder } from '../../../../shared/enums/operator.enums';
 import { TransactionSource, TransactionType } from '../../../../shared/enums/transaction.enums';
-import { ResourceKey as Resource } from '../../../../shared/i18n/resource.keys';
+import { ErrorCode as Resource } from '../../../../shared/errors/error-codes';
 import { SelectCreditCard, transactionTags } from '../../../src/db/schema';
 import { makeAccount, makeDbAccount, makeDbTransaction, makeTransaction } from '../../helpers/factories';
 import * as database from '../../../src/db';
-import { translateResource } from '../../../../shared/i18n/resource.utils';
 import type { CategoryEntity } from '../../../../shared/domains/category/category.types';
 import type { SubcategoryEntity } from '../../../../shared/domains/subcategory/subcategory.types';
 import type { CreditCardEntity } from '../../../../shared/domains/creditCard/creditCard.types';
-
-const translate = (resource: Resource) => translateResource(resource, 'en-US');
 const isResource = (value: string): value is Resource => Object.values(Resource).includes(value as Resource);
 const DEFAULT_ISO_DATE = new Date('2024-01-01T00:00:00Z').toISOString();
 
@@ -173,7 +170,6 @@ describe('TransactionService', () => {
             expect(result.success).toBe(false);
             if (!result.success) {
                 expect(result.error).toBe(Resource.ACCOUNT_NOT_FOUND);
-                expect(translate(result.error)).toBe(translate(Resource.ACCOUNT_NOT_FOUND));
             }
         });
 
@@ -203,7 +199,6 @@ describe('TransactionService', () => {
             expect(result.success).toBe(false);
             if (!result.success) {
                 expect(result.error).toBe(Resource.CREDIT_CARD_NOT_FOUND);
-                expect(translate(result.error)).toBe(translate(Resource.CREDIT_CARD_NOT_FOUND));
             }
         });
 
@@ -231,7 +226,6 @@ describe('TransactionService', () => {
             expect(result.success).toBe(false);
             if (!result.success) {
                 expect(result.error).toBe(Resource.CATEGORY_OR_SUBCATEGORY_REQUIRED);
-                expect(translate(result.error)).toBe(translate(Resource.CATEGORY_OR_SUBCATEGORY_REQUIRED));
             }
         });
 
@@ -260,7 +254,6 @@ describe('TransactionService', () => {
             expect(result.success).toBe(false);
             if (!result.success) {
                 expect(result.error).toBe(Resource.CATEGORY_NOT_FOUND_OR_INACTIVE);
-                expect(translate(result.error)).toBe(translate(Resource.CATEGORY_NOT_FOUND_OR_INACTIVE));
             }
         });
 
@@ -289,7 +282,6 @@ describe('TransactionService', () => {
             expect(result.success).toBe(false);
             if (!result.success) {
                 expect(result.error).toBe(Resource.SUBCATEGORY_NOT_FOUND_OR_INACTIVE);
-                expect(translate(result.error)).toBe(translate(Resource.SUBCATEGORY_NOT_FOUND_OR_INACTIVE));
             }
         });
 
@@ -456,7 +448,6 @@ describe('TransactionService', () => {
             expect(result.success).toBe(false);
             if (!result.success) {
                 expect(result.error).toBe(Resource.INTERNAL_SERVER_ERROR);
-                expect(translate(result.error)).toBe(translate(Resource.INTERNAL_SERVER_ERROR));
             }
         });
     });
@@ -489,7 +480,6 @@ describe('TransactionService', () => {
             expect(result.success).toBe(false);
             if (!result.success) {
                 expect(result.error).toBe(Resource.INTERNAL_SERVER_ERROR);
-                expect(translate(result.error)).toBe(translate(Resource.INTERNAL_SERVER_ERROR));
             }
         });
     });
@@ -515,7 +505,6 @@ describe('TransactionService', () => {
             expect(result.success).toBe(false);
             if (!result.success) {
                 expect(result.error).toBe(Resource.INTERNAL_SERVER_ERROR);
-                expect(translate(result.error)).toBe(translate(Resource.INTERNAL_SERVER_ERROR));
             }
         });
     });
@@ -532,7 +521,6 @@ describe('TransactionService', () => {
             expect(result.success).toBe(false);
             if (!result.success) {
                 expect(result.error).toBe(Resource.NO_RECORDS_FOUND);
-                expect(translate(result.error)).toBe(translate(Resource.NO_RECORDS_FOUND));
             }
         });
 
@@ -563,7 +551,6 @@ describe('TransactionService', () => {
             if (caught instanceof Error) {
                 expect(isResource(caught.message)).toBe(true);
                 if (isResource(caught.message)) {
-                    expect(translate(caught.message)).toBe(translate(Resource.INTERNAL_SERVER_ERROR));
                 }
             }
         });
@@ -595,7 +582,6 @@ describe('TransactionService', () => {
             expect(result.success).toBe(false);
             if (!result.success) {
                 expect(result.error).toBe(Resource.INTERNAL_SERVER_ERROR);
-                expect(translate(result.error)).toBe(translate(Resource.INTERNAL_SERVER_ERROR));
             }
         });
     });
@@ -621,7 +607,6 @@ describe('TransactionService', () => {
             expect(result.success).toBe(false);
             if (!result.success) {
                 expect(result.error).toBe(Resource.INTERNAL_SERVER_ERROR);
-                expect(translate(result.error)).toBe(translate(Resource.INTERNAL_SERVER_ERROR));
             }
         });
     });
@@ -643,7 +628,6 @@ describe('TransactionService', () => {
             expect(result.success).toBe(false);
             if (!result.success) {
                 expect(result.error).toBe(Resource.ACCOUNT_NOT_FOUND);
-                expect(translate(result.error)).toBe(translate(Resource.ACCOUNT_NOT_FOUND));
             }
         });
 
@@ -692,7 +676,6 @@ describe('TransactionService', () => {
             expect(result.success).toBe(false);
             if (!result.success) {
                 expect(result.error).toBe(Resource.INTERNAL_SERVER_ERROR);
-                expect(translate(result.error)).toBe(translate(Resource.INTERNAL_SERVER_ERROR));
             }
         });
     });
@@ -713,7 +696,6 @@ describe('TransactionService', () => {
             expect(result.success).toBe(false);
             if (!result.success) {
                 expect(result.error).toBe(Resource.ACCOUNT_NOT_FOUND);
-                expect(translate(result.error)).toBe(translate(Resource.ACCOUNT_NOT_FOUND));
             }
         });
 
@@ -745,7 +727,6 @@ describe('TransactionService', () => {
             expect(result.success).toBe(false);
             if (!result.success) {
                 expect(result.error).toBe(Resource.INTERNAL_SERVER_ERROR);
-                expect(translate(result.error)).toBe(translate(Resource.INTERNAL_SERVER_ERROR));
             }
         });
     });
@@ -764,7 +745,6 @@ describe('TransactionService', () => {
             expect(result.success).toBe(false);
             if (!result.success) {
                 expect(result.error).toBe(Resource.TRANSACTION_NOT_FOUND);
-                expect(translate(result.error)).toBe(translate(Resource.TRANSACTION_NOT_FOUND));
             }
         });
 
@@ -785,7 +765,6 @@ describe('TransactionService', () => {
             expect(result.success).toBe(false);
             if (!result.success) {
                 expect(result.error).toBe(Resource.ACCOUNT_NOT_FOUND);
-                expect(translate(result.error)).toBe(translate(Resource.ACCOUNT_NOT_FOUND));
             }
         });
 
@@ -806,7 +785,6 @@ describe('TransactionService', () => {
             expect(result.success).toBe(false);
             if (!result.success) {
                 expect(result.error).toBe(Resource.CREDIT_CARD_NOT_FOUND);
-                expect(translate(result.error)).toBe(translate(Resource.CREDIT_CARD_NOT_FOUND));
             }
         });
 
@@ -826,7 +804,6 @@ describe('TransactionService', () => {
             expect(result.success).toBe(false);
             if (!result.success) {
                 expect(result.error).toBe(Resource.CATEGORY_OR_SUBCATEGORY_REQUIRED);
-                expect(translate(result.error)).toBe(translate(Resource.CATEGORY_OR_SUBCATEGORY_REQUIRED));
             }
         });
 
@@ -846,7 +823,6 @@ describe('TransactionService', () => {
             expect(result.success).toBe(false);
             if (!result.success) {
                 expect(result.error).toBe(Resource.CATEGORY_NOT_FOUND_OR_INACTIVE);
-                expect(translate(result.error)).toBe(translate(Resource.CATEGORY_NOT_FOUND_OR_INACTIVE));
             }
         });
 
@@ -867,7 +843,6 @@ describe('TransactionService', () => {
             expect(result.success).toBe(false);
             if (!result.success) {
                 expect(result.error).toBe(Resource.SUBCATEGORY_NOT_FOUND_OR_INACTIVE);
-                expect(translate(result.error)).toBe(translate(Resource.SUBCATEGORY_NOT_FOUND_OR_INACTIVE));
             }
         });
 
@@ -935,7 +910,6 @@ describe('TransactionService', () => {
             expect(result.success).toBe(false);
             if (!result.success) {
                 expect(result.error).toBe(Resource.INTERNAL_SERVER_ERROR);
-                expect(translate(result.error)).toBe(translate(Resource.INTERNAL_SERVER_ERROR));
             }
         });
     });
@@ -954,7 +928,6 @@ describe('TransactionService', () => {
             expect(result.success).toBe(false);
             if (!result.success) {
                 expect(result.error).toBe(Resource.TRANSACTION_NOT_FOUND);
-                expect(translate(result.error)).toBe(translate(Resource.TRANSACTION_NOT_FOUND));
             }
         });
 
@@ -984,7 +957,6 @@ describe('TransactionService', () => {
             expect(result.success).toBe(false);
             if (!result.success) {
                 expect(result.error).toBe(Resource.INTERNAL_SERVER_ERROR);
-                expect(translate(result.error)).toBe(translate(Resource.INTERNAL_SERVER_ERROR));
             }
         });
     });

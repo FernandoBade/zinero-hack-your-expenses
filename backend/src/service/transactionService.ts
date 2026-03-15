@@ -1,7 +1,7 @@
 import { eq, inArray } from 'drizzle-orm';
 import { FilterOperator, SortOrder } from '../../../shared/enums/operator.enums';
 import { TransactionSortField, TransactionSource, TransactionType } from '../../../shared/enums/transaction.enums';
-import { ResourceKey as Resource } from '../../../shared/i18n/resource.keys';
+import { ErrorCode } from '../../../shared/errors/error-codes';
 import { SelectTransaction, InsertTransaction, transactionTags } from '../db/schema';
 import { withTransaction, db } from '../db';
 import { AccountRepository } from '../repositories/accountRepository';
@@ -42,27 +42,27 @@ export class TransactionService {
      * @param data - Transaction creation data.
      * @returns The created transaction record.
      */
-    async createTransaction(data: CreateTransactionInput): Promise<{ success: true; data: TransactionWithTags } | { success: false; error: Resource }> {
+    async createTransaction(data: CreateTransactionInput): Promise<{ success: true; data: TransactionWithTags } | { success: false; error: ErrorCode }> {
         let ownerUserId: number;
         if (data.transactionSource === TransactionSource.ACCOUNT) {
             if (!data.accountId) {
-                return { success: false, error: Resource.ACCOUNT_NOT_FOUND };
+                return { success: false, error: ErrorCode.ACCOUNT_NOT_FOUND };
             }
 
             const account = await new AccountService().getAccountById(data.accountId);
             if (!account.success || !account.data) {
-                return { success: false, error: Resource.ACCOUNT_NOT_FOUND };
+                return { success: false, error: ErrorCode.ACCOUNT_NOT_FOUND };
             }
 
             ownerUserId = account.data.userId;
         } else {
             if (!data.creditCardId) {
-                return { success: false, error: Resource.CREDIT_CARD_NOT_FOUND };
+                return { success: false, error: ErrorCode.CREDIT_CARD_NOT_FOUND };
             }
 
             const creditCard = await new CreditCardService().getCreditCardById(data.creditCardId);
             if (!creditCard.success || !creditCard.data) {
-                return { success: false, error: Resource.CREDIT_CARD_NOT_FOUND };
+                return { success: false, error: ErrorCode.CREDIT_CARD_NOT_FOUND };
             }
 
             ownerUserId = creditCard.data.userId;
@@ -81,7 +81,7 @@ export class TransactionService {
             if (tagIds) {
                 const isValid = await this.validateTagsByUser(ownerUserId, tagIds);
                 if (!isValid) {
-                    return { success: false, error: Resource.TAG_NOT_FOUND };
+                    return { success: false, error: ErrorCode.TAG_NOT_FOUND };
                 }
             }
 
@@ -117,7 +117,7 @@ export class TransactionService {
             });
             return { success: true, data: created };
         } catch {
-            return { success: false, error: Resource.INTERNAL_SERVER_ERROR };
+            return { success: false, error: ErrorCode.INTERNAL_SERVER_ERROR };
         }
     }
 
@@ -140,7 +140,7 @@ export class TransactionService {
             date?: { operator: FilterOperator.BETWEEN; value: [Date | null, Date | null] };
         },
         options?: QueryOptions<SelectTransaction>
-    ): Promise<{ success: true; data: TransactionWithTags[] } | { success: false; error: Resource }> {
+    ): Promise<{ success: true; data: TransactionWithTags[] } | { success: false; error: ErrorCode }> {
         try {
             const transactions = await this.transactionRepository.findMany(filters, {
                 limit: options?.limit,
@@ -151,7 +151,7 @@ export class TransactionService {
             const withTags = await this.attachTags(transactions);
             return { success: true, data: withTags };
         } catch {
-            return { success: false, error: Resource.INTERNAL_SERVER_ERROR };
+            return { success: false, error: ErrorCode.INTERNAL_SERVER_ERROR };
         }
     }
 
@@ -170,12 +170,12 @@ export class TransactionService {
         transactionSource?: { operator: FilterOperator.EQ | FilterOperator.IN; value: TransactionSource | TransactionSource[] };
         active?: { operator: FilterOperator.EQ; value: boolean };
         date?: { operator: FilterOperator.BETWEEN; value: [Date | null, Date | null] };
-    }): Promise<{ success: true; data: number } | { success: false; error: Resource }> {
+    }): Promise<{ success: true; data: number } | { success: false; error: ErrorCode }> {
         try {
             const count = await this.transactionRepository.count(filters);
             return { success: true, data: count };
         } catch {
-            return { success: false, error: Resource.INTERNAL_SERVER_ERROR };
+            return { success: false, error: ErrorCode.INTERNAL_SERVER_ERROR };
         }
     }
 
@@ -185,10 +185,10 @@ export class TransactionService {
      * @returns Transaction record if found.
      */
 
-    async getTransactionById(id: number): Promise<{ success: true; data: TransactionWithTags } | { success: false; error: Resource }> {
+    async getTransactionById(id: number): Promise<{ success: true; data: TransactionWithTags } | { success: false; error: ErrorCode }> {
         const transaction = await this.transactionRepository.findById(id);
         if (!transaction) {
-            return { success: false, error: Resource.NO_RECORDS_FOUND };
+            return { success: false, error: ErrorCode.NO_RECORDS_FOUND };
         }
         const [withTags] = await this.attachTags([transaction]);
         return { success: true, data: withTags };
@@ -203,7 +203,7 @@ export class TransactionService {
     async getTransactionsByAccount(
         accountId: number,
         options?: QueryOptions<SelectTransaction>
-    ): Promise<{ success: true; data: TransactionWithTags[] } | { success: false; error: Resource }> {
+    ): Promise<{ success: true; data: TransactionWithTags[] } | { success: false; error: ErrorCode }> {
         try {
             const transactions = await this.transactionRepository.findMany({
                 accountId: { operator: FilterOperator.EQ, value: accountId }
@@ -216,7 +216,7 @@ export class TransactionService {
             const withTags = await this.attachTags(transactions);
             return { success: true, data: withTags };
         } catch {
-            return { success: false, error: Resource.INTERNAL_SERVER_ERROR };
+            return { success: false, error: ErrorCode.INTERNAL_SERVER_ERROR };
         }
     }
 
@@ -226,14 +226,14 @@ export class TransactionService {
      * @returns Count of transactions.
      */
 
-    async countTransactionsByAccount(accountId: number): Promise<{ success: true; data: number } | { success: false; error: Resource }> {
+    async countTransactionsByAccount(accountId: number): Promise<{ success: true; data: number } | { success: false; error: ErrorCode }> {
         try {
             const count = await this.transactionRepository.count({
                 accountId: { operator: FilterOperator.EQ, value: accountId }
             });
             return { success: true, data: count };
         } catch {
-            return { success: false, error: Resource.INTERNAL_SERVER_ERROR };
+            return { success: false, error: ErrorCode.INTERNAL_SERVER_ERROR };
         }
     }
 
@@ -246,12 +246,12 @@ export class TransactionService {
     async getTransactionsByUser(
         userId: number,
         options?: QueryOptions<SelectTransaction>
-    ): Promise<{ success: true; data: AccountTransactions[] } | { success: false; error: Resource }> {
+    ): Promise<{ success: true; data: AccountTransactions[] } | { success: false; error: ErrorCode }> {
         const accountService = new AccountService();
         const userAccounts = await accountService.getAccountsByUser(userId);
 
         if (!userAccounts.success || !userAccounts.data?.length) {
-            return { success: false, error: Resource.ACCOUNT_NOT_FOUND };
+            return { success: false, error: ErrorCode.ACCOUNT_NOT_FOUND };
         }
 
         const accountIds = userAccounts.data.map(acc => acc.id);
@@ -274,7 +274,7 @@ export class TransactionService {
 
             return { success: true, data: grouped };
         } catch {
-            return { success: false, error: Resource.INTERNAL_SERVER_ERROR };
+            return { success: false, error: ErrorCode.INTERNAL_SERVER_ERROR };
         }
     }
 
@@ -286,12 +286,12 @@ export class TransactionService {
 
     async countTransactionsByUser(
         userId: number
-    ): Promise<{ success: true; data: number } | { success: false; error: Resource }> {
+    ): Promise<{ success: true; data: number } | { success: false; error: ErrorCode }> {
         const accountService = new AccountService();
         const userAccounts = await accountService.getAccountsByUser(userId);
 
         if (!userAccounts.success || !userAccounts.data?.length) {
-            return { success: false, error: Resource.ACCOUNT_NOT_FOUND };
+            return { success: false, error: ErrorCode.ACCOUNT_NOT_FOUND };
         }
 
         const accountIds = userAccounts.data.map(acc => acc.id);
@@ -302,7 +302,7 @@ export class TransactionService {
             });
             return { success: true, data: count };
         } catch {
-            return { success: false, error: Resource.INTERNAL_SERVER_ERROR };
+            return { success: false, error: ErrorCode.INTERNAL_SERVER_ERROR };
         }
     }
 
@@ -317,7 +317,7 @@ export class TransactionService {
     async updateTransaction(
         id: number,
         data: UpdateTransactionInput
-    ): Promise<{ success: true; data: TransactionWithTags } | { success: false; error: Resource }> {
+    ): Promise<{ success: true; data: TransactionWithTags } | { success: false; error: ErrorCode }> {
         try {
             const txResult = await withTransaction((connection) => this.applyUpdateWithinTransaction(connection, id, data));
             if (!txResult.success) {
@@ -327,7 +327,7 @@ export class TransactionService {
             const [withTags] = await this.attachTags([txResult.data]);
             return { success: true, data: withTags };
         } catch {
-            return { success: false, error: Resource.INTERNAL_SERVER_ERROR };
+            return { success: false, error: ErrorCode.INTERNAL_SERVER_ERROR };
         }
     }
 
@@ -338,11 +338,11 @@ export class TransactionService {
      * @param id - ID of the transaction to delete.
      * @returns Success with deleted ID, or error if transaction does not exist.
      */
-    async deleteTransaction(id: number): Promise<{ success: true; data: { id: number } } | { success: false; error: Resource }> {
+    async deleteTransaction(id: number): Promise<{ success: true; data: { id: number } } | { success: false; error: ErrorCode }> {
         try {
             return await withTransaction((connection) => this.deleteTransactionWithinTransaction(connection, id));
         } catch {
-            return { success: false, error: Resource.INTERNAL_SERVER_ERROR };
+            return { success: false, error: ErrorCode.INTERNAL_SERVER_ERROR };
         }
     }
 
@@ -374,22 +374,22 @@ export class TransactionService {
     private async validateTransactionClassification(
         categoryId: number | null | undefined,
         subcategoryId: number | null | undefined
-    ): Promise<Resource | null> {
+    ): Promise<ErrorCode | null> {
         if (!categoryId && !subcategoryId) {
-            return Resource.CATEGORY_OR_SUBCATEGORY_REQUIRED;
+            return ErrorCode.CATEGORY_OR_SUBCATEGORY_REQUIRED;
         }
 
         if (categoryId) {
             const category = await new CategoryService().getCategoryById(categoryId);
             if (!category.success || !category.data?.active) {
-                return Resource.CATEGORY_NOT_FOUND_OR_INACTIVE;
+                return ErrorCode.CATEGORY_NOT_FOUND_OR_INACTIVE;
             }
         }
 
         if (subcategoryId) {
             const subcategory = await new SubcategoryService().getSubcategoryById(subcategoryId);
             if (!subcategory.success || !subcategory.data?.active) {
-                return Resource.SUBCATEGORY_NOT_FOUND_OR_INACTIVE;
+                return ErrorCode.SUBCATEGORY_NOT_FOUND_OR_INACTIVE;
             }
         }
 
@@ -472,7 +472,7 @@ export class TransactionService {
         data: UpdateTransactionInput
     ): Promise<
         { updateData: UpdateTransactionInput; ownerUserId: number }
-        | { error: Resource }
+        | { error: ErrorCode }
     > {
         const { value, ...restUpdateData } = data;
         const updateData: UpdateTransactionInput = value !== undefined
@@ -483,12 +483,12 @@ export class TransactionService {
         if (effectiveSource === TransactionSource.ACCOUNT) {
             const effectiveAccountId = updateData.accountId !== undefined ? updateData.accountId : current.accountId;
             if (!effectiveAccountId) {
-                return { error: Resource.ACCOUNT_NOT_FOUND };
+                return { error: ErrorCode.ACCOUNT_NOT_FOUND };
             }
 
             const account = await new AccountService().getAccountById(effectiveAccountId);
             if (!account.success || !account.data) {
-                return { error: Resource.ACCOUNT_NOT_FOUND };
+                return { error: ErrorCode.ACCOUNT_NOT_FOUND };
             }
 
             if (updateData.creditCardId !== undefined) {
@@ -507,12 +507,12 @@ export class TransactionService {
 
         const effectiveCreditCardId = updateData.creditCardId !== undefined ? updateData.creditCardId : current.creditCardId;
         if (!effectiveCreditCardId) {
-            return { error: Resource.CREDIT_CARD_NOT_FOUND };
+            return { error: ErrorCode.CREDIT_CARD_NOT_FOUND };
         }
 
         const creditCard = await new CreditCardService().getCreditCardById(effectiveCreditCardId);
         if (!creditCard.success || !creditCard.data) {
-            return { error: Resource.CREDIT_CARD_NOT_FOUND };
+            return { error: ErrorCode.CREDIT_CARD_NOT_FOUND };
         }
 
         if (updateData.accountId !== undefined) {
@@ -536,10 +536,10 @@ export class TransactionService {
         connection: typeof db,
         id: number,
         data: UpdateTransactionInput
-    ): Promise<{ success: true; data: SelectTransaction } | { success: false; error: Resource }> {
+    ): Promise<{ success: true; data: SelectTransaction } | { success: false; error: ErrorCode }> {
         const current = await this.transactionRepository.findByIdForUpdate(id, connection);
         if (!current) {
-            return { success: false, error: Resource.TRANSACTION_NOT_FOUND };
+            return { success: false, error: ErrorCode.TRANSACTION_NOT_FOUND };
         }
 
         const normalizedUpdate = await this.normalizeUpdateInput(current, data);
@@ -552,7 +552,7 @@ export class TransactionService {
         if (tagIds) {
             const isValid = await this.validateTagsByUser(ownerUserId, tagIds, connection);
             if (!isValid) {
-                return { success: false, error: Resource.TAG_NOT_FOUND };
+                return { success: false, error: ErrorCode.TAG_NOT_FOUND };
             }
         }
 
@@ -584,10 +584,10 @@ export class TransactionService {
     private async deleteTransactionWithinTransaction(
         connection: typeof db,
         id: number
-    ): Promise<{ success: true; data: { id: number } } | { success: false; error: Resource }> {
+    ): Promise<{ success: true; data: { id: number } } | { success: false; error: ErrorCode }> {
         const existing = await this.transactionRepository.findByIdForUpdate(id, connection);
         if (!existing) {
-            return { success: false, error: Resource.TRANSACTION_NOT_FOUND };
+            return { success: false, error: ErrorCode.TRANSACTION_NOT_FOUND };
         }
 
         await this.transactionRepository.delete(id, connection);
@@ -611,7 +611,7 @@ export class TransactionService {
         connection: typeof db,
         current: SelectTransaction,
         updated: SelectTransaction
-    ): Promise<{ success: true } | { success: false; error: Resource }> {
+    ): Promise<{ success: true } | { success: false; error: ErrorCode }> {
         const currentDelta = getSignedTransactionDelta(current.transactionType, current.transactionSource, current.value);
         const updatedDelta = getSignedTransactionDelta(updated.transactionType, updated.transactionSource, updated.value);
 
@@ -650,14 +650,14 @@ export class TransactionService {
         connection: typeof db,
         transaction: SelectTransaction,
         delta: MonetaryString
-    ): Promise<{ success: true } | { success: false; error: Resource }> {
+    ): Promise<{ success: true } | { success: false; error: ErrorCode }> {
         if (isZeroMonetaryDelta(delta)) {
             return { success: true };
         }
 
         if (transaction.transactionSource === TransactionSource.ACCOUNT) {
             if (!transaction.accountId) {
-                return { success: false, error: Resource.INTERNAL_SERVER_ERROR };
+                return { success: false, error: ErrorCode.INTERNAL_SERVER_ERROR };
             }
 
             await this.accountRepository.applyBalanceDelta(transaction.accountId, delta, connection);
@@ -665,7 +665,7 @@ export class TransactionService {
         }
 
         if (!transaction.creditCardId) {
-            return { success: false, error: Resource.INTERNAL_SERVER_ERROR };
+            return { success: false, error: ErrorCode.INTERNAL_SERVER_ERROR };
         }
 
         await this.creditCardRepository.applyCreditCardDelta(transaction.creditCardId, delta, connection);

@@ -6,10 +6,9 @@ import { HTTPStatus } from '../../../shared/enums/http-status.enums';
 import { LogCategory, LogEvent, LogOperation, LogType } from '../../../shared/enums/log.enums';
 import { validateFeedbackRequest } from '../utils/validation/validateRequest';
 import { createValidationError, ValidationError } from '../utils/validation/errors';
-import { ResourceKey as Resource } from '../../../shared/i18n/resource.keys';
-import type { LanguageCode } from '../../../shared/i18n/resourceTypes';
+import { ErrorCode } from '../../../shared/errors/error-codes';
+import type { Locale } from '../../../shared/i18n/types/locale';
 import type { FeedbackAttachmentInput } from '../utils/email/feedbackEmail';
-import { translateResourceWithParams } from '../../../shared/i18n/resource.utils';
 import { ALLOWED_AUDIO_MIME_TYPES, ALLOWED_IMAGE_MIME_TYPES } from '../../../shared/enums/upload.enums';
 import { UploadValidation } from '../utils/upload/upload.constants';
 
@@ -24,8 +23,7 @@ const getFileMap = (files: Request['files']) =>
  */
 const validateAttachmentTypes = (
     imageFile: Express.Multer.File | undefined,
-    audioFile: Express.Multer.File | undefined,
-    language?: LanguageCode
+    audioFile: Express.Multer.File | undefined
 ) => {
     const errors: ValidationError[] = [];
 
@@ -33,11 +31,12 @@ const validateAttachmentTypes = (
         errors.push(
             createValidationError(
                 'image',
-                translateResourceWithParams(Resource.INVALID_TYPE, language, {
+                ErrorCode.INVALID_TYPE,
+                {
                     path: 'image',
                     expected: UploadValidation.FEEDBACK_IMAGE_MIME_EXPECTED,
                     received: imageFile.mimetype,
-                })
+                }
             )
         );
     }
@@ -46,11 +45,12 @@ const validateAttachmentTypes = (
         errors.push(
             createValidationError(
                 'audio',
-                translateResourceWithParams(Resource.INVALID_TYPE, language, {
+                ErrorCode.INVALID_TYPE,
+                {
                     path: 'audio',
                     expected: UploadValidation.FEEDBACK_AUDIO_MIME_EXPECTED,
                     received: audioFile.mimetype,
-                })
+                }
             )
         );
     }
@@ -85,17 +85,17 @@ class FeedbackController {
         try {
             const userId = req.user?.id;
             if (!userId) {
-                return answerAPI(req, res, HTTPStatus.UNAUTHORIZED, undefined, Resource.EXPIRED_OR_INVALID_TOKEN);
+                return answerAPI(req, res, HTTPStatus.UNAUTHORIZED, undefined, ErrorCode.EXPIRED_OR_INVALID_TOKEN);
             }
 
-            const parseResult = validateFeedbackRequest(req.body, req.language as LanguageCode);
+            const parseResult = validateFeedbackRequest(req.body, req.language as Locale);
             if (!parseResult.success) {
                 return answerAPI(
                     req,
                     res,
                     HTTPStatus.BAD_REQUEST,
                     parseResult.errors,
-                    Resource.VALIDATION_ERROR
+                    ErrorCode.VALIDATION_ERROR
                 );
             }
 
@@ -104,8 +104,7 @@ class FeedbackController {
             const audioFile = files?.audio?.[0];
             const fileErrors = validateAttachmentTypes(
                 imageFile,
-                audioFile,
-                req.language as LanguageCode
+                audioFile
             );
 
             if (fileErrors.length > 0) {
@@ -114,7 +113,7 @@ class FeedbackController {
                     res,
                     HTTPStatus.BAD_REQUEST,
                     fileErrors,
-                    Resource.VALIDATION_ERROR
+                    ErrorCode.VALIDATION_ERROR
                 );
             }
 
@@ -123,7 +122,7 @@ class FeedbackController {
                 return answerAPI(req, res, HTTPStatus.BAD_REQUEST, undefined, userResult.error);
             }
             if (!userResult.data) {
-                return answerAPI(req, res, HTTPStatus.BAD_REQUEST, undefined, Resource.USER_NOT_FOUND);
+                return answerAPI(req, res, HTTPStatus.BAD_REQUEST, undefined, ErrorCode.USER_NOT_FOUND);
             }
 
             const attachments = [mapAttachment(imageFile), mapAttachment(audioFile)].filter(
@@ -135,7 +134,7 @@ class FeedbackController {
                 userEmail: userResult.data.email,
                 title: parseResult.data.title,
                 message: parseResult.data.message,
-                language: req.language as LanguageCode,
+                language: req.language as Locale,
                 attachments: attachments.length > 0 ? attachments : undefined,
             });
 
@@ -165,7 +164,7 @@ class FeedbackController {
                 req.user?.id,
                 next
             );
-            return answerAPI(req, res, HTTPStatus.INTERNAL_SERVER_ERROR, undefined, Resource.INTERNAL_SERVER_ERROR);
+            return answerAPI(req, res, HTTPStatus.INTERNAL_SERVER_ERROR, undefined, ErrorCode.INTERNAL_SERVER_ERROR);
         }
     }
 }

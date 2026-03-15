@@ -3,13 +3,10 @@ import { SubcategoryRepository } from '../../../src/repositories/subcategoryRepo
 import { CategoryService } from '../../../src/service/categoryService';
 import { CategoryColor, CategoryType } from '../../../../shared/enums/category.enums';
 import { FilterOperator, SortOrder } from '../../../../shared/enums/operator.enums';
-import { ResourceKey as Resource } from '../../../../shared/i18n/resource.keys';
+import { ErrorCode as Resource } from '../../../../shared/errors/error-codes';
 import type { CategoryEntity } from '../../../../shared/domains/category/category.types';
 import type { SubcategoryEntity } from '../../../../shared/domains/subcategory/subcategory.types';
 import { SelectSubcategory } from '../../../src/db/schema';
-import { translateResource } from '../../../../shared/i18n/resource.utils';
-
-const translate = (resource: Resource) => translateResource(resource, 'en-US');
 const isResource = (value: string): value is Resource => Object.values(Resource).includes(value as Resource);
 
 const DEFAULT_ISO_DATE = new Date('2024-01-01T00:00:00Z').toISOString();
@@ -75,7 +72,6 @@ describe('SubcategoryService', () => {
             expect(result.success).toBe(false);
             if (!result.success) {
                 expect(result.error).toBe(Resource.CATEGORY_NOT_FOUND_OR_INACTIVE);
-                expect(translate(result.error)).toBe(translate(Resource.CATEGORY_NOT_FOUND_OR_INACTIVE));
             }
         });
 
@@ -94,7 +90,6 @@ describe('SubcategoryService', () => {
             expect(result.success).toBe(false);
             if (!result.success) {
                 expect(result.error).toBe(Resource.UNAUTHORIZED_OPERATION);
-                expect(translate(result.error)).toBe(translate(Resource.UNAUTHORIZED_OPERATION));
             }
         });
 
@@ -133,7 +128,6 @@ describe('SubcategoryService', () => {
             expect(result.success).toBe(false);
             if (!result.success) {
                 expect(result.error).toBe(Resource.INTERNAL_SERVER_ERROR);
-                expect(translate(result.error)).toBe(translate(Resource.INTERNAL_SERVER_ERROR));
             }
         });
     });
@@ -166,7 +160,6 @@ describe('SubcategoryService', () => {
             expect(result.success).toBe(false);
             if (!result.success) {
                 expect(result.error).toBe(Resource.INTERNAL_SERVER_ERROR);
-                expect(translate(result.error)).toBe(translate(Resource.INTERNAL_SERVER_ERROR));
             }
         });
     });
@@ -192,7 +185,6 @@ describe('SubcategoryService', () => {
             expect(result.success).toBe(false);
             if (!result.success) {
                 expect(result.error).toBe(Resource.INTERNAL_SERVER_ERROR);
-                expect(translate(result.error)).toBe(translate(Resource.INTERNAL_SERVER_ERROR));
             }
         });
     });
@@ -223,7 +215,6 @@ describe('SubcategoryService', () => {
             expect(result.success).toBe(false);
             if (!result.success) {
                 expect(result.error).toBe(Resource.INTERNAL_SERVER_ERROR);
-                expect(translate(result.error)).toBe(translate(Resource.INTERNAL_SERVER_ERROR));
             }
         });
     });
@@ -249,7 +240,6 @@ describe('SubcategoryService', () => {
             expect(result.success).toBe(false);
             if (!result.success) {
                 expect(result.error).toBe(Resource.INTERNAL_SERVER_ERROR);
-                expect(translate(result.error)).toBe(translate(Resource.INTERNAL_SERVER_ERROR));
             }
         });
     });
@@ -266,7 +256,6 @@ describe('SubcategoryService', () => {
             expect(result.success).toBe(false);
             if (!result.success) {
                 expect(result.error).toBe(Resource.NO_RECORDS_FOUND);
-                expect(translate(result.error)).toBe(translate(Resource.NO_RECORDS_FOUND));
             }
         });
 
@@ -297,7 +286,6 @@ describe('SubcategoryService', () => {
             if (caught instanceof Error) {
                 expect(isResource(caught.message)).toBe(true);
                 if (isResource(caught.message)) {
-                    expect(translate(caught.message)).toBe(translate(Resource.INTERNAL_SERVER_ERROR));
                 }
             }
         });
@@ -320,7 +308,6 @@ describe('SubcategoryService', () => {
             expect(result.success).toBe(false);
             if (!result.success) {
                 expect(result.error).toBe(Resource.NO_RECORDS_FOUND);
-                expect(translate(result.error)).toBe(translate(Resource.NO_RECORDS_FOUND));
             }
         });
 
@@ -372,7 +359,6 @@ describe('SubcategoryService', () => {
             expect(result.success).toBe(false);
             if (!result.success) {
                 expect(result.error).toBe(Resource.INTERNAL_SERVER_ERROR);
-                expect(translate(result.error)).toBe(translate(Resource.INTERNAL_SERVER_ERROR));
             }
         });
     });
@@ -393,7 +379,6 @@ describe('SubcategoryService', () => {
             expect(result.success).toBe(false);
             if (!result.success) {
                 expect(result.error).toBe(Resource.NO_RECORDS_FOUND);
-                expect(translate(result.error)).toBe(translate(Resource.NO_RECORDS_FOUND));
             }
         });
 
@@ -425,7 +410,6 @@ describe('SubcategoryService', () => {
             expect(result.success).toBe(false);
             if (!result.success) {
                 expect(result.error).toBe(Resource.INTERNAL_SERVER_ERROR);
-                expect(translate(result.error)).toBe(translate(Resource.INTERNAL_SERVER_ERROR));
             }
         });
     });
@@ -446,7 +430,6 @@ describe('SubcategoryService', () => {
             expect(result.success).toBe(false);
             if (!result.success) {
                 expect(result.error).toBe(Resource.CATEGORY_NOT_FOUND_OR_INACTIVE);
-                expect(translate(result.error)).toBe(translate(Resource.CATEGORY_NOT_FOUND_OR_INACTIVE));
             }
         });
 
@@ -465,7 +448,6 @@ describe('SubcategoryService', () => {
             expect(result.success).toBe(false);
             if (!result.success) {
                 expect(result.error).toBe(Resource.UNAUTHORIZED_OPERATION);
-                expect(translate(result.error)).toBe(translate(Resource.UNAUTHORIZED_OPERATION));
             }
         });
 
@@ -499,7 +481,6 @@ describe('SubcategoryService', () => {
             expect(result.success).toBe(false);
             if (!result.success) {
                 expect(result.error).toBe(Resource.INTERNAL_SERVER_ERROR);
-                expect(translate(result.error)).toBe(translate(Resource.INTERNAL_SERVER_ERROR));
             }
         });
     });
@@ -518,7 +499,6 @@ describe('SubcategoryService', () => {
             expect(result.success).toBe(false);
             if (!result.success) {
                 expect(result.error).toBe(Resource.SUBCATEGORY_NOT_FOUND);
-                expect(translate(result.error)).toBe(translate(Resource.SUBCATEGORY_NOT_FOUND));
             }
         });
 
@@ -546,7 +526,6 @@ describe('SubcategoryService', () => {
             expect(result.success).toBe(false);
             if (!result.success) {
                 expect(result.error).toBe(Resource.INTERNAL_SERVER_ERROR);
-                expect(translate(result.error)).toBe(translate(Resource.INTERNAL_SERVER_ERROR));
             }
         });
     });

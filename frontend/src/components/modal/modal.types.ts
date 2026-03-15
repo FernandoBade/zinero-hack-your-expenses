@@ -1,5 +1,5 @@
 import type { ComponentChildren } from "preact";
-import type { ResourceKey } from "@shared/i18n/resource.keys";
+import type { I18nKey } from "@shared/i18n/types/i18n-key";
 import { ModalPosition, ModalScrollMode, ModalSize } from "@shared/enums/ui.enums";
 
 /**
@@ -7,7 +7,7 @@ import { ModalPosition, ModalScrollMode, ModalSize } from "@shared/enums/ui.enum
  */
 export interface ModalProps {
     readonly open: boolean;
-    readonly title?: ResourceKey;
+    readonly title?: I18nKey;
     readonly size?: ModalSize;
     readonly position?: ModalPosition;
     readonly scrollMode?: ModalScrollMode;

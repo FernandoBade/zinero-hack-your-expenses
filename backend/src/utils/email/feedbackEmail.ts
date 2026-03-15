@@ -1,10 +1,9 @@
-import { Resend } from 'resend';
-import { createLog } from '../commons';
-import { EmailProvider } from '../../../../shared/enums/email.enums';
-import { LogCategory, LogEvent, LogOperation, LogType } from '../../../../shared/enums/log.enums';
-import { ResourceKey as Resource } from '../../../../shared/i18n/resource.keys';
-import type { LanguageCode } from '../../../../shared/i18n/resourceTypes';
-import { translateResource } from '../../../../shared/i18n/resource.utils';
+import { Resend } from "resend";
+import { createLog } from "../commons";
+import { EmailProvider } from "../../../../shared/enums/email.enums";
+import { LogCategory, LogEvent, LogOperation, LogType } from "../../../../shared/enums/log.enums";
+import type { Locale } from "../../../../shared/i18n/types/locale";
+import { translateAsync } from "../../../../shared/i18n/translate";
 
 export type FeedbackAttachmentInput = {
     filename: string;
@@ -18,7 +17,7 @@ type FeedbackEmailPayload = {
     userEmail: string;
     title: string;
     message: string;
-    language?: LanguageCode;
+    language?: Locale;
     attachments?: FeedbackAttachmentInput[];
 };
 
@@ -33,7 +32,7 @@ type FeedbackEmailContent = {
     userEmailLabel: string;
 };
 
-const FEEDBACK_TO_EMAIL = 'fer@bade.digital';
+const FEEDBACK_TO_EMAIL = "fer@bade.digital";
 const RESEND_API_KEY = process.env.RESEND_API_KEY;
 const RESEND_FROM_EMAIL = process.env.RESEND_FROM_EMAIL;
 const resend = RESEND_API_KEY ? new Resend(RESEND_API_KEY) : null;
@@ -41,13 +40,13 @@ const resend = RESEND_API_KEY ? new Resend(RESEND_API_KEY) : null;
 /**
  * @summary Resolves localized labels and subject text for feedback email templates.
  */
-const buildFeedbackEmailContent = (language?: LanguageCode): FeedbackEmailContent => ({
-    subject: translateResource(Resource.FEEDBACK_EMAIL_SUBJECT, language),
-    intro: translateResource(Resource.FEEDBACK_EMAIL_INTRO, language),
-    titleLabel: translateResource(Resource.FEEDBACK_EMAIL_TITLE_LABEL, language),
-    messageLabel: translateResource(Resource.FEEDBACK_EMAIL_MESSAGE_LABEL, language),
-    userIdLabel: translateResource(Resource.FEEDBACK_EMAIL_USER_ID_LABEL, language),
-    userEmailLabel: translateResource(Resource.FEEDBACK_EMAIL_USER_EMAIL_LABEL, language),
+const buildFeedbackEmailContent = async (language?: Locale): Promise<FeedbackEmailContent> => ({
+    subject: await translateAsync("email.feedback.subject", language),
+    intro: await translateAsync("email.feedback.intro", language),
+    titleLabel: await translateAsync("email.feedback.title_label", language),
+    messageLabel: await translateAsync("email.feedback.message_label", language),
+    userIdLabel: await translateAsync("email.feedback.user_id_label", language),
+    userEmailLabel: await translateAsync("email.feedback.user_email_label", language),
 });
 
 /**
@@ -86,22 +85,23 @@ const buildFeedbackEmailHtml = (
 const buildFeedbackEmailText = (
     content: FeedbackEmailContent,
     payload: FeedbackEmailPayload
-): string => [
-    content.subject,
-    '',
-    content.intro,
-    '',
-    `${content.userIdLabel} ${payload.userId}`,
-    `${content.userEmailLabel} ${payload.userEmail}`,
-    '',
-    `${content.titleLabel} ${payload.title}`,
-    `${content.messageLabel} ${payload.message}`,
-].join('\n');
+): string =>
+    [
+        content.subject,
+        "",
+        content.intro,
+        "",
+        `${content.userIdLabel} ${payload.userId}`,
+        `${content.userEmailLabel} ${payload.userEmail}`,
+        "",
+        `${content.titleLabel} ${payload.title}`,
+        `${content.messageLabel} ${payload.message}`,
+    ].join("\n");
 
 /**
  * @summary Redacts token query values before serializing URLs into logs.
  */
-const redactTokens = (value: string): string => value.replace(/token=([^&\s]+)/gi, 'token=[REDACTED]');
+const redactTokens = (value: string): string => value.replace(/token=([^&\s]+)/gi, "token=[REDACTED]");
 
 /**
  * @summary Normalizes provider/runtime errors into a serializable feedback-email error payload.
@@ -111,9 +111,9 @@ const formatEmailError = (error: unknown): Record<string, unknown> => {
         return { name: error.name, message: redactTokens(error.message) };
     }
 
-    if (error && typeof error === 'object') {
+    if (error && typeof error === "object") {
         const payload = error as Record<string, unknown>;
-        const message = typeof payload.message === 'string' ? payload.message : 'Email provider error';
+        const message = typeof payload.message === "string" ? payload.message : "Email provider error";
         return {
             message: redactTokens(message),
             code: payload.code ?? payload.statusCode ?? payload.status,
@@ -148,7 +148,7 @@ const logEmailError = async (error: unknown, userId?: number): Promise<void> => 
  * @summary Logs missing email-provider configuration for feedback delivery operations.
  */
 const logConfigError = async (userId?: number): Promise<void> => {
-    await logEmailError(new Error('Resend configuration missing'), userId);
+    await logEmailError(new Error("Resend configuration missing"), userId);
 };
 
 /**
@@ -160,7 +160,7 @@ const defaultSender: FeedbackEmailSender = async (payload) => {
         return false;
     }
 
-    const content = buildFeedbackEmailContent(payload.language);
+    const content = await buildFeedbackEmailContent(payload.language);
     const html = buildFeedbackEmailHtml(content, payload);
     const text = buildFeedbackEmailText(content, payload);
 
@@ -182,6 +182,7 @@ const defaultSender: FeedbackEmailSender = async (payload) => {
             await logEmailError(result.error, payload.userId);
             return false;
         }
+
         return true;
     } catch (error) {
         await logEmailError(error, payload.userId);
@@ -200,7 +201,7 @@ export async function sendFeedbackEmail(
         message,
         language,
         attachments,
-    }: Omit<FeedbackEmailPayload, 'to'>,
+    }: Omit<FeedbackEmailPayload, "to">,
     sender: FeedbackEmailSender = defaultSender
 ): Promise<{ success: true } | { success: false }> {
     const success = await sender({
@@ -215,4 +216,3 @@ export async function sendFeedbackEmail(
 
     return success ? { success: true } : { success: false };
 }
-

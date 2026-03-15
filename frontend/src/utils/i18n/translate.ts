@@ -1,23 +1,17 @@
-import { translateResource } from "@shared/i18n/resource.utils";
-import type { ResourceKey } from "@shared/i18n/resource.keys";
+import { translate } from "@shared/i18n/translate";
+import type { I18nKey } from "@shared/i18n/types/i18n-key";
 import { getLocale } from "@/state/locale.store";
 
 /**
- * @summary Resolves a required translation key using the current locale dictionary.
- * @param key Resource key to resolve.
- * @returns Localized string for the active locale.
+ * @summary Resolves a required translation key using the active locale state.
  */
-
-export function t(key: ResourceKey): string {
-    return translateResource(key, getLocale());
+export function t(key: I18nKey): string {
+    return translate(key, getLocale());
 }
 
 /**
  * @summary Resolves an optional translation key and returns undefined when absent.
- * @param key Optional resource key.
- * @returns Localized string or undefined.
  */
-
-export function tOptional(key?: ResourceKey): string | undefined {
+export function tOptional(key?: I18nKey): string | undefined {
     return key ? t(key) : undefined;
 }

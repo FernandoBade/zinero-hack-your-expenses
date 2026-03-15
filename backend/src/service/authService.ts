@@ -3,7 +3,7 @@ import crypto from 'crypto';
 import { TokenType } from '../../../shared/enums/auth.enums';
 import { LogCategory, LogEvent, LogType, LogOperation } from '../../../shared/enums/log.enums';
 import { TokenUtils } from '../utils/auth/tokenUtils';
-import { ResourceKey as Resource } from '../../../shared/i18n/resource.keys';
+import { ErrorCode } from '../../../shared/errors/error-codes';
 import { TokenService } from './tokenService';
 import { UserService } from './userService';
 import { createLog } from '../utils/commons';
@@ -34,32 +34,32 @@ export class AuthService {
      * @param password - User's plain-text password.
      * @returns Access token and rotation token along with user data, or error if credentials are invalid.
      */
-    async login(email: string, password: string): Promise<{ success: true; data: LoginContext } | { success: false; error: Resource }> {
+    async login(email: string, password: string): Promise<{ success: true; data: LoginContext } | { success: false; error: ErrorCode }> {
         if (!password) {
-            return { success: false, error: Resource.INVALID_CREDENTIALS };
+            return { success: false, error: ErrorCode.INVALID_CREDENTIALS };
         }
 
         // Find user by email
         const userResult = await this.userService.findUserByEmailExact(email.trim().toLowerCase());
         if (!userResult.success || !userResult.data) {
-            return { success: false, error: Resource.INVALID_CREDENTIALS };
+            return { success: false, error: ErrorCode.INVALID_CREDENTIALS };
         }
 
         // Get full user with password for comparison
         const userWithPassword = await this.userService.findOne(userResult.data.id);
         if (!userWithPassword.success || !userWithPassword.data) {
-            return { success: false, error: Resource.INVALID_CREDENTIALS };
+            return { success: false, error: ErrorCode.INVALID_CREDENTIALS };
         }
 
         const user = userWithPassword.data;
         if (!user.active) {
-            return { success: false, error: Resource.INVALID_CREDENTIALS };
+            return { success: false, error: ErrorCode.INVALID_CREDENTIALS };
         }
         if (!user.password || !(await bcrypt.compare(password, user.password))) {
-            return { success: false, error: Resource.INVALID_CREDENTIALS };
+            return { success: false, error: ErrorCode.INVALID_CREDENTIALS };
         }
         if (!user.emailVerifiedAt) {
-            return { success: false, error: Resource.EMAIL_NOT_VERIFIED };
+            return { success: false, error: ErrorCode.EMAIL_NOT_VERIFIED };
         }
 
         const token = TokenUtils.generateAccessToken({ id: user.id });
@@ -81,7 +81,7 @@ export class AuthService {
         });
 
         if (!tokenResult.success) {
-            return { success: false, error: Resource.INTERNAL_SERVER_ERROR };
+            return { success: false, error: ErrorCode.INTERNAL_SERVER_ERROR };
         }
 
         await this.tokenService.deleteExpiredTokens();
@@ -105,11 +105,11 @@ export class AuthService {
      * @param token - Token from cookies.
      * @returns New access and refresh tokens or error if the token is expired or invalid.
      */
-    async refresh(token: string): Promise<{ success: true; data: RefreshContext } | { success: false; error: Resource }> {
+    async refresh(token: string): Promise<{ success: true; data: RefreshContext } | { success: false; error: ErrorCode }> {
         const tokenHash = TokenUtils.hashRefreshToken(token);
         const tokenResult = await this.tokenService.findByTokenHash(tokenHash);
         if (!tokenResult.success || !tokenResult.data) {
-            return { success: false, error: Resource.EXPIRED_OR_INVALID_TOKEN };
+            return { success: false, error: ErrorCode.EXPIRED_OR_INVALID_TOKEN };
         }
 
         const storedToken = tokenResult.data;
@@ -138,22 +138,22 @@ export class AuthService {
                 LogEvent.REFRESH_REUSE_DETECTED,
                 storedToken.userId || undefined
             );
-            return { success: false, error: Resource.EXPIRED_OR_INVALID_TOKEN };
+            return { success: false, error: ErrorCode.EXPIRED_OR_INVALID_TOKEN };
         }
 
         if (!storedToken.sessionId || !storedToken.sessionExpiresAt) {
             await discardStoredToken();
-            return { success: false, error: Resource.EXPIRED_OR_INVALID_TOKEN };
+            return { success: false, error: ErrorCode.EXPIRED_OR_INVALID_TOKEN };
         }
 
         if (new Date(storedToken.sessionExpiresAt) < now) {
             await this.tokenService.deleteBySessionId(storedToken.sessionId);
-            return { success: false, error: Resource.EXPIRED_OR_INVALID_TOKEN };
+            return { success: false, error: ErrorCode.EXPIRED_OR_INVALID_TOKEN };
         }
 
         if (new Date(storedToken.expiresAt) < now) {
             await discardStoredToken();
-            return { success: false, error: Resource.EXPIRED_OR_INVALID_TOKEN };
+            return { success: false, error: ErrorCode.EXPIRED_OR_INVALID_TOKEN };
         }
 
         let payload: { id: number };
@@ -161,13 +161,13 @@ export class AuthService {
             payload = TokenUtils.verifyRefreshToken(token) as { id: number };
         } catch {
             await discardStoredToken();
-            return { success: false, error: Resource.EXPIRED_OR_INVALID_TOKEN };
+            return { success: false, error: ErrorCode.EXPIRED_OR_INVALID_TOKEN };
         }
 
         const userResult = await this.userService.findOne(payload.id);
         if (!userResult.success || !userResult.data || !userResult.data.active || !userResult.data.emailVerifiedAt) {
             await discardStoredToken();
-            return { success: false, error: Resource.EXPIRED_OR_INVALID_TOKEN };
+            return { success: false, error: ErrorCode.EXPIRED_OR_INVALID_TOKEN };
         }
 
         const newToken = TokenUtils.generateAccessToken({ id: payload.id });
@@ -185,7 +185,7 @@ export class AuthService {
         });
 
         if (!createResult.success) {
-            return { success: false, error: Resource.INTERNAL_SERVER_ERROR };
+            return { success: false, error: ErrorCode.INTERNAL_SERVER_ERROR };
         }
 
         try {
@@ -200,11 +200,11 @@ export class AuthService {
                     LogEvent.REFRESH_REUSE_DETECTED,
                     storedToken.userId || undefined
                 );
-                return { success: false, error: Resource.EXPIRED_OR_INVALID_TOKEN };
+                return { success: false, error: ErrorCode.EXPIRED_OR_INVALID_TOKEN };
             }
         } catch {
             await this.tokenService.deleteByTokenHash(newTokenHash);
-            return { success: false, error: Resource.INTERNAL_SERVER_ERROR };
+            return { success: false, error: ErrorCode.INTERNAL_SERVER_ERROR };
         }
 
         await this.tokenService.deleteExpiredTokens();
@@ -220,7 +220,7 @@ export class AuthService {
      * @param token - Token to invalidate.
      * @returns Success status and user ID if logout succeeds, or error if token is not found.
      */
-    async logout(token: string): Promise<{ success: true; data: LogoutContext } | { success: false; error: Resource }> {
+    async logout(token: string): Promise<{ success: true; data: LogoutContext } | { success: false; error: ErrorCode }> {
         const tokenHash = TokenUtils.hashRefreshToken(token);
         const tokenResult = await this.tokenService.findByTokenHash(tokenHash);
         const stored = tokenResult.success ? tokenResult.data : null;
@@ -232,7 +232,7 @@ export class AuthService {
                 LogEvent.LOGOUT_TOKEN_NOT_FOUND,
                 stored?.userId || undefined
             );
-            return { success: false, error: Resource.TOKEN_NOT_FOUND };
+            return { success: false, error: ErrorCode.TOKEN_NOT_FOUND };
         }
 
         await this.tokenService.deleteToken(stored.id);
@@ -255,10 +255,10 @@ export class AuthService {
      * @param token - Verification token.
      * @returns Success status or error.
      */
-    async verifyEmail(token: string): Promise<{ success: true; data: VerifyEmailOutput } | { success: false; error: Resource }> {
+    async verifyEmail(token: string): Promise<{ success: true; data: VerifyEmailOutput } | { success: false; error: ErrorCode }> {
         const tokenResult = await this.tokenService.verifyEmailVerificationToken(token);
         if (!tokenResult.success || !tokenResult.data) {
-            return { success: false, error: Resource.EXPIRED_OR_INVALID_TOKEN };
+            return { success: false, error: ErrorCode.EXPIRED_OR_INVALID_TOKEN };
         }
 
         const userResult = await this.userService.markEmailVerified(tokenResult.data.userId);
@@ -281,7 +281,7 @@ export class AuthService {
         email: string
     ): Promise<
         | { success: true; data: { sent: true } }
-        | { success: false; error: Resource; data?: { cooldownSeconds: number } }
+        | { success: false; error: ErrorCode; data?: { cooldownSeconds: number } }
     > {
         const userResult = await this.userService.findUserByEmailExact(email.trim().toLowerCase());
         if (!userResult.success || !userResult.data || !userResult.data.active) {
@@ -304,7 +304,7 @@ export class AuthService {
                 const remainingSeconds = Math.ceil((cooldownMs - elapsedMs) / 1000);
                 return {
                     success: false,
-                    error: Resource.EMAIL_VERIFICATION_COOLDOWN,
+                    error: ErrorCode.EMAIL_VERIFICATION_COOLDOWN,
                     data: { cooldownSeconds: remainingSeconds }
                 };
             }
@@ -314,14 +314,15 @@ export class AuthService {
 
         const tokenResult = await this.tokenService.createEmailVerificationToken(userResult.data.id);
         if (!tokenResult.success || !tokenResult.data) {
-            return { success: false, error: Resource.INTERNAL_SERVER_ERROR };
+            return { success: false, error: ErrorCode.INTERNAL_SERVER_ERROR };
         }
 
         try {
             await sendEmailVerificationEmail(
                 userResult.data.email,
                 tokenResult.data.token,
-                userResult.data.id
+                userResult.data.id,
+                userResult.data.language
             );
         } catch {
             // Ignore email failures to keep the response generic.
@@ -337,7 +338,7 @@ export class AuthService {
      * @param email - User email.
      * @returns Success status.
      */
-    async requestPasswordReset(email: string): Promise<{ success: true; data: { sent: true } } | { success: false; error: Resource }> {
+    async requestPasswordReset(email: string): Promise<{ success: true; data: { sent: true } } | { success: false; error: ErrorCode }> {
         const userResult = await this.userService.findUserByEmailExact(email.trim().toLowerCase());
         if (!userResult.success || !userResult.data || !userResult.data.active) {
             return { success: true, data: { sent: true } };
@@ -345,14 +346,15 @@ export class AuthService {
 
         const tokenResult = await this.tokenService.createPasswordResetToken(userResult.data.id);
         if (!tokenResult.success || !tokenResult.data) {
-            return { success: false, error: Resource.INTERNAL_SERVER_ERROR };
+            return { success: false, error: ErrorCode.INTERNAL_SERVER_ERROR };
         }
 
         try {
             await sendPasswordResetEmail(
                 userResult.data.email,
                 tokenResult.data.token,
-                userResult.data.id
+                userResult.data.id,
+                userResult.data.language
             );
         } catch {
             // Ignore email failures to keep the response generic.
@@ -368,10 +370,10 @@ export class AuthService {
      * @param newPassword - New password.
      * @returns Success status or error.
      */
-    async resetPassword(token: string, newPassword: string): Promise<{ success: true; data: ResetPasswordOutput } | { success: false; error: Resource }> {
+    async resetPassword(token: string, newPassword: string): Promise<{ success: true; data: ResetPasswordOutput } | { success: false; error: ErrorCode }> {
         const tokenResult = await this.tokenService.verifyPasswordResetToken(token);
         if (!tokenResult.success || !tokenResult.data) {
-            return { success: false, error: Resource.EXPIRED_OR_INVALID_TOKEN };
+            return { success: false, error: ErrorCode.EXPIRED_OR_INVALID_TOKEN };
         }
 
         const updateResult = await this.userService.updateUser(tokenResult.data.userId, { password: newPassword });

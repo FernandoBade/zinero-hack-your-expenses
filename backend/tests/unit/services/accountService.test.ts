@@ -2,11 +2,8 @@ import { AccountService } from '../../../src/service/accountService';
 import { AccountRepository } from '../../../src/repositories/accountRepository';
 import { UserService } from '../../../src/service/userService';
 import { FilterOperator, SortOrder } from '../../../../shared/enums/operator.enums';
-import { ResourceKey as Resource } from '../../../../shared/i18n/resource.keys';
+import { ErrorCode as Resource } from '../../../../shared/errors/error-codes';
 import { makeAccount, makeAccountInput, makeDbAccount, makeSanitizedUser } from '../../helpers/factories';
-import { translateResource } from '../../../../shared/i18n/resource.utils';
-
-const translate = (resource: Resource) => translateResource(resource, 'en-US');
 const isResource = (value: string): value is Resource => Object.values(Resource).includes(value as Resource);
 
 describe('AccountService', () => {
@@ -36,7 +33,6 @@ describe('AccountService', () => {
             expect(result.success).toBe(false);
             if (!result.success) {
                 expect(result.error).toBe(Resource.USER_NOT_FOUND);
-                expect(translate(result.error)).toBe(translate(Resource.USER_NOT_FOUND));
             }
         });
 
@@ -77,7 +73,6 @@ describe('AccountService', () => {
             expect(result.success).toBe(false);
             if (!result.success) {
                 expect(result.error).toBe(Resource.INTERNAL_SERVER_ERROR);
-                expect(translate(result.error)).toBe(translate(Resource.INTERNAL_SERVER_ERROR));
             }
         });
     });
@@ -110,7 +105,6 @@ describe('AccountService', () => {
             expect(result.success).toBe(false);
             if (!result.success) {
                 expect(result.error).toBe(Resource.INTERNAL_SERVER_ERROR);
-                expect(translate(result.error)).toBe(translate(Resource.INTERNAL_SERVER_ERROR));
             }
         });
     });
@@ -136,7 +130,6 @@ describe('AccountService', () => {
             expect(result.success).toBe(false);
             if (!result.success) {
                 expect(result.error).toBe(Resource.INTERNAL_SERVER_ERROR);
-                expect(translate(result.error)).toBe(translate(Resource.INTERNAL_SERVER_ERROR));
             }
         });
     });
@@ -153,7 +146,6 @@ describe('AccountService', () => {
             expect(result.success).toBe(false);
             if (!result.success) {
                 expect(result.error).toBe(Resource.NO_RECORDS_FOUND);
-                expect(translate(result.error)).toBe(translate(Resource.NO_RECORDS_FOUND));
             }
         });
 
@@ -184,7 +176,6 @@ describe('AccountService', () => {
             if (caught instanceof Error) {
                 expect(isResource(caught.message)).toBe(true);
                 if (isResource(caught.message)) {
-                    expect(translate(caught.message)).toBe(translate(Resource.INTERNAL_SERVER_ERROR));
                 }
             }
         });
@@ -216,7 +207,6 @@ describe('AccountService', () => {
             expect(result.success).toBe(false);
             if (!result.success) {
                 expect(result.error).toBe(Resource.INTERNAL_SERVER_ERROR);
-                expect(translate(result.error)).toBe(translate(Resource.INTERNAL_SERVER_ERROR));
             }
         });
     });
@@ -242,7 +232,6 @@ describe('AccountService', () => {
             expect(result.success).toBe(false);
             if (!result.success) {
                 expect(result.error).toBe(Resource.INTERNAL_SERVER_ERROR);
-                expect(translate(result.error)).toBe(translate(Resource.INTERNAL_SERVER_ERROR));
             }
         });
     });
@@ -264,7 +253,6 @@ describe('AccountService', () => {
             expect(result.success).toBe(false);
             if (!result.success) {
                 expect(result.error).toBe(Resource.USER_NOT_FOUND);
-                expect(translate(result.error)).toBe(translate(Resource.USER_NOT_FOUND));
             }
         });
 
@@ -294,7 +282,6 @@ describe('AccountService', () => {
             expect(result.success).toBe(false);
             if (!result.success) {
                 expect(result.error).toBe(Resource.INTERNAL_SERVER_ERROR);
-                expect(translate(result.error)).toBe(translate(Resource.INTERNAL_SERVER_ERROR));
             }
         });
     });
@@ -313,7 +300,6 @@ describe('AccountService', () => {
             expect(result.success).toBe(false);
             if (!result.success) {
                 expect(result.error).toBe(Resource.ACCOUNT_NOT_FOUND);
-                expect(translate(result.error)).toBe(translate(Resource.ACCOUNT_NOT_FOUND));
             }
         });
 
@@ -341,7 +327,6 @@ describe('AccountService', () => {
             expect(result.success).toBe(false);
             if (!result.success) {
                 expect(result.error).toBe(Resource.INTERNAL_SERVER_ERROR);
-                expect(translate(result.error)).toBe(translate(Resource.INTERNAL_SERVER_ERROR));
             }
         });
     });

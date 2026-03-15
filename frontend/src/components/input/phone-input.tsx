@@ -3,7 +3,7 @@ import { useEffect, useMemo, useRef, useState } from "preact/hooks";
 import { CountryCode } from "@shared/enums/country.enums";
 import { InputType } from "@shared/enums/input.enums";
 import { PhoneInputValidationError } from "@shared/enums/input-validation.enums";
-import { ResourceKey } from "@shared/i18n/resource.keys";
+import type { I18nKey } from "@shared/i18n/types/i18n-key";
 import { Input } from "@/components/input/input";
 import type { CanonicalInputValueChange } from "@/components/input/canonical-input.types";
 import type { PhoneInputProps } from "@/components/input/phone-input.types";
@@ -19,10 +19,10 @@ import {
 } from "@/utils/intl/phoneInput";
 import { t } from "@/utils/i18n/translate";
 
-const DEFAULT_ERROR_BY_VALIDATION: Readonly<Record<PhoneInputValidationError, ResourceKey>> = {
-    [PhoneInputValidationError.REQUIRED]: ResourceKey.FIELD_REQUIRED_GENERIC,
-    [PhoneInputValidationError.INVALID]: ResourceKey.PHONE_NUMBER_INVALID,
-    [PhoneInputValidationError.INCOMPLETE]: ResourceKey.PHONE_NUMBER_INCOMPLETE,
+const DEFAULT_ERROR_BY_VALIDATION: Readonly<Record<PhoneInputValidationError, I18nKey>> = {
+    [PhoneInputValidationError.REQUIRED]: 'error.field_required_generic',
+    [PhoneInputValidationError.INVALID]: 'error.phone_number_invalid',
+    [PhoneInputValidationError.INCOMPLETE]: 'error.phone_number_incomplete',
 };
 
 
@@ -58,11 +58,11 @@ function resolveValidationErrorKey(
     canonicalValue: string,
     props: Pick<
         PhoneInputProps,
-        "required" | "validateIncomplete" | "validationResourceKeys"
+        "required" | "validateIncomplete" | "validationI18nKeys"
     > & {
         readonly countryCode: CountryCode;
     }
-): ResourceKey | undefined {
+): I18nKey | undefined {
     const validationError = validatePhoneValue({
         displayValue,
         canonicalValue,
@@ -77,14 +77,14 @@ function resolveValidationErrorKey(
         return undefined;
     }
 
-    return props.validationResourceKeys?.[validationError] ?? DEFAULT_ERROR_BY_VALIDATION[validationError];
+    return props.validationI18nKeys?.[validationError] ?? DEFAULT_ERROR_BY_VALIDATION[validationError];
 }
 
 
 function createValueChange(
     canonicalValue: string,
     displayValue: string,
-    error: ResourceKey | undefined
+    error: I18nKey | undefined
 ): CanonicalInputValueChange {
     return {
         canonicalValue,
@@ -145,7 +145,7 @@ export function PhoneInput({
     countryCode,
     resetValueOnCountryChange = true,
     validateIncomplete = false,
-    validationResourceKeys,
+    validationI18nKeys,
     label,
     placeholder,
     hint,
@@ -227,7 +227,7 @@ export function PhoneInput({
             resolveValidationErrorKey(draftState.displayValue, draftState.canonicalValue, {
                 required,
                 validateIncomplete,
-                validationResourceKeys,
+                validationI18nKeys,
                 countryCode: effectiveCountryCode,
             }),
         [
@@ -236,7 +236,7 @@ export function PhoneInput({
             effectiveCountryCode,
             required,
             validateIncomplete,
-            validationResourceKeys,
+            validationI18nKeys,
         ]
     );
     const resolvedError = error ?? (isTouched ? computedValidationError : undefined);
@@ -269,7 +269,7 @@ export function PhoneInput({
             {
                 required,
                 validateIncomplete,
-                validationResourceKeys,
+                validationI18nKeys,
                 countryCode: targetCountryCode,
             }
         );
@@ -371,7 +371,7 @@ export function PhoneInput({
     const countrySelector = (
         <div class="flex items-center border-r border-base-300 pr-2">
             <label class="sr-only" for={`${id ?? name ?? "phone"}-country`}>
-                {t(ResourceKey.FIELD_LABEL_COUNTRY)}
+                {t('field.country.label')}
             </label>
             <select
                 id={`${id ?? name ?? "phone"}-country`}
@@ -431,3 +431,4 @@ export function PhoneInput({
         />
     );
 }
+

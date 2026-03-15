@@ -1,7 +1,7 @@
 import { FilterOperator, SortOrder } from '../../../shared/enums/operator.enums';
 import { CategoryRepository } from '../repositories/categoryRepository';
 import { UserService } from './userService';
-import { ResourceKey as Resource } from '../../../shared/i18n/resource.keys';
+import { ErrorCode } from '../../../shared/errors/error-codes';
 import { SelectCategory, InsertCategory } from '../db/schema';
 import { QueryOptions } from '../utils/pagination';
 import type { CategoryEntity, CreateCategoryInput, UpdateCategoryInput } from '../../../shared/domains/category/category.types';
@@ -35,12 +35,12 @@ export class CategoryService {
      * @param data - Category creation data.
      * @returns The created category record.
      */
-    async createCategory(data: CreateCategoryInput): Promise<{ success: true; data: CategoryEntity } | { success: false; error: Resource }> {
+    async createCategory(data: CreateCategoryInput): Promise<{ success: true; data: CategoryEntity } | { success: false; error: ErrorCode }> {
         const userService = new UserService();
         const user = await userService.getUserById(data.userId);
 
         if (!user.success || !user.data) {
-            return { success: false, error: Resource.USER_NOT_FOUND };
+            return { success: false, error: ErrorCode.USER_NOT_FOUND };
         }
 
         try {
@@ -50,7 +50,7 @@ export class CategoryService {
             } as InsertCategory);
             return { success: true, data: this.toCategoryEntity(created) };
         } catch {
-            return { success: false, error: Resource.INTERNAL_SERVER_ERROR };
+            return { success: false, error: ErrorCode.INTERNAL_SERVER_ERROR };
         }
     }
 
@@ -60,7 +60,7 @@ export class CategoryService {
      * @returns A list of all categories.
      */
 
-    async getCategories(options?: QueryOptions<SelectCategory>): Promise<{ success: true; data: CategoryEntity[] } | { success: false; error: Resource }> {
+    async getCategories(options?: QueryOptions<SelectCategory>): Promise<{ success: true; data: CategoryEntity[] } | { success: false; error: ErrorCode }> {
         try {
             const categories = await this.categoryRepository.findMany(undefined, {
                 limit: options?.limit,
@@ -70,7 +70,7 @@ export class CategoryService {
             });
             return { success: true, data: categories.map(category => this.toCategoryEntity(category)) };
         } catch {
-            return { success: false, error: Resource.INTERNAL_SERVER_ERROR };
+            return { success: false, error: ErrorCode.INTERNAL_SERVER_ERROR };
         }
     }
 
@@ -79,12 +79,12 @@ export class CategoryService {
      * @returns Total category count.
      */
 
-    async countCategories(): Promise<{ success: true; data: number } | { success: false; error: Resource }> {
+    async countCategories(): Promise<{ success: true; data: number } | { success: false; error: ErrorCode }> {
         try {
             const count = await this.categoryRepository.count();
             return { success: true, data: count };
         } catch {
-            return { success: false, error: Resource.INTERNAL_SERVER_ERROR };
+            return { success: false, error: ErrorCode.INTERNAL_SERVER_ERROR };
         }
     }
 
@@ -94,10 +94,10 @@ export class CategoryService {
      * @returns The category if found.
      */
 
-    async getCategoryById(id: number): Promise<{ success: true; data: CategoryEntity } | { success: false; error: Resource }> {
+    async getCategoryById(id: number): Promise<{ success: true; data: CategoryEntity } | { success: false; error: ErrorCode }> {
         const category = await this.categoryRepository.findById(id);
         if (!category) {
-            return { success: false, error: Resource.NO_RECORDS_FOUND };
+            return { success: false, error: ErrorCode.NO_RECORDS_FOUND };
         }
         return { success: true, data: this.toCategoryEntity(category) };
     }
@@ -108,7 +108,7 @@ export class CategoryService {
      * @returns A list of categories owned by the user.
      */
 
-    async getCategoriesByUser(userId: number, options?: QueryOptions<SelectCategory>): Promise<{ success: true; data: CategoryEntity[] } | { success: false; error: Resource }> {
+    async getCategoriesByUser(userId: number, options?: QueryOptions<SelectCategory>): Promise<{ success: true; data: CategoryEntity[] } | { success: false; error: ErrorCode }> {
         try {
             const categories = await this.categoryRepository.findMany({
                 userId: { operator: FilterOperator.EQ, value: userId }
@@ -120,7 +120,7 @@ export class CategoryService {
             });
             return { success: true, data: categories.map(category => this.toCategoryEntity(category)) };
         } catch {
-            return { success: false, error: Resource.INTERNAL_SERVER_ERROR };
+            return { success: false, error: ErrorCode.INTERNAL_SERVER_ERROR };
         }
     }
 
@@ -130,14 +130,14 @@ export class CategoryService {
      * @returns Count of user's categories.
      */
 
-    async countCategoriesByUser(userId: number): Promise<{ success: true; data: number } | { success: false; error: Resource }> {
+    async countCategoriesByUser(userId: number): Promise<{ success: true; data: number } | { success: false; error: ErrorCode }> {
         try {
             const count = await this.categoryRepository.count({
                 userId: { operator: FilterOperator.EQ, value: userId }
             });
             return { success: true, data: count };
         } catch {
-            return { success: false, error: Resource.INTERNAL_SERVER_ERROR };
+            return { success: false, error: ErrorCode.INTERNAL_SERVER_ERROR };
         }
     }
 
@@ -150,13 +150,13 @@ export class CategoryService {
      * @param data - Partial category data to update.
      * @returns Updated category record.
      */
-    async updateCategory(id: number, data: UpdateCategoryInput): Promise<{ success: true; data: CategoryEntity } | { success: false; error: Resource }> {
+    async updateCategory(id: number, data: UpdateCategoryInput): Promise<{ success: true; data: CategoryEntity } | { success: false; error: ErrorCode }> {
         if (data.userId !== undefined) {
             const userService = new UserService();
             const user = await userService.getUserById(data.userId);
 
             if (!user.success || !user.data) {
-                return { success: false, error: Resource.USER_NOT_FOUND };
+                return { success: false, error: ErrorCode.USER_NOT_FOUND };
             }
         }
 
@@ -164,7 +164,7 @@ export class CategoryService {
             const updated = await this.categoryRepository.update(id, data);
             return { success: true, data: this.toCategoryEntity(updated) };
         } catch {
-            return { success: false, error: Resource.INTERNAL_SERVER_ERROR };
+            return { success: false, error: ErrorCode.INTERNAL_SERVER_ERROR };
         }
     }
 
@@ -175,17 +175,17 @@ export class CategoryService {
      * @param id - ID of the category to delete.
      * @returns Success with deleted ID, or error if category does not exist.
      */
-    async deleteCategory(id: number): Promise<{ success: true; data: { id: number } } | { success: false; error: Resource }> {
+    async deleteCategory(id: number): Promise<{ success: true; data: { id: number } } | { success: false; error: ErrorCode }> {
         const existing = await this.categoryRepository.findById(id);
         if (!existing) {
-            return { success: false, error: Resource.CATEGORY_NOT_FOUND };
+            return { success: false, error: ErrorCode.CATEGORY_NOT_FOUND };
         }
 
         try {
             await this.categoryRepository.delete(id);
             return { success: true, data: { id } };
         } catch {
-            return { success: false, error: Resource.INTERNAL_SERVER_ERROR };
+            return { success: false, error: ErrorCode.INTERNAL_SERVER_ERROR };
         }
     }
 }

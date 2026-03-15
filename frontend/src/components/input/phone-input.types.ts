@@ -1,7 +1,7 @@
 import { CountryCode } from "@shared/enums/country.enums";
 import { PhoneInputValidationError } from "@shared/enums/input-validation.enums";
 import { Language } from "@shared/enums/user.enums";
-import type { ResourceKey } from "@shared/i18n/resource.keys";
+import type { I18nKey } from "@shared/i18n/types/i18n-key";
 import type {
     CanonicalInputBaseProps,
     CanonicalInputValueChange,
@@ -16,6 +16,7 @@ export interface PhoneInputProps extends CanonicalInputBaseProps {
     /** @summary When true, country switch clears the current draft to avoid cross-country reformat artifacts. */
     readonly resetValueOnCountryChange?: boolean;
     readonly validateIncomplete?: boolean;
-    readonly validationResourceKeys?: Partial<Record<PhoneInputValidationError, ResourceKey>>;
+    readonly validationI18nKeys?: Partial<Record<PhoneInputValidationError, I18nKey>>;
     readonly onCountryChange?: (countryCode: CountryCode, value: CanonicalInputValueChange) => void;
 }
+

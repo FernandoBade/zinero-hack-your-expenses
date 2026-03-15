@@ -1,4 +1,3 @@
-import { translateResource, translateResourceWithParams } from '../../../../shared/i18n/resource.utils';
 import {
     validateCreateUser,
     validateUpdateUser,
@@ -28,7 +27,7 @@ import {
     isValidEmail,
     hasMinLength,
 } from '../../../src/utils/validation/guards';
-import { ResourceKey as Resource } from '../../../../shared/i18n/resource.keys';
+import { ErrorCode as Resource } from '../../../../shared/errors/error-codes';
 import { AccountType } from '../../../../shared/enums/account.enums';
 import { CategoryColor, CategoryType } from '../../../../shared/enums/category.enums';
 import { CreditCardFlag } from '../../../../shared/enums/creditCard.enums';
@@ -36,11 +35,13 @@ import { TransactionSource, TransactionType } from '../../../../shared/enums/tra
 import { Currency, Language, Profile, Theme } from '../../../../shared/enums/user.enums';
 
 const lang = Language.EN_US;
-const t = (resource: Resource) => translateResource(resource, lang);
 
 describe('validation errors', () => {
     it('creates validation error objects', () => {
-        expect(createValidationError('field', 'error')).toEqual({ property: 'field', error: 'error' });
+        expect(createValidationError('name', Resource.VALIDATION_ERROR)).toEqual({
+            field: 'name',
+            errorCode: Resource.VALIDATION_ERROR,
+        });
     });
 });
 
@@ -111,7 +112,7 @@ describe('validateRequest', () => {
             expect(result.success).toBe(false);
             if (result.success) return;
             expect(result.errors).toEqual([
-                createValidationError('firstName', t(Resource.FIRST_NAME_TOO_SHORT)),
+                createValidationError('firstName', Resource.FIRST_NAME_TOO_SHORT),
             ]);
         });
 
@@ -167,7 +168,7 @@ describe('validateRequest', () => {
 
             expect(result.success).toBe(false);
             if (result.success) return;
-            expect(result.errors).toEqual([createValidationError('email', t(Resource.EMAIL_INVALID))]);
+            expect(result.errors).toEqual([createValidationError('email', Resource.EMAIL_INVALID)]);
         });
 
         it('returns normalized data for valid input', () => {
@@ -190,7 +191,7 @@ describe('validateRequest', () => {
 
             expect(result.success).toBe(false);
             if (result.success) return;
-            expect(result.errors).toEqual([createValidationError('userId', t(Resource.VALIDATION_ERROR))]);
+            expect(result.errors).toEqual([createValidationError('userId', Resource.VALIDATION_ERROR)]);
         });
 
         it('returns normalized data for valid input', () => {
@@ -222,7 +223,7 @@ describe('validateRequest', () => {
 
             expect(result.success).toBe(false);
             if (result.success) return;
-            expect(result.errors).toEqual([createValidationError('userId', t(Resource.VALIDATION_ERROR))]);
+            expect(result.errors).toEqual([createValidationError('userId', Resource.VALIDATION_ERROR)]);
         });
 
         it('returns normalized data for valid input', () => {
@@ -246,8 +247,9 @@ describe('validateRequest', () => {
 
             expect(result.success).toBe(false);
             if (result.success) return;
-            expect(result.errors[0].property).toBe('type');
-            expect(result.errors[0].error).toContain('income');
+            expect(result.errors[0].field).toBe('type');
+            expect(result.errors[0].errorCode).toBe(Resource.INVALID_ENUM);
+            expect(result.errors[0].params).toEqual(expect.objectContaining({ received: 'invalid' }));
         });
 
         it('returns normalized data for valid input', () => {
@@ -276,7 +278,7 @@ describe('validateRequest', () => {
 
             expect(result.success).toBe(false);
             if (result.success) return;
-            expect(result.errors).toEqual([createValidationError('userId', t(Resource.VALIDATION_ERROR))]);
+            expect(result.errors).toEqual([createValidationError('userId', Resource.VALIDATION_ERROR)]);
         });
 
         it('returns normalized data for valid input', () => {
@@ -305,7 +307,7 @@ describe('validateRequest', () => {
 
             expect(result.success).toBe(false);
             if (result.success) return;
-            expect(result.errors).toEqual([createValidationError('categoryId', t(Resource.VALIDATION_ERROR))]);
+            expect(result.errors).toEqual([createValidationError('categoryId', Resource.VALIDATION_ERROR)]);
         });
 
         it('returns normalized data for valid input', () => {
@@ -325,11 +327,11 @@ describe('validateRequest', () => {
             expect(result.success).toBe(false);
             if (result.success) return;
             expect(result.errors).toEqual([
-                createValidationError('active', translateResourceWithParams(Resource.INVALID_TYPE, lang, {
+                createValidationError('active', Resource.INVALID_TYPE, {
                     path: 'active',
                     expected: 'boolean',
                     received: 'yes'
-                }))
+                })
             ]);
         });
 
@@ -349,8 +351,9 @@ describe('validateRequest', () => {
 
             expect(result.success).toBe(false);
             if (result.success) return;
-            expect(result.errors[0].property).toBe('flag');
-            expect(result.errors[0].error).toContain('visa');
+            expect(result.errors[0].field).toBe('flag');
+            expect(result.errors[0].errorCode).toBe(Resource.INVALID_ENUM);
+            expect(result.errors[0].params).toEqual(expect.objectContaining({ received: 'invalid' }));
         });
 
         it('returns normalized data for valid input', () => {
@@ -384,7 +387,7 @@ describe('validateRequest', () => {
 
             expect(result.success).toBe(false);
             if (result.success) return;
-            expect(result.errors).toEqual([createValidationError('accountId', t(Resource.VALIDATION_ERROR))]);
+            expect(result.errors).toEqual([createValidationError('accountId', Resource.VALIDATION_ERROR)]);
         });
 
         it('returns normalized data for valid input', () => {
@@ -407,10 +410,10 @@ describe('validateRequest', () => {
             if (result.success) return;
             expect(result.errors).toEqual(
                 expect.arrayContaining([
-                    createValidationError('name', translateResourceWithParams(Resource.FIELD_REQUIRED, lang, {
+                    createValidationError('name', Resource.FIELD_REQUIRED, {
                         field: 'name'
-                    })),
-                    createValidationError('userId', t(Resource.VALIDATION_ERROR)),
+                    }),
+                    createValidationError('userId', Resource.VALIDATION_ERROR),
                 ])
             );
         });
@@ -432,7 +435,7 @@ describe('validateRequest', () => {
 
             expect(result.success).toBe(false);
             if (result.success) return;
-            expect(result.errors).toEqual([createValidationError('userId', t(Resource.VALIDATION_ERROR))]);
+            expect(result.errors).toEqual([createValidationError('userId', Resource.VALIDATION_ERROR)]);
         });
 
         it('returns normalized data for valid input', () => {
@@ -464,8 +467,8 @@ describe('validateRequest', () => {
             if (result.success) return;
             expect(result.errors).toEqual(
                 expect.arrayContaining([
-                    createValidationError('categoryId', t(Resource.CATEGORY_OR_SUBCATEGORY_REQUIRED)),
-                    createValidationError('subcategoryId', t(Resource.CATEGORY_OR_SUBCATEGORY_REQUIRED)),
+                    createValidationError('categoryId', Resource.CATEGORY_OR_SUBCATEGORY_REQUIRED),
+                    createValidationError('subcategoryId', Resource.CATEGORY_OR_SUBCATEGORY_REQUIRED),
                 ])
             );
         });
@@ -487,7 +490,7 @@ describe('validateRequest', () => {
 
             expect(result.success).toBe(false);
             if (result.success) return;
-            expect(result.errors).toEqual([createValidationError('totalMonths', t(Resource.TOTAL_MONTHS_REQUIRED))]);
+            expect(result.errors).toEqual([createValidationError('totalMonths', Resource.TOTAL_MONTHS_REQUIRED)]);
         });
 
         it('returns normalized data for valid input', () => {
@@ -557,11 +560,11 @@ describe('validateRequest', () => {
             if (result.success) return;
             expect(result.errors).toEqual(
                 expect.arrayContaining([
-                    createValidationError('value', translateResourceWithParams(Resource.INVALID_TYPE, lang, {
+                    createValidationError('value', Resource.INVALID_TYPE, {
                         path: 'value',
                         expected: 'string',
                         received: String(0.1 + 0.2)
-                    })),
+                    }),
                 ])
             );
         });
@@ -585,10 +588,10 @@ describe('validateRequest', () => {
             if (result.success) return;
             expect(result.errors).toEqual(
                 expect.arrayContaining([
-                    createValidationError('value', translateResourceWithParams(Resource.TOO_SMALL, lang, {
+                    createValidationError('value', Resource.TOO_SMALL, {
                         path: 'value',
                         min: 1
-                    })),
+                    }),
                 ])
             );
         });
@@ -600,7 +603,7 @@ describe('validateRequest', () => {
 
             expect(result.success).toBe(false);
             if (result.success) return;
-            expect(result.errors).toEqual([createValidationError('paymentDay', t(Resource.PAYMENT_DAY_OUT_OF_RANGE))]);
+            expect(result.errors).toEqual([createValidationError('paymentDay', Resource.PAYMENT_DAY_OUT_OF_RANGE)]);
         });
 
         it('returns normalized data for valid input', () => {
@@ -638,11 +641,11 @@ describe('validateRequest', () => {
             if (result.success) return;
             expect(result.errors).toEqual(
                 expect.arrayContaining([
-                    createValidationError('value', translateResourceWithParams(Resource.INVALID_TYPE, lang, {
+                    createValidationError('value', Resource.INVALID_TYPE, {
                         path: 'value',
                         expected: 'string',
                         received: String(0.1 + 0.2)
-                    })),
+                    }),
                 ])
             );
         });
@@ -655,12 +658,12 @@ describe('validateRequest', () => {
             expect(result.success).toBe(false);
             if (result.success) return;
             expect(result.errors).toEqual([
-                createValidationError('title', translateResourceWithParams(Resource.FIELD_REQUIRED, lang, {
+                createValidationError('title', Resource.FIELD_REQUIRED, {
                     field: 'title'
-                })),
-                createValidationError('message', translateResourceWithParams(Resource.FIELD_REQUIRED, lang, {
+                }),
+                createValidationError('message', Resource.FIELD_REQUIRED, {
                     field: 'message'
-                })),
+                }),
             ]);
         });
 
@@ -674,4 +677,6 @@ describe('validateRequest', () => {
         });
     });
 });
+
+
 

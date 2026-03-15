@@ -1,12 +1,12 @@
 import { AppRoutePath } from "@shared/enums/routes.enums";
-import { ResourceKey } from "@shared/i18n/resource.keys";
+import type { I18nKey } from "@shared/i18n/types/i18n-key";
 import { navigate } from "@/routes/navigation";
 import { login } from "@/services/auth/auth.service";
 
-const LOGIN_ERROR_FALLBACK_MESSAGE = ResourceKey.INVALID_CREDENTIALS;
+const LOGIN_ERROR_FALLBACK_MESSAGE = 'error.invalid_credentials';
 
 export interface LoginControllerDependencies {
-    readonly setError: (value: ResourceKey | null) => void;
+    readonly setError: (value: I18nKey | null) => void;
 }
 
 export interface LoginController {

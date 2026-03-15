@@ -1,9 +1,9 @@
-import type { ResourceKey } from "@shared/i18n/resource.keys";
+import type { I18nKey } from "@shared/i18n/types/i18n-key";
 import { IconPosition } from "@shared/enums/icon-position.enums";
 import { IconName } from "@shared/enums/icon.enums";
 
 export interface SelectOption {
-    readonly label: ResourceKey;
+    readonly label: I18nKey;
     readonly value: string;
 }
 
@@ -11,10 +11,10 @@ export interface SelectOption {
  * @summary Typed select props for reusable option lists.
  */
 export interface SelectProps {
-    readonly label?: ResourceKey;
-    readonly placeholder?: ResourceKey;
-    readonly hint?: ResourceKey;
-    readonly error?: ResourceKey;
+    readonly label?: I18nKey;
+    readonly placeholder?: I18nKey;
+    readonly hint?: I18nKey;
+    readonly error?: I18nKey;
     readonly options: readonly SelectOption[];
     readonly value?: string;
     readonly required?: boolean;

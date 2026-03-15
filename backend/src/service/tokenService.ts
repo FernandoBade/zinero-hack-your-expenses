@@ -1,7 +1,7 @@
 import crypto from 'crypto';
 import { TokenRepository } from '../repositories/tokenRepository';
 import { SelectToken, InsertToken, tokens } from '../db/schema';
-import { ResourceKey as Resource } from '../../../shared/i18n/resource.keys';
+import { ErrorCode } from '../../../shared/errors/error-codes';
 import { TokenType } from '../../../shared/enums/auth.enums';
 import { LogCategory, LogOperation, LogType } from '../../../shared/enums/log.enums';
 import { db } from '../db';
@@ -52,10 +52,10 @@ export class TokenService {
      * @returns token if found, or error.
      */
 
-    async findByTokenHash(tokenHash: string): Promise<{ success: true; data: SelectToken } | { success: false; error: Resource }> {
+    async findByTokenHash(tokenHash: string): Promise<{ success: true; data: SelectToken } | { success: false; error: ErrorCode }> {
         const tokenRecord = await this.tokenRepository.findByTokenHash(tokenHash);
         if (!tokenRecord) {
-            return { success: false, error: Resource.TOKEN_NOT_FOUND };
+            return { success: false, error: ErrorCode.TOKEN_NOT_FOUND };
         }
         return { success: true, data: tokenRecord };
     }
@@ -67,12 +67,12 @@ export class TokenService {
      * @param data - token data.
      * @returns Created token or error.
      */
-    async createToken(data: InsertToken): Promise<{ success: true; data: SelectToken } | { success: false; error: Resource }> {
+    async createToken(data: InsertToken): Promise<{ success: true; data: SelectToken } | { success: false; error: ErrorCode }> {
         try {
             const created = await this.tokenRepository.create(data);
             return { success: true, data: created };
         } catch {
-            return { success: false, error: Resource.INTERNAL_SERVER_ERROR };
+            return { success: false, error: ErrorCode.INTERNAL_SERVER_ERROR };
         }
     }
 
@@ -83,7 +83,7 @@ export class TokenService {
      * @param userId - User ID.
      * @returns Raw token and expiration or error.
      */
-    async createEmailVerificationToken(userId: number): Promise<{ success: true; data: { token: string; expiresAt: Date } } | { success: false; error: Resource }> {
+    async createEmailVerificationToken(userId: number): Promise<{ success: true; data: { token: string; expiresAt: Date } } | { success: false; error: ErrorCode }> {
         try {
             const token = generateOneTimeToken();
             const tokenHash = hashOneTimeToken(token);
@@ -101,7 +101,7 @@ export class TokenService {
 
             return { success: true, data: { token, expiresAt } };
         } catch {
-            return { success: false, error: Resource.INTERNAL_SERVER_ERROR };
+            return { success: false, error: ErrorCode.INTERNAL_SERVER_ERROR };
         }
     }
 
@@ -112,12 +112,12 @@ export class TokenService {
      * @param rawToken - Raw token value.
      * @returns User ID or error if invalid or expired.
      */
-    async verifyEmailVerificationToken(rawToken: string): Promise<{ success: true; data: { userId: number; alreadyVerified?: boolean } } | { success: false; error: Resource }> {
+    async verifyEmailVerificationToken(rawToken: string): Promise<{ success: true; data: { userId: number; alreadyVerified?: boolean } } | { success: false; error: ErrorCode }> {
         const tokenHash = hashOneTimeToken(rawToken);
         const tokenRecord = await this.tokenRepository.findByTokenHashAndType(tokenHash, TokenType.EMAIL_VERIFICATION);
 
         if (!tokenRecord) {
-            return { success: false, error: Resource.EXPIRED_OR_INVALID_TOKEN };
+            return { success: false, error: ErrorCode.EXPIRED_OR_INVALID_TOKEN };
         }
 
         const now = new Date();
@@ -127,12 +127,12 @@ export class TokenService {
 
         if (new Date(tokenRecord.expiresAt) < now) {
             await this.tokenRepository.delete(tokenRecord.id);
-            return { success: false, error: Resource.EXPIRED_OR_INVALID_TOKEN };
+            return { success: false, error: ErrorCode.EXPIRED_OR_INVALID_TOKEN };
         }
 
         const revoked = await this.tokenRepository.markTokenRevoked(tokenRecord.id, now);
         if (revoked === 0) {
-            return { success: false, error: Resource.EXPIRED_OR_INVALID_TOKEN };
+            return { success: false, error: ErrorCode.EXPIRED_OR_INVALID_TOKEN };
         }
 
         return { success: true, data: { userId: tokenRecord.userId, alreadyVerified: false } };
@@ -145,7 +145,7 @@ export class TokenService {
      * @param userId - User ID.
      * @returns Raw token and expiration or error.
      */
-    async createPasswordResetToken(userId: number): Promise<{ success: true; data: { token: string; expiresAt: Date } } | { success: false; error: Resource }> {
+    async createPasswordResetToken(userId: number): Promise<{ success: true; data: { token: string; expiresAt: Date } } | { success: false; error: ErrorCode }> {
         try {
             const token = generateOneTimeToken();
             const tokenHash = hashOneTimeToken(token);
@@ -163,7 +163,7 @@ export class TokenService {
 
             return { success: true, data: { token, expiresAt } };
         } catch {
-            return { success: false, error: Resource.INTERNAL_SERVER_ERROR };
+            return { success: false, error: ErrorCode.INTERNAL_SERVER_ERROR };
         }
     }
 
@@ -174,27 +174,27 @@ export class TokenService {
      * @param rawToken - Raw token value.
      * @returns User ID or error if invalid or expired.
      */
-    async verifyPasswordResetToken(rawToken: string): Promise<{ success: true; data: { userId: number } } | { success: false; error: Resource }> {
+    async verifyPasswordResetToken(rawToken: string): Promise<{ success: true; data: { userId: number } } | { success: false; error: ErrorCode }> {
         const tokenHash = hashOneTimeToken(rawToken);
         const tokenRecord = await this.tokenRepository.findByTokenHashAndType(tokenHash, TokenType.PASSWORD_RESET);
 
         if (!tokenRecord) {
-            return { success: false, error: Resource.EXPIRED_OR_INVALID_TOKEN };
+            return { success: false, error: ErrorCode.EXPIRED_OR_INVALID_TOKEN };
         }
 
         const now = new Date();
         if (tokenRecord.revokedAt) {
-            return { success: false, error: Resource.EXPIRED_OR_INVALID_TOKEN };
+            return { success: false, error: ErrorCode.EXPIRED_OR_INVALID_TOKEN };
         }
 
         if (new Date(tokenRecord.expiresAt) < now) {
             await this.tokenRepository.delete(tokenRecord.id);
-            return { success: false, error: Resource.EXPIRED_OR_INVALID_TOKEN };
+            return { success: false, error: ErrorCode.EXPIRED_OR_INVALID_TOKEN };
         }
 
         const revoked = await this.tokenRepository.markTokenRevoked(tokenRecord.id, now);
         if (revoked === 0) {
-            return { success: false, error: Resource.EXPIRED_OR_INVALID_TOKEN };
+            return { success: false, error: ErrorCode.EXPIRED_OR_INVALID_TOKEN };
         }
 
         return { success: true, data: { userId: tokenRecord.userId } };
@@ -306,7 +306,7 @@ export class TokenService {
      * @summary Removes tokens that have expired.
      * @returns Total number of deleted entries or error on failure.
      */
-    async deleteExpiredTokens(): Promise<{ success: true; data: { deleted: number } } | { success: false; error: Resource }> {
+    async deleteExpiredTokens(): Promise<{ success: true; data: { deleted: number } } | { success: false; error: ErrorCode }> {
         try {
             const result = await db.delete(tokens)
                 .where(lt(tokens.expiresAt, new Date()));
@@ -323,7 +323,7 @@ export class TokenService {
 
             return { success: true, data: { deleted: total } };
         } catch {
-            return { success: false, error: Resource.INTERNAL_SERVER_ERROR };
+            return { success: false, error: ErrorCode.INTERNAL_SERVER_ERROR };
         }
     }
 }

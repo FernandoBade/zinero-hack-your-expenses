@@ -2,7 +2,7 @@ import { AuthEvent } from "@shared/enums/auth.enums";
 import { ApiRoutePath, AppRoutePath } from "@shared/enums/routes.enums";
 import { AuthScheme, FetchCredentialsMode, HttpHeaderName, HttpMethod } from "@shared/enums/http.enums";
 import { StorageKey } from "@shared/enums/storage.enums";
-import { ResourceKey } from "@shared/i18n/resource.keys";
+import { ErrorCode } from "@shared/errors/error-codes";
 import { APP_ENV } from "@/config/env";
 import { storage } from "@/platform/storage/storage";
 import { replace } from "@/routes/navigation";
@@ -23,9 +23,9 @@ const AUTH_REFRESH_BLOCKLIST = new Set<string>([
 const MAX_GET_ATTEMPTS = 3;
 const BASE_RETRY_DELAY_MS = 300;
 
-const ERROR_MESSAGE_KEY = {
-    NETWORK: ResourceKey.UNEXPECTED_ERROR,
-    REQUEST_FAILED: ResourceKey.UNEXPECTED_ERROR,
+const ERROR_CODE_BY_FAILURE = {
+    NETWORK: ErrorCode.UNEXPECTED_ERROR,
+    REQUEST_FAILED: ErrorCode.UNEXPECTED_ERROR,
 } as const;
 
 interface RequestExecutionContext {
@@ -38,11 +38,9 @@ type RefreshHandler = () => Promise<boolean>;
 let refreshPromise: Promise<boolean> | null = null;
 let refreshHandler: RefreshHandler | null = null;
 
-
 function isAbsoluteUrl(value: string): boolean {
     return value.startsWith("http://") || value.startsWith("https://");
 }
-
 
 function resolvePath(input: string): string {
     if (isAbsoluteUrl(input)) {
@@ -51,7 +49,6 @@ function resolvePath(input: string): string {
 
     return input.startsWith("/") ? input : `/${input}`;
 }
-
 
 function buildRequestUrl(input: string): string {
     if (isAbsoluteUrl(input)) {
@@ -66,7 +63,6 @@ function buildRequestUrl(input: string): string {
     return `${normalizedBaseUrl}${normalizedPath}`;
 }
 
-
 function buildRequestHeaders(init?: HeadersInit): Headers {
     const headers = new Headers(init);
     headers.set(HttpHeaderName.ACCEPT_LANGUAGE, getLocale());
@@ -79,21 +75,17 @@ function buildRequestHeaders(init?: HeadersInit): Headers {
     return headers;
 }
 
-
 function resolveMethod(init?: RequestInit): string {
     return (init?.method ?? HttpMethod.GET).toUpperCase();
 }
-
 
 function isRetryableGetMethod(method: string): boolean {
     return method === HttpMethod.GET;
 }
 
-
 function computeBackoffMs(attempt: number): number {
     return BASE_RETRY_DELAY_MS * Math.pow(2, attempt - 1);
 }
-
 
 function isNetworkError(error: unknown): boolean {
     return error instanceof TypeError;
@@ -109,10 +101,7 @@ function isApiResponseShape<T>(value: unknown): value is ApiResponse<T> {
     }
 
     if ((value as { success: boolean }).success === false) {
-        return (
-            typeof (value as { resource?: unknown }).resource === "string" &&
-            typeof (value as { message?: unknown }).message === "string"
-        );
+        return typeof (value as { errorCode?: unknown }).errorCode === "string";
     }
 
     return true;
@@ -132,8 +121,7 @@ function normalizeResponse<T>(response: Response, payload: unknown): ApiResponse
 
     return {
         success: false,
-        resource: ERROR_MESSAGE_KEY.REQUEST_FAILED,
-        message: ERROR_MESSAGE_KEY.REQUEST_FAILED,
+        errorCode: ERROR_CODE_BY_FAILURE.REQUEST_FAILED,
         error: payload,
     };
 }
@@ -141,8 +129,7 @@ function normalizeResponse<T>(response: Response, payload: unknown): ApiResponse
 function normalizeNetworkError<T>(error: unknown): ApiResponse<T> {
     return {
         success: false,
-        resource: ERROR_MESSAGE_KEY.NETWORK,
-        message: ERROR_MESSAGE_KEY.NETWORK,
+        errorCode: ERROR_CODE_BY_FAILURE.NETWORK,
         error,
     };
 }
@@ -166,7 +153,6 @@ async function parseResponsePayload(response: Response): Promise<unknown> {
     }
 }
 
-
 function shouldRunRefreshFlow(path: string, hasReplayedAfterRefresh: boolean): boolean {
     if (hasReplayedAfterRefresh) {
         return false;
@@ -188,7 +174,6 @@ async function runRefreshOnce(): Promise<boolean> {
 
     return refreshPromise;
 }
-
 
 function handleSessionExpired(): void {
     setUnauthenticated();
@@ -266,7 +251,6 @@ async function executeRequest<T>(
  * @param init Optional request configuration.
  * @returns Standardized API response payload.
  */
-
 export async function request<T>(input: string, init?: RequestInit): Promise<ApiResponse<T>> {
     return executeRequest<T>(input, init, {
         attempt: 1,
@@ -279,7 +263,6 @@ export async function request<T>(input: string, init?: RequestInit): Promise<Api
  * @param handler Refresh function from auth service.
  * @returns No return value.
  */
-
 export function setAuthRefreshHandler(handler: RefreshHandler): void {
     refreshHandler = handler;
 }

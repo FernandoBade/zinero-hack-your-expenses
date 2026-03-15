@@ -1,4 +1,4 @@
-import type { ResourceKey } from "@shared/i18n/resource.keys";
+import type { I18nKey } from "@shared/i18n/types/i18n-key";
 import { IconName } from "@shared/enums/icon.enums";
 import { ToastVariant } from "@shared/enums/ui.enums";
 
@@ -9,7 +9,7 @@ import { ToastVariant } from "@shared/enums/ui.enums";
  */
 export interface ToastPayload {
     readonly variant: ToastVariant;
-    readonly message: ResourceKey;
+    readonly message: I18nKey;
     readonly icon?: IconName;
     readonly durationMs?: number;
 }

@@ -4,7 +4,7 @@ import { Readable } from 'stream';
 import { Client as FtpClient } from 'basic-ftp';
 import { FilterOperator, SortOrder } from '../../../shared/enums/operator.enums';
 import { UserRepository } from '../repositories/userRepository';
-import { ResourceKey as Resource } from '../../../shared/i18n/resource.keys';
+import { ErrorCode } from '../../../shared/errors/error-codes';
 import { SelectUser, InsertUser } from '../db/schema';
 import { QueryOptions } from '../utils/pagination';
 import { TokenService } from './tokenService';
@@ -84,7 +84,7 @@ export class UserService {
      * @param data - User registration data.
      * @returns Created user record or error if email is already in use.
      */
-    async createUser(data: CreateUserInput): Promise<{ success: true; data: SanitizedUser } | { success: false; error: Resource }> {
+    async createUser(data: CreateUserInput): Promise<{ success: true; data: SanitizedUser } | { success: false; error: ErrorCode }> {
         data.email = data.email.trim().toLowerCase();
 
         const existingUsers = await this.userRepository.findMany({
@@ -94,9 +94,9 @@ export class UserService {
         if (existingUsers.length > 0) {
             const existing = existingUsers[0];
             if (existing && !existing.emailVerifiedAt) {
-                return { success: false, error: Resource.EMAIL_NOT_VERIFIED };
+                return { success: false, error: ErrorCode.EMAIL_NOT_VERIFIED };
             }
-            return { success: false, error: Resource.EMAIL_IN_USE };
+            return { success: false, error: ErrorCode.EMAIL_IN_USE };
         }
 
         const hashedPassword = await bcrypt.hash(data.password, USER_SERVICE_CONFIG.passwordHashRounds);
@@ -122,13 +122,18 @@ export class UserService {
             const tokenResult = await this.tokenService.createEmailVerificationToken(created.id);
             if (!tokenResult.success || !tokenResult.data) {
                 await rollbackUser();
-                return { success: false, error: Resource.INTERNAL_SERVER_ERROR };
+                return { success: false, error: ErrorCode.INTERNAL_SERVER_ERROR };
             }
 
-            await sendEmailVerificationEmail(created.email, tokenResult.data.token, created.id);
+            await sendEmailVerificationEmail(
+                created.email,
+                tokenResult.data.token,
+                created.id,
+                created.language
+            );
         } catch {
             await rollbackUser();
-            return { success: false, error: Resource.INTERNAL_SERVER_ERROR };
+            return { success: false, error: ErrorCode.INTERNAL_SERVER_ERROR };
         }
 
         return {
@@ -143,7 +148,7 @@ export class UserService {
      * @returns List of user records.
      */
 
-    async getUsers(options?: QueryOptions<SelectUser>): Promise<{ success: true; data: SanitizedUser[] } | { success: false; error: Resource }> {
+    async getUsers(options?: QueryOptions<SelectUser>): Promise<{ success: true; data: SanitizedUser[] } | { success: false; error: ErrorCode }> {
         try {
             const users = await this.userRepository.findMany(undefined, {
                 limit: options?.limit,
@@ -156,7 +161,7 @@ export class UserService {
                 data: users.map(u => this.sanitizeUser(u))
             };
         } catch {
-            return { success: false, error: Resource.INTERNAL_SERVER_ERROR };
+            return { success: false, error: ErrorCode.INTERNAL_SERVER_ERROR };
         }
     }
 
@@ -165,12 +170,12 @@ export class UserService {
      * @returns Total user count.
      */
 
-    async countUsers(): Promise<{ success: true; data: number } | { success: false; error: Resource }> {
+    async countUsers(): Promise<{ success: true; data: number } | { success: false; error: ErrorCode }> {
         try {
             const count = await this.userRepository.count();
             return { success: true, data: count };
         } catch {
-            return { success: false, error: Resource.INTERNAL_SERVER_ERROR };
+            return { success: false, error: ErrorCode.INTERNAL_SERVER_ERROR };
         }
     }
 
@@ -180,10 +185,10 @@ export class UserService {
      * @returns User record if found, or error if not.
      */
 
-    async getUserById(id: number): Promise<{ success: true; data: SanitizedUser } | { success: false; error: Resource }> {
+    async getUserById(id: number): Promise<{ success: true; data: SanitizedUser } | { success: false; error: ErrorCode }> {
         const user = await this.userRepository.findById(id);
         if (!user) {
-            return { success: false, error: Resource.USER_NOT_FOUND };
+            return { success: false, error: ErrorCode.USER_NOT_FOUND };
         }
         return {
             success: true,
@@ -198,7 +203,7 @@ export class UserService {
      * @param emailTerm - Email search term (partial match).
      * @returns List of users matching the email filter.
      */
-    async getUsersByEmail(emailTerm: string, options?: QueryOptions<SelectUser>): Promise<{ success: true; data: SanitizedUser[] } | { success: false; error: Resource }> {
+    async getUsersByEmail(emailTerm: string, options?: QueryOptions<SelectUser>): Promise<{ success: true; data: SanitizedUser[] } | { success: false; error: ErrorCode }> {
         try {
             const result = await this.userRepository.findMany({
                 email: { operator: FilterOperator.LIKE, value: emailTerm }
@@ -213,7 +218,7 @@ export class UserService {
                 data: result.map(u => this.sanitizeUser(u))
             };
         } catch {
-            return { success: false, error: Resource.INTERNAL_SERVER_ERROR };
+            return { success: false, error: ErrorCode.INTERNAL_SERVER_ERROR };
         }
     }
 
@@ -223,7 +228,7 @@ export class UserService {
      * @returns List of users matching the exact email.
      */
 
-    async getUserByEmailExact(email: string, options?: QueryOptions<SelectUser>): Promise<{ success: true; data: SanitizedUser[] } | { success: false; error: Resource }> {
+    async getUserByEmailExact(email: string, options?: QueryOptions<SelectUser>): Promise<{ success: true; data: SanitizedUser[] } | { success: false; error: ErrorCode }> {
         try {
             const normalized = email.trim().toLowerCase();
             const result = await this.userRepository.findMany({
@@ -239,7 +244,7 @@ export class UserService {
                 data: result.map(u => this.sanitizeUser(u))
             };
         } catch {
-            return { success: false, error: Resource.INTERNAL_SERVER_ERROR };
+            return { success: false, error: ErrorCode.INTERNAL_SERVER_ERROR };
         }
     }
 
@@ -249,7 +254,7 @@ export class UserService {
      * @returns User record if found, or error if not.
      */
 
-    async findUserByEmailExact(email: string): Promise<{ success: true; data: SanitizedUser } | { success: false; error: Resource }> {
+    async findUserByEmailExact(email: string): Promise<{ success: true; data: SanitizedUser } | { success: false; error: ErrorCode }> {
         try {
             const normalized = email.trim().toLowerCase();
             const result = await this.userRepository.findMany({
@@ -259,16 +264,16 @@ export class UserService {
             });
 
             if (result.length === 0) {
-                return { success: false, error: Resource.USER_NOT_FOUND };
+                return { success: false, error: ErrorCode.USER_NOT_FOUND };
             }
 
             if (result.length > 1) {
-                return { success: false, error: Resource.INTERNAL_SERVER_ERROR };
+                return { success: false, error: ErrorCode.INTERNAL_SERVER_ERROR };
             }
 
             return { success: true, data: this.sanitizeUser(result[0]) };
         } catch {
-            return { success: false, error: Resource.INTERNAL_SERVER_ERROR };
+            return { success: false, error: ErrorCode.INTERNAL_SERVER_ERROR };
         }
     }
 
@@ -278,14 +283,14 @@ export class UserService {
      * @returns Count of matching users.
      */
 
-    async countUsersByEmail(emailTerm: string): Promise<{ success: true; data: number } | { success: false; error: Resource }> {
+    async countUsersByEmail(emailTerm: string): Promise<{ success: true; data: number } | { success: false; error: ErrorCode }> {
         try {
             const count = await this.userRepository.count({
                 email: { operator: FilterOperator.LIKE, value: emailTerm }
             });
             return { success: true, data: count };
         } catch {
-            return { success: false, error: Resource.INTERNAL_SERVER_ERROR };
+            return { success: false, error: ErrorCode.INTERNAL_SERVER_ERROR };
         }
     }
 
@@ -297,10 +302,10 @@ export class UserService {
      * @param data - Partial user data.
      * @returns Updated user or error if not found.
      */
-    async updateUser(id: number, data: UpdateUserInput): Promise<{ success: true; data: SanitizedUser } | { success: false; error: Resource }> {
+    async updateUser(id: number, data: UpdateUserInput): Promise<{ success: true; data: SanitizedUser } | { success: false; error: ErrorCode }> {
         const current = await this.userRepository.findById(id);
         if (!current) {
-            return { success: false, error: Resource.NO_RECORDS_FOUND };
+            return { success: false, error: ErrorCode.NO_RECORDS_FOUND };
         }
 
         if (data.password && current.password) {
@@ -333,10 +338,10 @@ export class UserService {
      * @param userId - User ID.
      * @returns Updated user or error.
      */
-    async markEmailVerified(userId: number): Promise<{ success: true; data: SanitizedUser } | { success: false; error: Resource }> {
+    async markEmailVerified(userId: number): Promise<{ success: true; data: SanitizedUser } | { success: false; error: ErrorCode }> {
         const existing = await this.userRepository.findById(userId);
         if (!existing) {
-            return { success: false, error: Resource.USER_NOT_FOUND };
+            return { success: false, error: ErrorCode.USER_NOT_FOUND };
         }
 
         if (existing.emailVerifiedAt) {
@@ -354,10 +359,10 @@ export class UserService {
      * @param id - ID of the user to delete.
      * @returns Success with deleted ID, or error if user does not exist.
      */
-    async deleteUser(id: number): Promise<{ success: true; data: { id: number } } | { success: false; error: Resource }> {
+    async deleteUser(id: number): Promise<{ success: true; data: { id: number } } | { success: false; error: ErrorCode }> {
         const existingUser = await this.userRepository.findById(id);
         if (!existingUser) {
-            return { success: false, error: Resource.USER_NOT_FOUND };
+            return { success: false, error: ErrorCode.USER_NOT_FOUND };
         }
 
         await this.userRepository.delete(id);
@@ -370,10 +375,10 @@ export class UserService {
      * @returns User record or error.
      */
 
-    async findOne(id: number): Promise<{ success: true; data: UserEntity } | { success: false; error: Resource }> {
+    async findOne(id: number): Promise<{ success: true; data: UserEntity } | { success: false; error: ErrorCode }> {
         const user = await this.userRepository.findById(id);
         if (!user) {
-            return { success: false, error: Resource.USER_NOT_FOUND };
+            return { success: false, error: ErrorCode.USER_NOT_FOUND };
         }
         return { success: true, data: this.toUserEntity(user) };
     }
@@ -386,10 +391,10 @@ export class UserService {
      * @param file - Multer file buffer for the avatar.
      * @returns Public URL of the uploaded avatar or an error.
      */
-    async uploadAvatar(userId: number, file: Express.Multer.File): Promise<{ success: true; data: { url: string } } | { success: false; error: Resource }> {
+    async uploadAvatar(userId: number, file: Express.Multer.File): Promise<{ success: true; data: { url: string } } | { success: false; error: ErrorCode }> {
         const existingUser = await this.userRepository.findById(userId);
         if (!existingUser) {
-            return { success: false, error: Resource.USER_NOT_FOUND };
+            return { success: false, error: ErrorCode.USER_NOT_FOUND };
         }
 
         const host = process.env.FTP_HOST;
@@ -400,7 +405,7 @@ export class UserService {
         const port = Number.isFinite(portValue) ? portValue : USER_SERVICE_CONFIG.defaultFtpPort;
 
         if (!host || !user || !password || !uploadPath) {
-            return { success: false, error: Resource.INTERNAL_SERVER_ERROR };
+            return { success: false, error: ErrorCode.INTERNAL_SERVER_ERROR };
         }
 
         const extension = resolveAvatarExtension(file.mimetype);
@@ -445,7 +450,7 @@ export class UserService {
             await this.userRepository.update(userId, { avatarUrl: publicUrl });
             return { success: true, data: { url: publicUrl } };
         } catch {
-            return { success: false, error: Resource.INTERNAL_SERVER_ERROR };
+            return { success: false, error: ErrorCode.INTERNAL_SERVER_ERROR };
         } finally {
             ftpClient.close();
         }

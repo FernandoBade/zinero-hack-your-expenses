@@ -2,7 +2,7 @@ import { AccountType } from '../../../shared/enums/account.enums';
 import { CategoryColor, CategoryType } from '../../../shared/enums/category.enums';
 import { CreditCardFlag } from '../../../shared/enums/creditCard.enums';
 import { Currency, Language, Profile, Theme } from '../../../shared/enums/user.enums';
-import { LanguageCode } from '../../../shared/i18n/resourceTypes';
+import { Locale } from '../../../shared/i18n/types/locale';
 
 export type AccountTemplate = {
     name: string;
@@ -29,7 +29,7 @@ export type CategoryTemplate = {
 };
 
 export type SeedConfig = {
-    language: LanguageCode;
+    language: Locale;
     defaultPassword: string;
     emailDomain: string;
     userOptions: {

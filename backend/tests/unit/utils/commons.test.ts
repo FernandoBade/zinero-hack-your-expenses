@@ -1,8 +1,7 @@
 import { HTTPStatus } from '../../../../shared/enums/http-status.enums';
 import { LogCategory, LogOperation, LogType } from '../../../../shared/enums/log.enums';
-import { ResourceKey as Resource } from '../../../../shared/i18n/resource.keys';
+import { ErrorCode as Resource } from '../../../../shared/errors/error-codes';
 import { createMockRequest, createMockResponse, createNext } from '../../helpers/mockExpress';
-import { translateResource } from '../../../../shared/i18n/resource.utils';
 import { Language } from '../../../../shared/enums/language.enums';
 
 jest.mock('winston', () => ({
@@ -131,8 +130,7 @@ describe('commons utils', () => {
             const response = (res.json as jest.Mock).mock.calls[0][0];
             expect(res.status).toHaveBeenCalledWith(HTTPStatus.BAD_REQUEST);
             expect(response.success).toBe(false);
-            expect(response.resource).toBe(Resource.INVALID_TYPE);
-            expect(response.message).toBe(translateResource(Resource.INVALID_TYPE, Language.PT_BR));
+            expect(response.errorCode).toBe(Resource.INVALID_TYPE);
             expect(response.error).toEqual({ reason: 'x' });
             expect(typeof response.elapsedTime).toBe('number');
         });
@@ -146,8 +144,7 @@ describe('commons utils', () => {
             const response = (res.json as jest.Mock).mock.calls[0][0];
             expect(res.status).toHaveBeenCalledWith(HTTPStatus.BAD_REQUEST);
             expect(response.success).toBe(false);
-            expect(response.resource).toBe(Resource.INTERNAL_SERVER_ERROR);
-            expect(response.message).toBe(translateResource(Resource.INTERNAL_SERVER_ERROR, Language.EN_US));
+            expect(response.errorCode).toBe(Resource.INTERNAL_SERVER_ERROR);
             expect(response.error).toEqual({ reason: 'x' });
         });
 
@@ -173,7 +170,7 @@ describe('commons utils', () => {
             expect(response.pageSize).toBe(10);
             expect(response.pageCount).toBe(1);
             expect(response.totalItems).toBe(1);
-            expect(response.elapsedTime).toEqual(expect.stringContaining(' ms'));
+            expect(typeof response.elapsedTime).toBe('number');
         });
 
         it('returns early when headers already sent', () => {
@@ -258,8 +255,7 @@ describe('commons utils', () => {
             const response = (res.json as jest.Mock).mock.calls[0][0];
             expect(res.status).toHaveBeenCalledWith(HTTPStatus.BAD_REQUEST);
             expect(response.success).toBe(false);
-            expect(response.resource).toBe(Resource.INVALID_TYPE);
-            expect(response.message).toBe(translateResource(Resource.INVALID_TYPE, Language.EN_US));
+            expect(response.errorCode).toBe(Resource.INVALID_TYPE);
             expect(response.error).toEqual(expect.objectContaining({ message: 'boom', name: 'Error' }));
             expect(typeof response.elapsedTime).toBe('number');
         });
@@ -309,7 +305,7 @@ describe('commons utils', () => {
             commons.answerAPI(req, res, HTTPStatus.OK);
 
             const response = (res.json as jest.Mock).mock.calls[0][0];
-            expect(response.elapsedTime).toBe('0 ms');
+            expect(response.elapsedTime).toBe(0);
         });
     });
 });

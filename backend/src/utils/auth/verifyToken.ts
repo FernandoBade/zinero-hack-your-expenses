@@ -3,7 +3,7 @@ import { TokenUtils } from './tokenUtils';
 import { answerAPI } from '../commons';
 import { AuthScheme } from '../../../../shared/enums/http.enums';
 import { HTTPStatus } from '../../../../shared/enums/http-status.enums';
-import { ResourceKey as Resource } from '../../../../shared/i18n/resource.keys';
+import { ErrorCode } from '../../../../shared/errors/error-codes';
 import { UserService } from '../../service/userService';
 
 /**
@@ -18,7 +18,7 @@ export async function verifyToken(req: Request, res: Response, next: NextFunctio
     const bearerPrefix = `${AuthScheme.BEARER} `;
 
     if (!authHeader || !authHeader.startsWith(bearerPrefix)) {
-        answerAPI(req, res, HTTPStatus.UNAUTHORIZED, undefined, Resource.EXPIRED_OR_INVALID_TOKEN);
+        answerAPI(req, res, HTTPStatus.UNAUTHORIZED, undefined, ErrorCode.EXPIRED_OR_INVALID_TOKEN);
         return;
     }
 
@@ -30,7 +30,7 @@ export async function verifyToken(req: Request, res: Response, next: NextFunctio
         const userResult = await userService.findOne(tokenData.id);
 
         if (!userResult.success || !userResult.data || !userResult.data.active || !userResult.data.emailVerifiedAt) {
-            answerAPI(req, res, HTTPStatus.UNAUTHORIZED, undefined, Resource.EXPIRED_OR_INVALID_TOKEN);
+            answerAPI(req, res, HTTPStatus.UNAUTHORIZED, undefined, ErrorCode.EXPIRED_OR_INVALID_TOKEN);
             return;
         }
 
@@ -40,7 +40,7 @@ export async function verifyToken(req: Request, res: Response, next: NextFunctio
         };
         next();
     } catch {
-        answerAPI(req, res, HTTPStatus.UNAUTHORIZED, undefined, Resource.EXPIRED_OR_INVALID_TOKEN);
+        answerAPI(req, res, HTTPStatus.UNAUTHORIZED, undefined, ErrorCode.EXPIRED_OR_INVALID_TOKEN);
         return;
     }
 }

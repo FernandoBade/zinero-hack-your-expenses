@@ -1,6 +1,6 @@
 import { LogCategory, LogOperation, LogType } from '../../../../shared/enums/log.enums';
-import { ResourceKey as Resource } from '../../../../shared/i18n/resource.keys';
-import { translateResource } from '../../../../shared/i18n/resource.utils';
+import { Language } from '../../../../shared/enums/language.enums';
+import { translateAsync } from '../../../../shared/i18n/translate';
 const originalEnv = { ...process.env };
 
 const setEnv = (overrides: Record<string, string | undefined>) => {
@@ -85,7 +85,7 @@ describe('authEmail utils', () => {
         });
         const sender = jest.fn().mockResolvedValue(undefined);
 
-        await module.sendEmailVerificationEmail('user@example.com', 'verify-token', 12, sender);
+        await module.sendEmailVerificationEmail('user@example.com', 'verify-token', 12, undefined, sender);
 
         expect(sender).toHaveBeenCalledWith({
             type: 'emailVerification',
@@ -101,7 +101,7 @@ describe('authEmail utils', () => {
         });
         const sender = jest.fn().mockResolvedValue(undefined);
 
-        await module.sendPasswordResetEmail('user@example.com', 'reset-token', 7, sender);
+        await module.sendPasswordResetEmail('user@example.com', 'reset-token', 7, undefined, sender);
 
         expect(sender).toHaveBeenCalledWith({
             type: 'passwordReset',
@@ -125,17 +125,17 @@ describe('authEmail utils', () => {
         expect(payload).toEqual(expect.objectContaining({
             from: 'no-reply@example.com',
             to: 'user@example.com',
-            subject: translateResource(Resource.EMAIL_VERIFICATION_SUBJECT),
+            subject: await translateAsync('email.auth.verification.subject', Language.PT_BR),
         }));
 
         const html = payload.html as string;
-        expect(html).toContain(translateResource(Resource.EMAIL_VERIFICATION_BODY));
-        expect(html).toContain(translateResource(Resource.EMAIL_LINK_LABEL));
+        expect(html).toContain(await translateAsync('email.auth.verification.body', Language.PT_BR));
+        expect(html).toContain(await translateAsync('email.auth.link.label', Language.PT_BR));
         expect(html).toContain('https://app.example.com/verify-email?token=verify-token');
 
         const text = payload.text as string;
-        expect(text).toContain(translateResource(Resource.EMAIL_VERIFICATION_BODY));
-        expect(text).toContain(translateResource(Resource.EMAIL_LINK_LABEL));
+        expect(text).toContain(await translateAsync('email.auth.verification.body', Language.PT_BR));
+        expect(text).toContain(await translateAsync('email.auth.link.label', Language.PT_BR));
         expect(text).toContain('https://app.example.com/verify-email?token=verify-token');
     });
 
@@ -153,12 +153,12 @@ describe('authEmail utils', () => {
         expect(payload).toEqual(expect.objectContaining({
             from: 'no-reply@example.com',
             to: 'user@example.com',
-            subject: translateResource(Resource.PASSWORD_RESET_SUBJECT),
+            subject: await translateAsync('email.auth.password_reset.subject', Language.PT_BR),
         }));
 
         const html = payload.html as string;
-        expect(html).toContain(translateResource(Resource.PASSWORD_RESET_BODY));
-        expect(html).toContain(translateResource(Resource.PASSWORD_RESET_WARNING));
+        expect(html).toContain(await translateAsync('email.auth.password_reset.body', Language.PT_BR));
+        expect(html).toContain(await translateAsync('email.auth.password_reset.warning', Language.PT_BR));
         expect(html).toContain('https://app.example.com/reset-password?token=reset-token');
     });
 

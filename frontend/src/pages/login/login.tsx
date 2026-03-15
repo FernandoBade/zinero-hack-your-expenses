@@ -6,7 +6,7 @@ import googleLogoButton from "@shared/assets/images/google-logo-button.png";
 import loginIllustration from "@shared/assets/images/login.png";
 import { InputType } from "@shared/enums/input.enums";
 import { AlertVariant, ButtonVariant } from "@shared/enums/ui.enums";
-import { ResourceKey } from "@shared/i18n/resource.keys";
+import type { I18nKey } from "@shared/i18n/types/i18n-key";
 import { Alert } from "@/components/alert/alert";
 import { Button } from "@/components/button/button";
 import { Card } from "@/components/card/card";
@@ -16,22 +16,22 @@ import { PageContainer } from "@/components/page-container/page-container";
 import { createLoginController } from "@/pages/login/login.controller";
 import { t } from "@/utils/i18n/translate";
 
-const LOGIN_TITLE_KEY = ResourceKey.AUTH_LOGIN_TITLE;
-const LOGIN_SUBTITLE_KEY = ResourceKey.AUTH_LOGIN_SUBTITLE;
-const LOGIN_EMAIL_LABEL_KEY = ResourceKey.FIELD_LABEL_EMAIL;
-const LOGIN_EMAIL_PLACEHOLDER_KEY = ResourceKey.AUTH_LOGIN_EMAIL_PLACEHOLDER;
-const LOGIN_PASSWORD_LABEL_KEY = ResourceKey.FIELD_LABEL_PASSWORD;
-const LOGIN_PASSWORD_PLACEHOLDER_KEY = ResourceKey.AUTH_LOGIN_PASSWORD_PLACEHOLDER;
-const LOGIN_BUTTON_KEY = ResourceKey.AUTH_LOGIN_BUTTON;
-const LOGIN_SUPPORT_KEY = ResourceKey.AUTH_LOGIN_SUPPORT;
-const LOGIN_DIVIDER_OR_KEY = ResourceKey.AUTH_LOGIN_DIVIDER_OR;
-const LOGIN_WITH_GOOGLE_KEY = ResourceKey.AUTH_LOGIN_WITH_GOOGLE;
-const SIGNUP_HINT_KEY = ResourceKey.AUTH_SIGNUP_HINT;
-const SIGNUP_ACTION_KEY = ResourceKey.AUTH_SIGNUP_ACTION;
-const LOGIN_ILLUSTRATION_ALT_KEY = ResourceKey.AUTH_LOGIN_ILLUSTRATION_ALT;
-const AUTH_SHOW_PASSWORD_KEY = ResourceKey.AUTH_SHOW_PASSWORD;
-const AUTH_HIDE_PASSWORD_KEY = ResourceKey.AUTH_HIDE_PASSWORD;
-const BRAND_ALT_KEY = ResourceKey.APP_NAME;
+const LOGIN_TITLE_KEY = 'auth.login.title';
+const LOGIN_SUBTITLE_KEY = 'auth.login.subtitle';
+const LOGIN_EMAIL_LABEL_KEY = 'field.email.label';
+const LOGIN_EMAIL_PLACEHOLDER_KEY = 'auth.login.email.placeholder';
+const LOGIN_PASSWORD_LABEL_KEY = 'field.password.label';
+const LOGIN_PASSWORD_PLACEHOLDER_KEY = "auth.login.password.placeholder";
+const LOGIN_BUTTON_KEY = 'auth.login.submit';
+const LOGIN_SUPPORT_KEY = 'auth.login.help.link';
+const LOGIN_DIVIDER_OR_KEY = 'auth.login.divider.or';
+const LOGIN_WITH_GOOGLE_KEY = 'auth.login.google.continue';
+const SIGNUP_HINT_KEY = 'auth.login.signup_prompt.text';
+const SIGNUP_ACTION_KEY = 'auth.login.signup_prompt.action';
+const LOGIN_ILLUSTRATION_ALT_KEY = 'auth.login.illustration.alt';
+const AUTH_SHOW_PASSWORD_KEY = 'auth.password.toggle.show';
+const AUTH_HIDE_PASSWORD_KEY = 'auth.password.toggle.hide';
+const BRAND_ALT_KEY = 'app.name';
 
 /**
  * @summary Renders the login page and binds form events to the login controller.
@@ -41,7 +41,7 @@ export function LoginPage(): JSX.Element {
     const [email, setEmail] = useState<string>("");
     const [password, setPassword] = useState<string>("");
     const [showPassword, setShowPassword] = useState<boolean>(false);
-    const [error, setError] = useState<ResourceKey | null>(null);
+    const [error, setError] = useState<I18nKey | null>(null);
     const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
     const controller = useMemo(() => createLoginController({ setError }), []);

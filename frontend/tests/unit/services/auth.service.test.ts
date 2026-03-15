@@ -1,5 +1,5 @@
 import { AuthEvent } from "@shared/enums/auth.enums";
-import { ResourceKey } from "@shared/i18n/resource.keys";
+import { ErrorCode } from "@shared/errors/error-codes";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const loginApiMock = vi.fn();
@@ -39,11 +39,10 @@ describe("auth.service", () => {
         vi.clearAllMocks();
     });
 
-    it("prioritizes response.resource as semantic key", async () => {
+    it("maps API errorCode to an i18n message key and keeps error payload", async () => {
         loginApiMock.mockResolvedValue({
             success: false,
-            resource: ResourceKey.EMAIL_NOT_VERIFIED,
-            message: "Email nao verificado",
+            errorCode: ErrorCode.EMAIL_NOT_VERIFIED,
             error: { canResend: true },
         });
 
@@ -51,33 +50,35 @@ describe("auth.service", () => {
 
         expect(result).toEqual({
             success: false,
-            messageKey: ResourceKey.EMAIL_NOT_VERIFIED,
+            messageKey: "error.email_not_verified",
             error: { canResend: true },
         });
         expect(setUnauthenticatedMock).toHaveBeenCalledTimes(1);
     });
 
-    it("returns unexpected error key when an error response has no resource", async () => {
+    it("returns unexpected error key for an unmapped errorCode", async () => {
         loginApiMock.mockResolvedValue({
             success: false,
-            message: ResourceKey.INVALID_CREDENTIALS,
+            errorCode: "UNMAPPED_ERROR_CODE",
         });
 
         const result = await login("user@example.com", "wrong");
 
-        expect(result.messageKey).toBe(ResourceKey.UNEXPECTED_ERROR);
+        expect(result.messageKey).toBe("error.unexpected_error");
         expect(setUnauthenticatedMock).toHaveBeenCalledTimes(1);
     });
 
-    it("does not infer semantic key from translated message text", async () => {
+    it("uses errorCode mapping instead of legacy message/resource fields", async () => {
         loginApiMock.mockResolvedValue({
             success: false,
+            errorCode: ErrorCode.INVALID_CREDENTIALS,
+            resource: "error.email_not_verified",
             message: "Credenciais invalidas",
         });
 
         const result = await login("user@example.com", "wrong");
 
-        expect(result.messageKey).toBe(ResourceKey.UNEXPECTED_ERROR);
+        expect(result.messageKey).toBe("error.invalid_credentials");
         expect(setUnauthenticatedMock).toHaveBeenCalledTimes(1);
     });
 
@@ -85,15 +86,11 @@ describe("auth.service", () => {
         loginApiMock.mockResolvedValue({
             success: true,
             data: { token: "access-token" },
-            resource: ResourceKey.EMAIL_VERIFICATION_SUCCESS,
         });
 
         const result = await login("user@example.com", "secret");
 
-        expect(result).toEqual({
-            success: true,
-            messageKey: ResourceKey.EMAIL_VERIFICATION_SUCCESS,
-        });
+        expect(result).toEqual({ success: true });
         expect(setAuthenticatedMock).toHaveBeenCalledWith("access-token");
         expect(emitAuthEventMock).toHaveBeenCalledWith(AuthEvent.LOGIN_SUCCESS);
     });

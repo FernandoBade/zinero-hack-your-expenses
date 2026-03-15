@@ -10,7 +10,8 @@
         "test:watch": "vitest",
         "test:coverage": "vitest run --coverage",
         "test:ci": "vitest run --coverage --reporter=default",
-        "lint": "eslint ."
+        "lint": "eslint .",
+        "typecheck": "tsc --noEmit -p tsconfig.app.json"
     },
     "dependencies": {
         "@phosphor-icons/react": "^2.1.10",

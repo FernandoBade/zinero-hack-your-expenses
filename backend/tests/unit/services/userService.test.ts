@@ -3,10 +3,9 @@ import { UserService } from '../../../src/service/userService';
 import { UserRepository } from '../../../src/repositories/userRepository';
 import { TokenService } from '../../../src/service/tokenService';
 import { FilterOperator, SortOrder } from '../../../../shared/enums/operator.enums';
-import { ResourceKey as Resource } from '../../../../shared/i18n/resource.keys';
+import { ErrorCode as Resource } from '../../../../shared/errors/error-codes';
 import { makeCreateUserInput, makeDbUser, makeUser } from '../../helpers/factories';
 import { sendEmailVerificationEmail } from '../../../src/utils/email/authEmail';
-import { translateResource } from '../../../../shared/i18n/resource.utils';
 
 const ftpClientMock = {
     access: jest.fn(),
@@ -37,8 +36,6 @@ type CompareFn = (data: string | Buffer, encrypted: string) => Promise<boolean>;
 const hashMock = bcrypt.hash as jest.MockedFunction<HashFn>;
 const compareMock = bcrypt.compare as jest.MockedFunction<CompareFn>;
 const sendEmailVerificationMock = sendEmailVerificationEmail as jest.MockedFunction<typeof sendEmailVerificationEmail>;
-
-const translate = (resource: Resource) => translateResource(resource, 'en-US');
 const isResource = (value: string): value is Resource => Object.values(Resource).includes(value as Resource);
 
 describe('UserService', () => {
@@ -71,7 +68,6 @@ describe('UserService', () => {
             expect(result.success).toBe(false);
             if (!result.success) {
                 expect(result.error).toBe(Resource.EMAIL_NOT_VERIFIED);
-                expect(translate(result.error)).toBe(translate(Resource.EMAIL_NOT_VERIFIED));
             }
         });
 
@@ -95,7 +91,6 @@ describe('UserService', () => {
             expect(result.success).toBe(false);
             if (!result.success) {
                 expect(result.error).toBe(Resource.EMAIL_IN_USE);
-                expect(translate(result.error)).toBe(translate(Resource.EMAIL_IN_USE));
             }
         });
 
@@ -127,7 +122,12 @@ describe('UserService', () => {
                 })
             );
             expect(createTokenSpy).toHaveBeenCalledWith(created.id);
-            expect(sendEmailVerificationMock).toHaveBeenCalledWith(created.email, 'verify-token', created.id);
+            expect(sendEmailVerificationMock).toHaveBeenCalledWith(
+                created.email,
+                'verify-token',
+                created.id,
+                created.language
+            );
             expect(result).toEqual(
                 expect.objectContaining({
                     success: true,
@@ -183,7 +183,6 @@ describe('UserService', () => {
             if (caught instanceof Error) {
                 expect(isResource(caught.message)).toBe(true);
                 if (isResource(caught.message)) {
-                    expect(translate(caught.message)).toBe(translate(Resource.INTERNAL_SERVER_ERROR));
                 }
             }
         });
@@ -228,7 +227,6 @@ describe('UserService', () => {
             expect(result.success).toBe(false);
             if (!result.success) {
                 expect(result.error).toBe(Resource.INTERNAL_SERVER_ERROR);
-                expect(translate(result.error)).toBe(translate(Resource.INTERNAL_SERVER_ERROR));
             }
         });
     });
@@ -254,7 +252,6 @@ describe('UserService', () => {
             expect(result.success).toBe(false);
             if (!result.success) {
                 expect(result.error).toBe(Resource.INTERNAL_SERVER_ERROR);
-                expect(translate(result.error)).toBe(translate(Resource.INTERNAL_SERVER_ERROR));
             }
         });
     });
@@ -271,7 +268,6 @@ describe('UserService', () => {
             expect(result.success).toBe(false);
             if (!result.success) {
                 expect(result.error).toBe(Resource.USER_NOT_FOUND);
-                expect(translate(result.error)).toBe(translate(Resource.USER_NOT_FOUND));
             }
         });
 
@@ -310,7 +306,6 @@ describe('UserService', () => {
             if (caught instanceof Error) {
                 expect(isResource(caught.message)).toBe(true);
                 if (isResource(caught.message)) {
-                    expect(translate(caught.message)).toBe(translate(Resource.INTERNAL_SERVER_ERROR));
                 }
             }
         });
@@ -351,7 +346,6 @@ describe('UserService', () => {
             expect(result.success).toBe(false);
             if (!result.success) {
                 expect(result.error).toBe(Resource.INTERNAL_SERVER_ERROR);
-                expect(translate(result.error)).toBe(translate(Resource.INTERNAL_SERVER_ERROR));
             }
         });
     });
@@ -391,7 +385,6 @@ describe('UserService', () => {
             expect(result.success).toBe(false);
             if (!result.success) {
                 expect(result.error).toBe(Resource.INTERNAL_SERVER_ERROR);
-                expect(translate(result.error)).toBe(translate(Resource.INTERNAL_SERVER_ERROR));
             }
         });
     });
@@ -411,7 +404,6 @@ describe('UserService', () => {
             expect(result.success).toBe(false);
             if (!result.success) {
                 expect(result.error).toBe(Resource.USER_NOT_FOUND);
-                expect(translate(result.error)).toBe(translate(Resource.USER_NOT_FOUND));
             }
         });
 
@@ -452,7 +444,6 @@ describe('UserService', () => {
             expect(result.success).toBe(false);
             if (!result.success) {
                 expect(result.error).toBe(Resource.INTERNAL_SERVER_ERROR);
-                expect(translate(result.error)).toBe(translate(Resource.INTERNAL_SERVER_ERROR));
             }
         });
     });
@@ -478,7 +469,6 @@ describe('UserService', () => {
             expect(result.success).toBe(false);
             if (!result.success) {
                 expect(result.error).toBe(Resource.INTERNAL_SERVER_ERROR);
-                expect(translate(result.error)).toBe(translate(Resource.INTERNAL_SERVER_ERROR));
             }
         });
     });
@@ -498,7 +488,6 @@ describe('UserService', () => {
             expect(result.success).toBe(false);
             if (!result.success) {
                 expect(result.error).toBe(Resource.NO_RECORDS_FOUND);
-                expect(translate(result.error)).toBe(translate(Resource.NO_RECORDS_FOUND));
             }
         });
 
@@ -571,7 +560,6 @@ describe('UserService', () => {
             if (caught instanceof Error) {
                 expect(isResource(caught.message)).toBe(true);
                 if (isResource(caught.message)) {
-                    expect(translate(caught.message)).toBe(translate(Resource.INTERNAL_SERVER_ERROR));
                 }
             }
         });
@@ -591,7 +579,6 @@ describe('UserService', () => {
             expect(result.success).toBe(false);
             if (!result.success) {
                 expect(result.error).toBe(Resource.USER_NOT_FOUND);
-                expect(translate(result.error)).toBe(translate(Resource.USER_NOT_FOUND));
             }
         });
 
@@ -625,7 +612,6 @@ describe('UserService', () => {
             if (caught instanceof Error) {
                 expect(isResource(caught.message)).toBe(true);
                 if (isResource(caught.message)) {
-                    expect(translate(caught.message)).toBe(translate(Resource.INTERNAL_SERVER_ERROR));
                 }
             }
         });
@@ -643,7 +629,6 @@ describe('UserService', () => {
             expect(result.success).toBe(false);
             if (!result.success) {
                 expect(result.error).toBe(Resource.USER_NOT_FOUND);
-                expect(translate(result.error)).toBe(translate(Resource.USER_NOT_FOUND));
             }
         });
 
@@ -678,7 +663,6 @@ describe('UserService', () => {
             if (caught instanceof Error) {
                 expect(isResource(caught.message)).toBe(true);
                 if (isResource(caught.message)) {
-                    expect(translate(caught.message)).toBe(translate(Resource.INTERNAL_SERVER_ERROR));
                 }
             }
         });

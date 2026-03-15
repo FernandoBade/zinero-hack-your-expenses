@@ -4,13 +4,10 @@ import { AccountService } from '../../../src/service/accountService';
 import { UserService } from '../../../src/service/userService';
 import { CreditCardFlag } from '../../../../shared/enums/creditCard.enums';
 import { FilterOperator, SortOrder } from '../../../../shared/enums/operator.enums';
-import { ResourceKey as Resource } from '../../../../shared/i18n/resource.keys';
+import { ErrorCode as Resource } from '../../../../shared/errors/error-codes';
 import type { CreditCardEntity } from '../../../../shared/domains/creditCard/creditCard.types';
 import { SelectCreditCard } from '../../../src/db/schema';
 import { makeAccount, makeSanitizedUser } from '../../helpers/factories';
-import { translateResource } from '../../../../shared/i18n/resource.utils';
-
-const translate = (resource: Resource) => translateResource(resource, 'en-US');
 const isResource = (value: string): value is Resource => Object.values(Resource).includes(value as Resource);
 
 const DEFAULT_ISO_DATE = new Date('2024-01-01T00:00:00Z').toISOString();
@@ -79,7 +76,6 @@ describe('CreditCardService', () => {
             expect(result.success).toBe(false);
             if (!result.success) {
                 expect(result.error).toBe(Resource.USER_NOT_FOUND);
-                expect(translate(result.error)).toBe(translate(Resource.USER_NOT_FOUND));
             }
         });
 
@@ -105,7 +101,6 @@ describe('CreditCardService', () => {
             expect(result.success).toBe(false);
             if (!result.success) {
                 expect(result.error).toBe(Resource.ACCOUNT_NOT_FOUND);
-                expect(translate(result.error)).toBe(translate(Resource.ACCOUNT_NOT_FOUND));
             }
         });
 
@@ -135,7 +130,6 @@ describe('CreditCardService', () => {
             expect(result.success).toBe(false);
             if (!result.success) {
                 expect(result.error).toBe(Resource.DATA_ALREADY_EXISTS);
-                expect(translate(result.error)).toBe(translate(Resource.DATA_ALREADY_EXISTS));
             }
         });
 
@@ -214,7 +208,6 @@ describe('CreditCardService', () => {
             expect(result.success).toBe(false);
             if (!result.success) {
                 expect(result.error).toBe(Resource.INTERNAL_SERVER_ERROR);
-                expect(translate(result.error)).toBe(translate(Resource.INTERNAL_SERVER_ERROR));
             }
         });
     });
@@ -247,7 +240,6 @@ describe('CreditCardService', () => {
             expect(result.success).toBe(false);
             if (!result.success) {
                 expect(result.error).toBe(Resource.INTERNAL_SERVER_ERROR);
-                expect(translate(result.error)).toBe(translate(Resource.INTERNAL_SERVER_ERROR));
             }
         });
     });
@@ -273,7 +265,6 @@ describe('CreditCardService', () => {
             expect(result.success).toBe(false);
             if (!result.success) {
                 expect(result.error).toBe(Resource.INTERNAL_SERVER_ERROR);
-                expect(translate(result.error)).toBe(translate(Resource.INTERNAL_SERVER_ERROR));
             }
         });
     });
@@ -290,7 +281,6 @@ describe('CreditCardService', () => {
             expect(result.success).toBe(false);
             if (!result.success) {
                 expect(result.error).toBe(Resource.CREDIT_CARD_NOT_FOUND);
-                expect(translate(result.error)).toBe(translate(Resource.CREDIT_CARD_NOT_FOUND));
             }
         });
 
@@ -321,7 +311,6 @@ describe('CreditCardService', () => {
             if (caught instanceof Error) {
                 expect(isResource(caught.message)).toBe(true);
                 if (isResource(caught.message)) {
-                    expect(translate(caught.message)).toBe(translate(Resource.INTERNAL_SERVER_ERROR));
                 }
             }
         });
@@ -353,7 +342,6 @@ describe('CreditCardService', () => {
             expect(result.success).toBe(false);
             if (!result.success) {
                 expect(result.error).toBe(Resource.INTERNAL_SERVER_ERROR);
-                expect(translate(result.error)).toBe(translate(Resource.INTERNAL_SERVER_ERROR));
             }
         });
     });
@@ -379,7 +367,6 @@ describe('CreditCardService', () => {
             expect(result.success).toBe(false);
             if (!result.success) {
                 expect(result.error).toBe(Resource.INTERNAL_SERVER_ERROR);
-                expect(translate(result.error)).toBe(translate(Resource.INTERNAL_SERVER_ERROR));
             }
         });
     });
@@ -400,7 +387,6 @@ describe('CreditCardService', () => {
             expect(result.success).toBe(false);
             if (!result.success) {
                 expect(result.error).toBe(Resource.USER_NOT_FOUND);
-                expect(translate(result.error)).toBe(translate(Resource.USER_NOT_FOUND));
             }
         });
 
@@ -439,7 +425,6 @@ describe('CreditCardService', () => {
             expect(result.success).toBe(false);
             if (!result.success) {
                 expect(result.error).toBe(Resource.ACCOUNT_NOT_FOUND);
-                expect(translate(result.error)).toBe(translate(Resource.ACCOUNT_NOT_FOUND));
             }
         });
 
@@ -460,7 +445,6 @@ describe('CreditCardService', () => {
             expect(result.success).toBe(false);
             if (!result.success) {
                 expect(result.error).toBe(Resource.DATA_ALREADY_EXISTS);
-                expect(translate(result.error)).toBe(translate(Resource.DATA_ALREADY_EXISTS));
             }
         });
 
@@ -496,7 +480,6 @@ describe('CreditCardService', () => {
             expect(result.success).toBe(false);
             if (!result.success) {
                 expect(result.error).toBe(Resource.INTERNAL_SERVER_ERROR);
-                expect(translate(result.error)).toBe(translate(Resource.INTERNAL_SERVER_ERROR));
             }
         });
     });
@@ -515,7 +498,6 @@ describe('CreditCardService', () => {
             expect(result.success).toBe(false);
             if (!result.success) {
                 expect(result.error).toBe(Resource.CREDIT_CARD_NOT_FOUND);
-                expect(translate(result.error)).toBe(translate(Resource.CREDIT_CARD_NOT_FOUND));
             }
         });
 
@@ -543,7 +525,6 @@ describe('CreditCardService', () => {
             expect(result.success).toBe(false);
             if (!result.success) {
                 expect(result.error).toBe(Resource.INTERNAL_SERVER_ERROR);
-                expect(translate(result.error)).toBe(translate(Resource.INTERNAL_SERVER_ERROR));
             }
         });
     });

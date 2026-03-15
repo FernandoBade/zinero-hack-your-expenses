@@ -1,6 +1,7 @@
 import { verifyToken } from '../../../src/utils/auth/verifyToken';
 import { HTTPStatus } from '../../../../shared/enums/http-status.enums';
 import { Profile } from '../../../../shared/enums/user.enums';
+import { ErrorCode as Resource } from '../../../../shared/errors/error-codes';
 import { TokenUtils } from '../../../src/utils/auth/tokenUtils';
 import { createMockRequest, createMockResponse, createNext } from '../../helpers/mockExpress';
 import { UserService } from '../../../src/service/userService';
@@ -40,7 +41,7 @@ describe('verifyToken middleware', () => {
         expect(res.json).toHaveBeenCalledWith(
             expect.objectContaining({
                 success: false,
-                message: expect.any(String),
+                errorCode: Resource.EXPIRED_OR_INVALID_TOKEN,
             })
         );
         expect(next).not.toHaveBeenCalled();
@@ -76,7 +77,7 @@ describe('verifyToken middleware', () => {
         expect(res.json).toHaveBeenCalledWith(
             expect.objectContaining({
                 success: false,
-                message: expect.any(String),
+                errorCode: Resource.EXPIRED_OR_INVALID_TOKEN,
             })
         );
         expect(next).not.toHaveBeenCalled();
@@ -95,7 +96,7 @@ describe('verifyToken middleware', () => {
         expect(res.json).toHaveBeenCalledWith(
             expect.objectContaining({
                 success: false,
-                message: expect.any(String),
+                errorCode: Resource.EXPIRED_OR_INVALID_TOKEN,
             })
         );
         expect(next).not.toHaveBeenCalled();
@@ -117,7 +118,7 @@ describe('verifyToken middleware', () => {
         expect(res.json).toHaveBeenCalledWith(
             expect.objectContaining({
                 success: false,
-                message: expect.any(String),
+                errorCode: Resource.EXPIRED_OR_INVALID_TOKEN,
             })
         );
         expect(next).not.toHaveBeenCalled();

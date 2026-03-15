@@ -3,13 +3,10 @@ import { CategoryRepository } from '../../../src/repositories/categoryRepository
 import { UserService } from '../../../src/service/userService';
 import { CategoryColor, CategoryType } from '../../../../shared/enums/category.enums';
 import { FilterOperator, SortOrder } from '../../../../shared/enums/operator.enums';
-import { ResourceKey as Resource } from '../../../../shared/i18n/resource.keys';
+import { ErrorCode as Resource } from '../../../../shared/errors/error-codes';
 import { SelectCategory } from '../../../src/db/schema';
 import type { CategoryEntity } from '../../../../shared/domains/category/category.types';
 import { makeSanitizedUser } from '../../helpers/factories';
-import { translateResource } from '../../../../shared/i18n/resource.utils';
-
-const translate = (resource: Resource) => translateResource(resource, 'en-US');
 const isResource = (value: string): value is Resource => Object.values(Resource).includes(value as Resource);
 
 const DEFAULT_ISO_DATE = new Date('2024-01-01T00:00:00Z').toISOString();
@@ -72,7 +69,6 @@ describe('CategoryService', () => {
             expect(result.success).toBe(false);
             if (!result.success) {
                 expect(result.error).toBe(Resource.USER_NOT_FOUND);
-                expect(translate(result.error)).toBe(translate(Resource.USER_NOT_FOUND));
             }
         });
 
@@ -121,7 +117,6 @@ describe('CategoryService', () => {
             expect(result.success).toBe(false);
             if (!result.success) {
                 expect(result.error).toBe(Resource.INTERNAL_SERVER_ERROR);
-                expect(translate(result.error)).toBe(translate(Resource.INTERNAL_SERVER_ERROR));
             }
         });
     });
@@ -154,7 +149,6 @@ describe('CategoryService', () => {
             expect(result.success).toBe(false);
             if (!result.success) {
                 expect(result.error).toBe(Resource.INTERNAL_SERVER_ERROR);
-                expect(translate(result.error)).toBe(translate(Resource.INTERNAL_SERVER_ERROR));
             }
         });
     });
@@ -180,7 +174,6 @@ describe('CategoryService', () => {
             expect(result.success).toBe(false);
             if (!result.success) {
                 expect(result.error).toBe(Resource.INTERNAL_SERVER_ERROR);
-                expect(translate(result.error)).toBe(translate(Resource.INTERNAL_SERVER_ERROR));
             }
         });
     });
@@ -197,7 +190,6 @@ describe('CategoryService', () => {
             expect(result.success).toBe(false);
             if (!result.success) {
                 expect(result.error).toBe(Resource.NO_RECORDS_FOUND);
-                expect(translate(result.error)).toBe(translate(Resource.NO_RECORDS_FOUND));
             }
         });
 
@@ -228,7 +220,6 @@ describe('CategoryService', () => {
             if (caught instanceof Error) {
                 expect(isResource(caught.message)).toBe(true);
                 if (isResource(caught.message)) {
-                    expect(translate(caught.message)).toBe(translate(Resource.INTERNAL_SERVER_ERROR));
                 }
             }
         });
@@ -260,7 +251,6 @@ describe('CategoryService', () => {
             expect(result.success).toBe(false);
             if (!result.success) {
                 expect(result.error).toBe(Resource.INTERNAL_SERVER_ERROR);
-                expect(translate(result.error)).toBe(translate(Resource.INTERNAL_SERVER_ERROR));
             }
         });
     });
@@ -286,7 +276,6 @@ describe('CategoryService', () => {
             expect(result.success).toBe(false);
             if (!result.success) {
                 expect(result.error).toBe(Resource.INTERNAL_SERVER_ERROR);
-                expect(translate(result.error)).toBe(translate(Resource.INTERNAL_SERVER_ERROR));
             }
         });
     });
@@ -308,7 +297,6 @@ describe('CategoryService', () => {
             expect(result.success).toBe(false);
             if (!result.success) {
                 expect(result.error).toBe(Resource.USER_NOT_FOUND);
-                expect(translate(result.error)).toBe(translate(Resource.USER_NOT_FOUND));
             }
         });
 
@@ -338,7 +326,6 @@ describe('CategoryService', () => {
             expect(result.success).toBe(false);
             if (!result.success) {
                 expect(result.error).toBe(Resource.INTERNAL_SERVER_ERROR);
-                expect(translate(result.error)).toBe(translate(Resource.INTERNAL_SERVER_ERROR));
             }
         });
     });
@@ -357,7 +344,6 @@ describe('CategoryService', () => {
             expect(result.success).toBe(false);
             if (!result.success) {
                 expect(result.error).toBe(Resource.CATEGORY_NOT_FOUND);
-                expect(translate(result.error)).toBe(translate(Resource.CATEGORY_NOT_FOUND));
             }
         });
 
@@ -385,7 +371,6 @@ describe('CategoryService', () => {
             expect(result.success).toBe(false);
             if (!result.success) {
                 expect(result.error).toBe(Resource.INTERNAL_SERVER_ERROR);
-                expect(translate(result.error)).toBe(translate(Resource.INTERNAL_SERVER_ERROR));
             }
         });
     });

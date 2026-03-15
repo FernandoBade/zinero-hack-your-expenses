@@ -1,33 +1,31 @@
-## 📋 Project Context
+## Project Context
 
 This repository is a monorepo containing:
 
-- **backend/** — Node.js + TypeScript backend
-- **shared/** — shared contracts (types, enums, DTOs, i18n keys, assets)
-- **frontend/** — Preact + Vite + TypeScript frontend
+- `backend/` - Node.js + TypeScript backend
+- `shared/` - shared contracts (types, enums, DTOs, i18n keys, assets)
+- `frontend/` - Preact + Vite + TypeScript frontend
 
 ### Core Principle
 
-The frontend must mirror the backend architecture conceptually.
-
-The goal is that developers familiar with backend layers can instantly navigate frontend code.
+The frontend must mirror backend architecture conceptually so backend-oriented developers can navigate frontend quickly.
 
 ---
 
-# 🏗️ Frontend Stack (Non-Negotiable)
+# Frontend Stack (Non-Negotiable)
 
 - Preact
 - Vite
 - TypeScript (strict)
 - TailwindCSS
 - DaisyUI
-- History API Router (NO hash router)
+- History API Router (no hash router)
 
-UI must always be **mobile-first**.
+UI must be mobile-first.
 
 ---
 
-# 📱 Capacitor Future Readiness
+# Capacitor Future Readiness
 
 This frontend must remain compatible with a future Capacitor migration.
 
@@ -39,41 +37,27 @@ This frontend must remain compatible with a future Capacitor migration.
 
 ### Required
 
-All native integrations must be abstracted behind:
+All native integrations must be abstracted behind `src/platform/`.
 
-```
+Required modules:
 
-src/platform/
-
-```
-
-Required platform modules:
-
-```
-
+```text
 platform/
-├ storage/
-├ network/
-├ backButton/
-└ isNative.ts
-
+|-- storage/
+|-- network/
+|-- backButton/
+`-- isNative.ts
 ```
 
-Pages and components must never interact with platform APIs directly.
+Pages and components must never call platform APIs directly.
 
 ---
 
-# 🎨 UI Layer Policy (Tailwind + DaisyUI)
+# UI Layer Policy (Tailwind + DaisyUI)
 
-DaisyUI is **styling only**, not a component system.
+DaisyUI is styling only, not a component system.
 
-The real component library lives in:
-
-```
-
-src/components/
-
-```
+The real component library lives in `src/components/`.
 
 ### Allowed
 
@@ -84,18 +68,11 @@ DaisyUI classes may appear:
 
 ### Forbidden
 
-DaisyUI classes directly in:
+DaisyUI classes directly in `src/pages/**`.
 
-```
+Pages must use components such as:
 
-src/pages/**
-
-```
-
-Pages must always use components such as:
-
-```
-
+```tsx
 <Button />
 <Card />
 <Input />
@@ -104,96 +81,140 @@ Pages must always use components such as:
 
 ---
 
-# 🧠 TypeScript & Enum Policy
+# TypeScript, Enums, and Constants Policy
 
-All system identifiers must be typed.
-
-### Hard Rule
-
-Never use repeated string literals.
+All system identifiers must be typed. Never use repeated string literals for core contracts.
 
 Examples that must be typed:
 
-* UI variants
-* route paths
-* storage keys
-* theme names
-* event names
-* API modes
-* feature flags
+- UI variants
+- route paths
+- storage keys
+- theme names
+- event names
+- API modes
+- feature flags
 
-### Enum Location
+### Enum Scope Rules
 
-All enums must live in:
+Use runtime enums only when runtime enum semantics are actually useful.
 
-```
-shared/enums/
-```
+- Business/domain enums: `shared/enums/*`
+- UI/state enums: `shared/enums/*`
+- Route/path enums: `shared/enums/routes.enums.ts`
+- Storage/theme/mode enums: `shared/enums/*`
 
-Example:
+### i18n Exception (Critical)
 
-```
-shared/enums/ui.enums.ts
-shared/enums/routes.enums.ts
-shared/enums/theme.enums.ts
-shared/enums/storage.enums.ts
-```
+i18n keys must NOT use runtime enums.
 
-Frontend must import them via:
-
-```ts
-import { Something } from "@shared/enums/..."
-```
+i18n keys must be derived from `as const` catalogs and typed via `keyof`.
 
 ---
 
-# 🌐 Internationalization Enforcement (Critical)
+# Internationalization Architecture (Canonical)
 
-This project is **fully internationalized**.
+This project is fully internationalized.
 
-No user-visible text may appear as a string literal.
+No user-visible text may appear as a hardcoded string in page/component JSX.
 
-### Forbidden
+### Canonical Shared Structure
 
+```text
+shared/
+  errors/
+    error-codes.ts
+    error-payload.ts
+
+  fields/
+    field-keys.ts
+    field-label-map.ts
+
+  i18n/
+    locales/
+      en-US/
+        ui.ts
+        errors.ts
+        email.ts
+      pt-BR/
+        ui.ts
+        errors.ts
+        email.ts
+      es-ES/
+        ui.ts
+        errors.ts
+        email.ts
+
+    mappings/
+      error-code-map.ts
+
+    types/
+      i18n-key.ts
+      locale.ts
+      catalog.ts
+
+    translate.ts
 ```
-<h1>Welcome back!</h1>
-<Button>Log in</Button>
-<Input placeholder="Email" />
-```
 
-### Correct
+### Key Identity Rules
 
-```ts
-import { t } from "@shared/i18n"
-```
+- `ErrorCode` identifies machine/business/API errors.
+- `I18nKey` identifies translatable messages.
+- `ErrorCode` and `I18nKey` are different contracts and must not be conflated.
 
-```
-<h1>{t(I18nKey.AUTH_LOGIN_TITLE)}</h1>
-<Button>{t(I18nKey.AUTH_LOGIN_BUTTON)}</Button>
-<Input placeholder={t(I18nKey.AUTH_EMAIL_PLACEHOLDER)} />
-```
+### Key Naming Rules
 
-### Rules
+Use domain-first dot notation.
 
-* All UI text must come from `@shared/i18n`
-* Pages must never contain hardcoded text
-* New text requires adding keys in `shared/i18n`
+Examples:
 
-Hardcoded UI text is considered a **bug**.
+- `auth.login.submit`
+- `auth.login.email.placeholder`
+- `auth.login.signup_prompt.text`
+- `error.invalid_credentials`
+- `field.user_id.label`
+
+Do not use:
+
+- vague camelCase keys such as `authSignupHint`
+- natural-language sentence keys
+- hash keys
+
+### Typing Rules
+
+- Canonical locale is `en-US` for key derivation.
+- `I18nKey = keyof CanonicalCatalog`.
+- Non-canonical locales must `satisfy` canonical key shape.
+- Missing locale keys must fail TypeScript.
+
+### Translation Runtime Rules
+
+- Shared translator must support ICU message syntax.
+- Frontend translates UI locally from `I18nKey`.
+- Backend returns `ErrorCode` + `params?` + `field?` for API errors.
+- Backend does not return localized UI text as primary API contract.
+- Backend may translate backend-owned channels (email/notifications).
+- Locale catalog loading must be compatible with locale-level lazy loading.
+
+### Field Mapping Rules
+
+- Field identifiers must be typed by `FieldKey`.
+- Field-to-label mapping must be typed (`Record<FieldKey, I18nKey>`), not `Record<string, ...>`.
+
+### Hardcoded Text Enforcement
+
+Hardcoded UI text is a bug.
+
+- Pages/components must use i18n keys for user-visible text.
+- ESLint must enforce detection for hardcoded user-visible JSX strings.
 
 ---
 
-# ✨ Golden Rule
-
-> UI is composition. Business logic never lives inside components.
-
----
-
-# 🔄 Structural Mirroring Rules
+# Structural Mirroring Rules
 
 Backend layers:
 
-```
+```text
 routes/
 controller/
 service/
@@ -204,469 +225,166 @@ shared/
 
 Frontend equivalents:
 
-| Backend      | Frontend                |
-| ------------ | ----------------------- |
-| routes       | routes                  |
-| controller   | pages/*/*.controller.ts |
-| service      | services/               |
-| repositories | api/                    |
-| utils        | utils/                  |
-| shared       | @shared/*               |
+| Backend | Frontend |
+| --- | --- |
+| routes | routes |
+| controller | pages/*/*.controller.ts |
+| service | services/ |
+| repositories | api/ |
+| utils | utils/ |
+| shared | @shared/* |
 
 ---
 
-# 📁 Folder Architecture
+# Folder Architecture
 
-```
+```text
 src/
- ├ pages/
- ├ components/
- ├ services/
- ├ api/
- ├ routes/
- ├ platform/
- ├ state/
- ├ utils/
- ├ config/
- └ styles/
+ |-- pages/
+ |-- components/
+ |-- services/
+ |-- api/
+ |-- routes/
+ |-- platform/
+ |-- state/
+ |-- utils/
+ |-- config/
+ `-- styles/
 ```
 
-### Forbidden
+Forbidden: `src/shared/`
 
-```
-src/shared/
-```
-
-Shared contracts must always come from monorepo `shared/`.
+Shared contracts must come from monorepo `shared/`.
 
 ---
 
-# 📝 Naming Conventions
+# Naming Conventions
 
 ### Pages
 
-```
+```text
 src/pages/login/login.tsx
 src/pages/dashboard/dashboard.tsx
 ```
 
 ### Controllers
 
-```
+```text
 login.controller.ts
 dashboard.controller.ts
 ```
 
-Controllers orchestrate flows and state.
-
-They must not call API directly.
+Controllers orchestrate flows and state. Controllers must not call API directly.
 
 ---
 
-# 📦 Page Assets
-
-Page-specific UI goes inside:
-
-```
-src/pages/<page>/<page>Assets/
-```
-
-Example:
-
-```
-src/pages/login/loginAssets/LoginForm.tsx
-```
-
-Never pollute global components with page-only UI.
-
----
-
-# 🔗 Dependency Rules
+# Dependency Rules
 
 Allowed imports:
 
-| From       | Can import                  |
-| ---------- | --------------------------- |
-| pages      | components, services, state |
-| services   | api, utils                  |
-| api        | platform, utils             |
-| components | components, utils           |
-| routes     | pages, state                |
+| From | Can import |
+| --- | --- |
+| pages | components, services, state |
+| services | api, utils |
+| api | platform, utils |
+| components | components, utils |
+| routes | pages, state |
 
 Forbidden:
 
-* components → services
-* components → api
-* pages → api
-* pages → fetch()
+- components -> services
+- components -> api
+- pages -> api
+- pages -> fetch()
 
 ---
 
-# 🌐 HTTP Rules
+# HTTP Rules
 
-All HTTP must go through:
-
-```
-src/api/http/httpClient.ts
-```
+All HTTP must go through `src/api/http/httpClient.ts`.
 
 No `fetch()` elsewhere.
 
 ---
 
-# 🔐 Auth Architecture
+# Auth Architecture
 
 Auth must be centralized:
 
-```
+```text
 services/auth/auth.service.ts
 state/auth.store.ts
 ```
 
 Forbidden:
 
-* token in pages
-* refresh logic in pages
+- token logic in pages
+- refresh logic in pages
 
 ---
 
-# 🧭 Navigation Rules
+# Navigation Rules
 
-Navigation must go through:
-
-```
-src/routes/navigation.ts
-```
+Navigation must go through `src/routes/navigation.ts`.
 
 Forbidden:
 
-```
-window.location
-history.pushState
-```
+- `window.location`
+- `history.pushState`
 
 ---
 
-# 💾 Storage Rules
+# Storage Rules
 
-All storage must go through:
+All storage must go through `src/platform/storage/`.
 
-```
-src/platform/storage/
-```
+Forbidden outside platform layer:
 
-Forbidden:
-
-```
-localStorage
-sessionStorage
-```
-
-outside platform layer.
+- `localStorage`
+- `sessionStorage`
 
 ---
 
-# 🎨 UI Componentization Rules
+# Design System Integrity
 
-Reusable components must live in:
+Reusable components must live in `src/components/`.
 
-```
-src/components/
-```
+Agents must not recreate existing UI primitives with ad-hoc raw elements.
 
-Required primitives:
-
-* Button
-* Input
-* Card
-* Modal
-* Table
-* DataTable
-* Accordion
-* Bullets
-* Loader
-* Alert
-* Tooltip
-* PageContainer
-* Layout
-* ErrorState
+Pages must not override component styling directly.
 
 ---
 
-# 🧩 Design System Integrity (Critical)
+# Documentation Rules
 
-Agents must **never recreate UI primitives**.
-
-### Forbidden
-
-```
-<input class="input input-bordered">
-<button class="btn btn-primary">
-<div class="card">
-```
-
-### Correct
-
-```
-<Input />
-<Button />
-<Card />
-```
-
-Always reuse components from:
-
-```
-src/components/
-```
-
-If a component exists, it must be used.
+Every exported function in `services`, `api`, `platform`, and `state` must have JSDoc.
 
 ---
 
-# 🧱 Component Style Protection
+# Necessary Differences
 
-Pages must not override component styling.
-
-Forbidden:
-
-```
-<Input class="text-white" />
-<Card class="bg-gray-200" />
-<Button class="bg-green-600" />
-```
-
-Allowed:
-
-```
-<Button variant={UI.ButtonVariant.PRIMARY} />
-<Input type={InputType.EMAIL} />
-```
-
-Component styling is internal.
+If frontend differs from backend architecture, document it as `NECESSARY DIFFERENCE`.
 
 ---
 
-# 🎯 Visual Fidelity Enforcement
-
-When implementing screens from designs:
-
-* spacing must follow reference
-* hierarchy must match reference
-* surfaces must preserve component colors
-
-Agents must **not invent styling overrides**.
-
-If visual differences appear, verify component usage before modifying styles.
-
----
-
-# 📐 Page Composition Pattern
-
-Pages must follow this hierarchy:
-
-```
-Page
- └ Layout
-    └ PageContainer
-       └ PageAssets components
-          └ Shared components
-```
-
-Pages must remain thin.
-
-Large JSX trees must be extracted.
-
----
-
-# 📱 Responsive Rules
-
-Mobile-first layout.
-
-Mobile:
-
-* single column
-
-Desktop:
-
-* progressive enhancements
-
-Illustrations and secondary visuals may be hidden on small screens.
-
----
-
-# 🖼 Image and Illustration Policy
-
-All images must live in:
-
-```
-shared/assets/images/
-```
-
-Forbidden:
-
-```
-frontend/src/assets/images
-frontend/public/images
-pages/**/assets/images
-```
-
-Import example:
-
-```ts
-import loginIllustration from "@shared/assets/images/login.png"
-```
-
----
-
-# 🔤 Typography Rules
-
-Fonts must be self-hosted in:
-
-```
-shared/assets/fonts/
-```
-
-Primary font:
-
-```
-Plus Jakarta Sans
-```
-
-Numeric font:
-
-```
-IBM Plex Mono
-```
-
-Numeric content must use:
-
-```
-font-variant-numeric: tabular-nums
-```
-
-Pages must use semantic typography tokens only.
-
----
-
-# 🎨 Color Rules
-
-Allowed tokens:
-
-```
-bg-base-100
-bg-base-200
-text-base-content
-bg-primary
-bg-success
-```
-
-Forbidden:
-
-```
-text-red-500
-bg-blue-100
-text-black
-bg-white
-text-[#222]
-```
-
----
-
-# 🪟 Collapse / Accordion Standard
-
-All collapsible behavior must use:
-
-```
-src/components/collapse/collapse.tsx
-```
-
-Accordion must compose Collapse.
-
-Ad-hoc `details/summary` implementations are forbidden.
-
----
-
-# 🏷 Brand Asset Policy
-
-Logos must come from:
-
-```
-shared/assets/images/
-```
-
-Forbidden:
-
-```
-frontend/src/assets/logo.png
-external logo URLs
-inline logo SVG
-```
-
----
-
-# 🧠 Screen Development Phase
-
-Current project phase focuses on building screens.
-
-Agents must prioritize:
-
-1. composing UI with existing components
-2. respecting design system
-3. maintaining responsive layout
-4. avoiding new primitives unless necessary
-5. preserving architecture boundaries
-
-Consistency is more important than experimentation.
-
----
-
-# 📚 Documentation Rules
-
-Every exported function in:
-
-* services
-* api
-* platform
-* state
-
-must have JSDoc.
-
-Example:
-
-```ts
-/**
- * @summary Fetch all tags for authenticated user
- */
-```
-
----
-
-# 🔍 Necessary Differences
-
-If frontend differs from backend architecture, document it as:
-
-```
-NECESSARY DIFFERENCE
-```
-
----
-
-# ✅ PR Checklist
-
-* [ ] No `shared/` folder inside frontend
-* [ ] All enums imported from `@shared/enums`
-* [ ] No duplicated types
-* [ ] No hardcoded UI text
-* [ ] No DaisyUI classes in pages
-* [ ] No fetch outside api/
-* [ ] No localStorage outside platform/
-* [ ] Components contain no business logic
-* [ ] Services contain no UI logic
-* [ ] Pages remain thin
-* [ ] Design system components reused
-* [ ] No component style overrides
-* [ ] Images imported from shared assets
-* [ ] Typography tokens respected
-* [ ] Numeric fonts used for financial values
-
-```
+# PR Checklist
+
+- [ ] No `shared/` folder inside frontend
+- [ ] No duplicated types
+- [ ] No `fetch()` outside `api/`
+- [ ] No `localStorage`/`sessionStorage` outside platform layer
+- [ ] Components contain no business logic
+- [ ] Services contain no UI logic
+- [ ] Pages remain thin
+- [ ] Design system components are reused
+- [ ] No component style overrides
+- [ ] Images imported from shared assets
+- [ ] Typography tokens respected
+- [ ] Numeric fonts used for financial values
+- [ ] Backend API errors use `ErrorCode` contract (`errorCode`, `params?`, `field?`)
+- [ ] Frontend maps `ErrorCode -> I18nKey` locally
+- [ ] i18n keys use dot notation and come from canonical catalogs
+- [ ] i18n keys are not runtime enums
+- [ ] Locale files follow `locales/<locale>/ui.ts|errors.ts|email.ts`
+- [ ] No hardcoded user-visible UI text
+- [ ] ESLint rule for hardcoded UI text is active

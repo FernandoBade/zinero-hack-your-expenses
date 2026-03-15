@@ -1,10 +1,10 @@
-import { Resend } from 'resend';
-import { createLog } from '../commons';
-import { TokenType } from '../../../../shared/enums/auth.enums';
-import { EmailProvider } from '../../../../shared/enums/email.enums';
-import { LogCategory, LogEvent, LogOperation, LogType } from '../../../../shared/enums/log.enums';
-import { ResourceKey as Resource } from '../../../../shared/i18n/resource.keys';
-import { translateResource } from '../../../../shared/i18n/resource.utils';
+import { Resend } from "resend";
+import { createLog } from "../commons";
+import { TokenType } from "../../../../shared/enums/auth.enums";
+import { EmailProvider } from "../../../../shared/enums/email.enums";
+import { LogCategory, LogEvent, LogOperation, LogType } from "../../../../shared/enums/log.enums";
+import type { Locale } from "../../../../shared/i18n/types/locale";
+import { translateAsync } from "../../../../shared/i18n/translate";
 
 type AuthEmailType = TokenType.EMAIL_VERIFICATION | TokenType.PASSWORD_RESET;
 
@@ -13,6 +13,7 @@ type AuthEmailPayload = {
     to: string;
     link: string;
     userId?: number;
+    locale?: Locale;
 };
 
 export type AuthEmailSender = (payload: AuthEmailPayload) => Promise<void>;
@@ -24,7 +25,7 @@ type AuthEmailContent = {
     linkLabel: string;
 };
 
-const BASE_URL = (process.env.FRONTEND_BASE_URL ?? '').replace(/\/$/, '');
+const BASE_URL = (process.env.FRONTEND_BASE_URL ?? "").replace(/\/$/, "");
 const RESEND_API_KEY = process.env.RESEND_API_KEY;
 const RESEND_FROM_EMAIL = process.env.RESEND_FROM_EMAIL;
 const resend = RESEND_API_KEY ? new Resend(RESEND_API_KEY) : null;
@@ -33,7 +34,7 @@ const resend = RESEND_API_KEY ? new Resend(RESEND_API_KEY) : null;
  * @summary Builds auth links with token query parameter for frontend verification and reset flows.
  */
 const buildAuthLink = (path: string, token: string): string => {
-    const normalizedPath = path.startsWith('/') ? path : `/${path}`;
+    const normalizedPath = path.startsWith("/") ? path : `/${path}`;
     const encodedToken = encodeURIComponent(token);
     const link = `${normalizedPath}?token=${encodedToken}`;
     return BASE_URL ? `${BASE_URL}${link}` : link;
@@ -42,20 +43,20 @@ const buildAuthLink = (path: string, token: string): string => {
 /**
  * @summary Resolves localized subject/body content for auth email templates by token type.
  */
-const buildAuthEmailContent = (type: AuthEmailType): AuthEmailContent => {
+const buildAuthEmailContent = async (type: AuthEmailType, locale?: Locale): Promise<AuthEmailContent> => {
     if (type === TokenType.EMAIL_VERIFICATION) {
         return {
-            subject: translateResource(Resource.EMAIL_VERIFICATION_SUBJECT),
-            body: translateResource(Resource.EMAIL_VERIFICATION_BODY),
-            linkLabel: translateResource(Resource.EMAIL_LINK_LABEL),
+            subject: await translateAsync("email.auth.verification.subject", locale),
+            body: await translateAsync("email.auth.verification.body", locale),
+            linkLabel: await translateAsync("email.auth.link.label", locale),
         };
     }
 
     return {
-        subject: translateResource(Resource.PASSWORD_RESET_SUBJECT),
-        body: translateResource(Resource.PASSWORD_RESET_BODY),
-        warning: translateResource(Resource.PASSWORD_RESET_WARNING),
-        linkLabel: translateResource(Resource.EMAIL_LINK_LABEL),
+        subject: await translateAsync("email.auth.password_reset.subject", locale),
+        body: await translateAsync("email.auth.password_reset.body", locale),
+        warning: await translateAsync("email.auth.password_reset.warning", locale),
+        linkLabel: await translateAsync("email.auth.link.label", locale),
     };
 };
 
@@ -65,7 +66,7 @@ const buildAuthEmailContent = (type: AuthEmailType): AuthEmailContent => {
 const buildAuthEmailHtml = (content: AuthEmailContent, link: string): string => {
     const warningBlock = content.warning
         ? `<p style="margin:0 0 12px;line-height:1.5;color:#555;">${content.warning}</p>`
-        : '';
+        : "";
 
     return `
 <!DOCTYPE html>
@@ -92,23 +93,23 @@ const buildAuthEmailHtml = (content: AuthEmailContent, link: string): string => 
 const buildAuthEmailText = (content: AuthEmailContent, link: string): string => {
     const lines = [
         content.subject,
-        '',
+        "",
         content.body,
-        '',
+        "",
         `${content.linkLabel} ${link}`,
     ];
 
     if (content.warning) {
-        lines.push('', content.warning);
+        lines.push("", content.warning);
     }
 
-    return lines.join('\n');
+    return lines.join("\n");
 };
 
 /**
  * @summary Redacts token query values before writing URLs into logs.
  */
-const redactTokens = (value: string): string => value.replace(/token=([^&\s]+)/gi, 'token=[REDACTED]');
+const redactTokens = (value: string): string => value.replace(/token=([^&\s]+)/gi, "token=[REDACTED]");
 
 /**
  * @summary Normalizes provider and runtime failures into a safe serializable email-error payload.
@@ -118,9 +119,9 @@ const formatEmailError = (error: unknown): Record<string, unknown> => {
         return { name: error.name, message: redactTokens(error.message) };
     }
 
-    if (error && typeof error === 'object') {
+    if (error && typeof error === "object") {
         const payload = error as Record<string, unknown>;
-        const message = typeof payload.message === 'string' ? payload.message : 'Email provider error';
+        const message = typeof payload.message === "string" ? payload.message : "Email provider error";
         return {
             message: redactTokens(message),
             code: payload.code ?? payload.statusCode ?? payload.status,
@@ -156,19 +157,19 @@ const logEmailError = async (type: AuthEmailType, error: unknown, userId?: numbe
  * @summary Logs missing sender configuration errors for authentication email operations.
  */
 const logConfigError = async (type: AuthEmailType, userId?: number): Promise<void> => {
-    await logEmailError(type, new Error('Resend configuration missing'), userId);
+    await logEmailError(type, new Error("Resend configuration missing"), userId);
 };
 
 /**
  * @summary Sends authentication emails through Resend and captures provider-level failures.
  */
-const defaultSender: AuthEmailSender = async ({ type, to, link, userId }) => {
+const defaultSender: AuthEmailSender = async ({ type, to, link, userId, locale }) => {
     if (!resend || !RESEND_FROM_EMAIL) {
         await logConfigError(type, userId);
         return;
     }
 
-    const content = buildAuthEmailContent(type);
+    const content = await buildAuthEmailContent(type, locale);
     const html = buildAuthEmailHtml(content, link);
     const text = buildAuthEmailText(content, link);
 
@@ -189,23 +190,34 @@ const defaultSender: AuthEmailSender = async ({ type, to, link, userId }) => {
     }
 };
 
-export const buildEmailVerificationLink = (token: string): string => buildAuthLink('/verify-email', token);
+export const buildEmailVerificationLink = (token: string): string => buildAuthLink("/verify-email", token);
 
-export const buildPasswordResetLink = (token: string): string => buildAuthLink('/reset-password', token);
+export const buildPasswordResetLink = (token: string): string => buildAuthLink("/reset-password", token);
 
 /**
  * @summary Sends an email-verification message using the injectable sender strategy.
  */
-export async function sendEmailVerificationEmail(to: string, token: string, userId?: number, sender: AuthEmailSender = defaultSender): Promise<void> {
+export async function sendEmailVerificationEmail(
+    to: string,
+    token: string,
+    userId?: number,
+    locale?: Locale,
+    sender: AuthEmailSender = defaultSender
+): Promise<void> {
     const link = buildEmailVerificationLink(token);
-    await sender({ type: TokenType.EMAIL_VERIFICATION, to, link, userId });
+    await sender({ type: TokenType.EMAIL_VERIFICATION, to, link, userId, locale });
 }
 
 /**
  * @summary Sends a password-reset message using the injectable sender strategy.
  */
-export async function sendPasswordResetEmail(to: string, token: string, userId?: number, sender: AuthEmailSender = defaultSender): Promise<void> {
+export async function sendPasswordResetEmail(
+    to: string,
+    token: string,
+    userId?: number,
+    locale?: Locale,
+    sender: AuthEmailSender = defaultSender
+): Promise<void> {
     const link = buildPasswordResetLink(token);
-    await sender({ type: TokenType.PASSWORD_RESET, to, link, userId });
+    await sender({ type: TokenType.PASSWORD_RESET, to, link, userId, locale });
 }
-

@@ -6,6 +6,8 @@ import type { PaginationProps } from "@/components/pagination/pagination.types";
 
 type PaginationItem = number | "ellipsis-start" | "ellipsis-end";
 
+const ELLIPSIS_SYMBOL = "...";
+
 
 function getPaginationItems(currentPage: number, totalPages: number): readonly PaginationItem[] {
     if (totalPages <= 7) {
@@ -64,9 +66,7 @@ export function Pagination({ currentPage, totalPages, onPageChange }: Pagination
                             key={`${item}-${index}`}
                             class="btn btn-disabled btn-ghost btn-sm pointer-events-none text-table-number"
                             aria-hidden="true"
-                        >
-                            ...
-                        </span>
+                        >{ELLIPSIS_SYMBOL}</span>
                     );
                 }
 
@@ -92,4 +92,5 @@ export function Pagination({ currentPage, totalPages, onPageChange }: Pagination
         </nav>
     );
 }
+
 

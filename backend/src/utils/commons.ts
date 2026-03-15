@@ -1,26 +1,16 @@
-import { translateResource } from '../../../shared/i18n/resource.utils';
-// #region Imports
-import { HTTPStatus } from '../../../shared/enums/http-status.enums';
-import { LogType, LogOperation, LogCategory } from '../../../shared/enums/log.enums';
-import { Language } from '../../../shared/enums/language.enums';
-import { createLogger, format, transports, addColors } from 'winston';
-import { NextFunction, Response, Request } from 'express';
-import { ResourceKey as Resource } from '../../../shared/i18n/resource.keys';
-// #endregion Imports
+import { createLogger, format, transports, addColors } from "winston";
+import { NextFunction, Response, Request } from "express";
+import { HTTPStatus } from "../../../shared/enums/http-status.enums";
+import { LogType, LogOperation, LogCategory } from "../../../shared/enums/log.enums";
+import { ErrorCode, type ErrorCode as ErrorCodeType } from "../../../shared/errors/error-codes";
+import type { FieldKey } from "../../../shared/fields/field-keys";
+import type { TranslationParams } from "../../../shared/i18n/types/catalog";
 
-// #region Logger Configuration
-/*
-    * Logger configuration using Winston for structured logging.
-    * Custom log levels and colors are defined for better readability.
-    * Logs are sent to the console and can be persisted to a database.
-    *
-    * @module logger
-    */
 /**
  * @summary Lazily resolves the log service to avoid eager circular imports during bootstrap.
  */
 async function getLogService() {
-    const { LogService } = await import('../service/logService');
+    const { LogService } = await import("../service/logService");
     return new LogService();
 }
 
@@ -29,15 +19,15 @@ const customLogs = {
         [LogType.ERROR]: 0,
         [LogType.ALERT]: 1,
         [LogType.SUCCESS]: 2,
-        [LogType.DEBUG]: 3
+        [LogType.DEBUG]: 3,
     },
     colors: {
-        [LogType.ERROR]: 'red',
-        [LogType.ALERT]: 'yellow',
-        [LogType.SUCCESS]: 'green',
-        [LogType.DEBUG]: 'magenta'
-    }
-};
+        [LogType.ERROR]: "red",
+        [LogType.ALERT]: "yellow",
+        [LogType.SUCCESS]: "green",
+        [LogType.DEBUG]: "magenta",
+    },
+} as const;
 
 addColors(customLogs.colors);
 
@@ -46,49 +36,27 @@ const logger = createLogger({
     format: format.combine(
         format.timestamp(),
         format.colorize({ all: true }),
-        format.printf(({ timestamp, level, message }) =>
-            `[${timestamp}][${level}]${message}`
-        )
+        format.printf(({ timestamp, level, message }) => `[${timestamp}][${level}]${message}`)
     ),
-    transports: [
-        new transports.Console({ level: LogType.DEBUG })
-    ]
+    transports: [new transports.Console({ level: LogType.DEBUG })],
 });
 
-const LOG_DETAIL_IGNORED_FIELDS = ['createdAt', 'updatedAt'];
+const LOG_DETAIL_IGNORED_FIELDS = ["createdAt", "updatedAt"];
 
-/**
- * Checks whether a value is a plain object.
- *
- * @summary Detects plain objects for log normalization.
- * @param value - Value to inspect.
- * @returns True when the value is a plain object.
- */
 function isPlainObject(value: unknown): value is Record<string, unknown> {
-    return Boolean(value) && typeof value === 'object' && value?.constructor === Object;
+    return Boolean(value) && typeof value === "object" && value?.constructor === Object;
 }
 
-/**
- * @summary Detects paginated payload shape used by standardized API response envelopes.
- */
 function isPaginatedData(value: unknown): value is { data: unknown; meta: Record<string, unknown> } {
     if (!isPlainObject(value)) {
         return false;
     }
-    if (!('data' in value) || !('meta' in value)) {
+    if (!("data" in value) || !("meta" in value)) {
         return false;
     }
     return isPlainObject(value.meta);
 }
 
-/**
- * Removes timestamp fields from a log detail payload.
- *
- * @summary Strips timestamps from log detail objects.
- * @param detail - Log detail object to sanitize.
- * @param ignoreKeys - Optional list of extra keys to remove.
- * @returns Sanitized log detail without timestamp fields.
- */
 export function sanitizeLogDetail<T extends object>(detail: T, ignoreKeys: string[] = []): Record<string, unknown> {
     const ignored = new Set([...LOG_DETAIL_IGNORED_FIELDS, ...ignoreKeys]);
     const payload = detail as Record<string, unknown>;
@@ -100,37 +68,22 @@ export function sanitizeLogDetail<T extends object>(detail: T, ignoreKeys: strin
     }, {} as Record<string, unknown>);
 }
 
-/**
- * Compares two log values with support for Date objects.
- *
- * @summary Checks equality for audit log comparisons.
- * @param left - Previous value.
- * @param right - Current value.
- * @returns True when the values are equivalent.
- */
 function areLogValuesEqual(left: unknown, right: unknown): boolean {
-    if (left === right) return true;
+    if (left === right) {
+        return true;
+    }
 
     if (left instanceof Date && right instanceof Date) {
         return left.getTime() === right.getTime();
     }
 
-    if (left && right && typeof left === 'object' && typeof right === 'object') {
+    if (left && right && typeof left === "object" && typeof right === "object") {
         return JSON.stringify(left) === JSON.stringify(right);
     }
 
     return false;
 }
 
-/**
- * Builds a delta payload for update audit logs.
- *
- * @summary Generates field-level changes between two objects.
- * @param before - Previous state of the entity.
- * @param after - Current state of the entity.
- * @param ignoreKeys - Optional list of keys to exclude from the delta.
- * @returns Object containing only changed fields with from/to values.
- */
 export function buildLogDelta<T extends object>(
     before: T,
     after: T,
@@ -153,19 +106,10 @@ export function buildLogDelta<T extends object>(
 }
 
 /**
- * Logs a message to the console and, if appropriate, persists it to the database.
- * Used across the system for centralized logging with support for log levels, user context, and categories.
- *
  * @summary Logs to console and delegates persistence.
- * @param LogType - Severity level of the log (e.g., ERROR, DEBUG).
- * @param operation - Type of operation being logged (e.g., CREATE, DELETE).
- * @param category - Area of the system the log relates to (e.g., USER, AUTH).
- * @param detail - Log message or object, automatically serialized if needed.
- * @param userId - Optional user ID to associate the log with.
- * @param next - Optional Express error handler for chaining errors.
  */
 export async function createLog(
-    LogType: LogType,
+    logType: LogType,
     operation: LogOperation,
     category: LogCategory,
     detail: unknown,
@@ -173,99 +117,90 @@ export async function createLog(
     _next?: NextFunction
 ) {
     const normalizedDetail = isPlainObject(detail) ? sanitizeLogDetail(detail) : detail;
-    const logMessage = typeof normalizedDetail === 'object' ? JSON.stringify(normalizedDetail) : String(normalizedDetail);
+    const logMessage = typeof normalizedDetail === "object" ? JSON.stringify(normalizedDetail) : String(normalizedDetail);
 
-    logger.log(LogType, `[${operation}][${category}]: ${logMessage}`.trim());
+    logger.log(logType, `[${operation}][${category}]: ${logMessage}`.trim());
 
     const logService = await getLogService();
-    await logService.createLog(LogType, operation, category, logMessage, userId);
+    await logService.createLog(logType, operation, category, logMessage, userId);
 }
 
-// #endregion Logger Configuration
-
-// #region API Response Helpers
 /**
- * @summary Builds standardized translated API responses with optional pagination metadata.
- * @param req - Express request, used to detect the user's language preference.
- * @param res - Express response object.
- * @param status - HTTP status code to send.
- * @param data - Optional response payload (success: data, error: details).
- * @param resource - Optional resource key for localized message.
+ * @summary Builds standardized API responses with machine-stable error contracts.
  */
-
 export function answerAPI(
-    req: Request,
+    _req: Request,
     res: Response,
     status: HTTPStatus,
     data?: unknown,
-    resource?: Resource
+    errorCode?: ErrorCodeType,
+    params?: TranslationParams,
+    field?: FieldKey
 ) {
-    if (res.headersSent) return;
+    if (res.headersSent) {
+        return;
+    }
 
     const success = status === HTTPStatus.OK || status === HTTPStatus.CREATED;
-    const language = req.language ?? Language.PT_BR;
     const elapsedTime = getDurationMs(res);
-    const responseResource = success ? resource : (resource ?? Resource.INTERNAL_SERVER_ERROR);
 
     const response: Record<string, unknown> = {
         success,
-        ...(responseResource && {
-            resource: responseResource,
-            message: translateResource(responseResource, language)
-        })
+        elapsedTime,
     };
 
-    if (data !== undefined) {
-        if (success && isPaginatedData(data)) {
-            const { data: payload, meta } = data;
-            const { page, pageSize, pageCount, total, ...restMeta } = meta || {};
-
-            response.data = payload;
-            if (Object.keys(restMeta).length) {
-                response.meta = restMeta;
-            }
-
-            response.elapsedTime = `${elapsedTime} ms`;
-            if (page !== undefined) response.page = page;
-            if (pageSize !== undefined) response.pageSize = pageSize;
-            if (pageCount !== undefined) response.pageCount = pageCount;
-            if (total !== undefined) response.totalItems = total;
-        } else {
-            if (success) {
-                response.data = data;
+    if (success) {
+        if (data !== undefined) {
+            if (isPaginatedData(data)) {
+                const { data: payload, meta } = data;
+                const { page, pageSize, pageCount, total, ...restMeta } = meta || {};
+                response.data = payload;
+                if (Object.keys(restMeta).length > 0) {
+                    response.meta = restMeta;
+                }
+                if (page !== undefined) response.page = page;
+                if (pageSize !== undefined) response.pageSize = pageSize;
+                if (pageCount !== undefined) response.pageCount = pageCount;
+                if (total !== undefined) response.totalItems = total;
             } else {
-                response.error = JSON.parse(JSON.stringify(data));
+                response.data = data;
             }
-            response.elapsedTime = elapsedTime;
         }
-    } else {
-        response.elapsedTime = `${elapsedTime} ms`;
+        return res.status(status).json(response);
+    }
 
+    response.errorCode = errorCode ?? ErrorCode.INTERNAL_SERVER_ERROR;
+    if (params) {
+        response.params = params;
+    }
+    if (field) {
+        response.field = field;
+    }
+    if (data !== undefined) {
+        response.error = JSON.parse(JSON.stringify(data));
     }
 
     return res.status(status).json(response);
 }
 
 /**
- * @summary Normalizes unknown thrown values into serializable error payloads.
- * @param error - Unknown error object.
- * @returns A structured object with message, name and stack trace (if applicable).
+ * @summary Normalizes unknown thrown values into serializable payloads.
  */
-
 export function formatError(error: unknown): Record<string, unknown> {
     if (error instanceof Error) {
-
-        const detailedError = (error as unknown) as Record<string, unknown> & {
+        const detailedError = error as Error & {
             sqlMessage?: string;
             code?: string;
             errno?: number;
             sqlState?: string;
         };
+
         const message =
             error.message ||
             detailedError.sqlMessage ||
             detailedError.code ||
-            Resource.UNEXPECTED_ERROR;
+            ErrorCode.UNEXPECTED_ERROR;
+
         return {
             message,
             name: error.name,
@@ -275,41 +210,34 @@ export function formatError(error: unknown): Record<string, unknown> {
         };
     }
 
-    if (typeof error === 'object' && error !== null) {
+    if (typeof error === "object" && error !== null) {
         return error as Record<string, unknown>;
     }
 
     return { message: error };
 }
 
-
-
 /**
- * @summary Sends a standardized translated error response payload.
- * @param req - Express request, used to determine language for translation.
- * @param res - Express response to write the error into.
- * @param status - HTTP status code to return.
- * @param resource - Resource key for localized error message.
- * @param error - Optional raw error object to include in the payload.
- * @returns The formatted error response in JSON format.
+ * @summary Sends a standardized error response payload.
  */
-
 export function sendErrorResponse(
     req: Request,
     res: Response,
     status: HTTPStatus,
-    resource: Resource,
-    error?: unknown
+    errorCode: ErrorCodeType,
+    error?: unknown,
+    params?: TranslationParams,
+    field?: FieldKey
 ) {
-    const language = req.language ?? Language.PT_BR;
-    return res.status(status).json({
-        success: false,
-        resource,
-        message: translateResource(resource, language),
-        ...(error ? { error: formatError(error) } : {}),
-        elapsedTime: getDurationMs(res)
-
-    });
+    return answerAPI(
+        req,
+        res,
+        status,
+        error ? formatError(error) : undefined,
+        errorCode,
+        params,
+        field
+    );
 }
 
 /**
@@ -327,11 +255,9 @@ export function requestTimer() {
  */
 function getDurationMs(res: Response): number {
     const start: bigint | undefined = res.locals?._startNs;
-    if (!start) return 0;
+    if (!start) {
+        return 0;
+    }
     const end = process.hrtime.bigint();
-    return Number((end - start) / BigInt(1000000));
+    return Number((end - start) / BigInt(1_000_000));
 }
-
-
-// #endregion API Response Helpers
-

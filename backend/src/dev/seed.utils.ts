@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { LanguageCode } from '../../../shared/i18n/resourceTypes';
+import { Locale } from '../../../shared/i18n/types/locale';
 import { SeedConfig } from './seed.config';
 
 export type SeedRegistry = {
@@ -10,7 +10,7 @@ export type SeedContext = {
     config: SeedConfig;
     random: SeedRandom;
     logger: SeedLogger;
-    language: LanguageCode;
+    language: Locale;
     registry: SeedRegistry;
 };
 
@@ -18,7 +18,7 @@ export type SeedRequestOptions = {
     body?: unknown;
     params?: Record<string, string>;
     query?: Record<string, string | string[]>;
-    language?: LanguageCode;
+    language?: Locale;
     userId?: number;
 };
 
