@@ -3,9 +3,9 @@ import { useMemo, useState } from "preact/hooks";
 import { EyeClosedIcon, EyeIcon, FingerprintIcon } from "@phosphor-icons/react";
 import brandLogoHorizontal from "@shared/assets/images/ZINERO_transparent_horizontal.png";
 import googleLogoButton from "@shared/assets/images/google-logo-button.png";
-import loginIllustration from "@shared/assets/images/login.png";
+//import loginIllustration from "@shared/assets/images/login.png";
 import { InputType } from "@shared/enums/input.enums";
-import { AlertVariant, ButtonVariant } from "@shared/enums/ui.enums";
+import { AlertVariant, AlertStyle, ButtonVariant } from "@shared/enums/ui.enums";
 import type { I18nKey } from "@shared/i18n/types/i18n-key";
 import { Alert } from "@/components/alert/alert";
 import { Button } from "@/components/button/button";
@@ -18,9 +18,7 @@ import { t } from "@/utils/i18n/translate";
 
 const LOGIN_TITLE_KEY = 'auth.login.title';
 const LOGIN_SUBTITLE_KEY = 'auth.login.subtitle';
-const LOGIN_EMAIL_LABEL_KEY = 'field.email.label';
 const LOGIN_EMAIL_PLACEHOLDER_KEY = 'auth.login.email.placeholder';
-const LOGIN_PASSWORD_LABEL_KEY = 'field.password.label';
 const LOGIN_PASSWORD_PLACEHOLDER_KEY = "auth.login.password.placeholder";
 const LOGIN_BUTTON_KEY = 'auth.login.submit';
 const LOGIN_SUPPORT_KEY = 'auth.login.help.link';
@@ -28,7 +26,7 @@ const LOGIN_DIVIDER_OR_KEY = 'auth.login.divider.or';
 const LOGIN_WITH_GOOGLE_KEY = 'auth.login.google.continue';
 const SIGNUP_HINT_KEY = 'auth.login.signup_prompt.text';
 const SIGNUP_ACTION_KEY = 'auth.login.signup_prompt.action';
-const LOGIN_ILLUSTRATION_ALT_KEY = 'auth.login.illustration.alt';
+// const LOGIN_ILLUSTRATION_ALT_KEY = 'auth.login.illustration.alt';
 const AUTH_SHOW_PASSWORD_KEY = 'auth.password.toggle.show';
 const AUTH_HIDE_PASSWORD_KEY = 'auth.password.toggle.hide';
 const BRAND_ALT_KEY = 'app.name';
@@ -55,16 +53,16 @@ export function LoginPage(): JSX.Element {
     return (
         <section class="min-h-screen bg-gradient-to-br from-stone-900 to-stone-700">
             <PageContainer>
-                <div class="flex min-h-[calc(100vh-3rem)] items-center py-4">
-                    <div class="grid w-full items-center gap-10 lg:grid-cols-[minmax(0,28rem)_minmax(0,1fr)] lg:gap-16">
-                        <div class="mx-auto w-full max-w-md">
+                <div class="flex min-h-[calc(100vh-3rem)] items-center py-2">
+                    <div class="grid w-full items-center gap-4 lg:grid-cols-[100%] lg:gap-2">
+                        <div class="mx-auto w-full max-w-[30.125rem]">
                             <div class="[&>article]:!border-base-content/20 [&>article]:!shadow-2xl [&_.card-body]:!p-6 sm:[&_.card-body]:!p-8">
                                 <Card bgColor="neutral">
                                     <header class="mb-6 flex flex-col items-center gap-5 text-center">
-                                        <img src={brandLogoHorizontal} alt={t(BRAND_ALT_KEY)} class="mb-6 w-full" />
+                                        <img src={brandLogoHorizontal} alt={t(BRAND_ALT_KEY)} class="mb-6 w-auto px-4" />
                                         <div class="space-y-2">
                                             <h1 class="text-page-title text-base-100">{t(LOGIN_TITLE_KEY)}</h1>
-                                            <p class="text-body font-semibold text-base-100/90">{t(LOGIN_SUBTITLE_KEY)}</p>
+                                            <h1 class="text-body font-semibold text-base-100">{t(LOGIN_SUBTITLE_KEY)}</h1>
                                         </div>
                                     </header>
 
@@ -73,7 +71,6 @@ export function LoginPage(): JSX.Element {
                                             <Input
                                                 id="login-email"
                                                 name="email"
-                                                label={LOGIN_EMAIL_LABEL_KEY}
                                                 placeholder={LOGIN_EMAIL_PLACEHOLDER_KEY}
                                                 type={InputType.EMAIL}
                                                 value={email}
@@ -85,7 +82,6 @@ export function LoginPage(): JSX.Element {
                                             <Input
                                                 id="login-password"
                                                 name="password"
-                                                label={LOGIN_PASSWORD_LABEL_KEY}
                                                 type={showPassword ? InputType.TEXT : InputType.PASSWORD}
                                                 value={password}
                                                 placeholder={LOGIN_PASSWORD_PLACEHOLDER_KEY}
@@ -109,9 +105,9 @@ export function LoginPage(): JSX.Element {
                                             />
                                         </div>
 
-                                        {error ? <Alert variant={AlertVariant.ERROR} message={error} /> : null}
 
-                                        <div class="space-y-4 pt-1">
+
+                                        <div class="space-y-4">
                                             <div class="[&>button]:w-full">
                                                 <Button type="submit" variant={ButtonVariant.PRIMARY} loading={isSubmitting}>
                                                     <span class="inline-flex items-center gap-2">
@@ -120,28 +116,28 @@ export function LoginPage(): JSX.Element {
                                                     </span>
                                                 </Button>
                                             </div>
-
-                                            <div class="mb-2 text-right [&>button]:!text-base-100/90">
+                                            {error ? <Alert variant={AlertVariant.ERROR} style={AlertStyle.OUTLINE} message={error} /> : null}
+                                            <div class="mb-2 text-right [&>button]:!text-base-100">
                                                 <Button type="button" variant={ButtonVariant.LINK} label={LOGIN_SUPPORT_KEY} />
                                             </div>
 
-                                            <div class="flex items-center gap-4">
+                                            <div class="pb-4 flex items-center gap-4">
                                                 <span class="h-px flex-1 bg-base-100/40" />
                                                 <span class="text-body text-base-100">{t(LOGIN_DIVIDER_OR_KEY)}</span>
                                                 <span class="h-px flex-1 bg-base-100/40" />
                                             </div>
 
                                             <div class="[&>button]:w-full [&>button]:!border-base-100/80 [&>button]:!text-base-100">
-                                                <Button type="button" variant={ButtonVariant.OUTLINE}>
-                                                    <span class="inline-flex items-center gap-3">
-                                                        <img src={googleLogoButton} alt="" class="h-6 w-6" aria-hidden="true" />
-                                                        <span class="text-button-lg font-semibold">{t(LOGIN_WITH_GOOGLE_KEY)}</span>
+                                                <Button type="button" variant={ButtonVariant.OUTLINE} disabled>
+                                                    <span class="inline-flex items-center gap-3 cursor-not-allowed">
+                                                        <img src={googleLogoButton} alt="" class="h-6 w-6 cursor-not-allowed" aria-hidden="true" />
+                                                        <span class="text-button-lg font-semibold line-through text-stone-500 cursor-not-allowed">{t(LOGIN_WITH_GOOGLE_KEY) + " (soon)"}</span>
                                                     </span>
                                                 </Button>
                                             </div>
 
-                                            <div class="pt-2 text-center">
-                                                <span class="text-body text-base-100/90">{t(SIGNUP_HINT_KEY)} </span>
+                                            <div class="pt-1 text-center">
+                                                <span class="text-sm text-base-100">{t(SIGNUP_HINT_KEY)}</span>
                                                 <Button type="button" variant={ButtonVariant.LINK} label={SIGNUP_ACTION_KEY} />
                                             </div>
                                         </div>
@@ -150,13 +146,13 @@ export function LoginPage(): JSX.Element {
                             </div>
                         </div>
 
-                        <figure class="hidden lg:flex lg:items-center lg:justify-center">
+                        {/* <figure class="hidden lg:flex lg:items-center lg:justify-center">
                             <img
                                 src={loginIllustration}
                                 alt={t(LOGIN_ILLUSTRATION_ALT_KEY)}
-                                class="h-auto w-full max-w-[44rem] object-contain"
+                                class="h-auto w-auto max-w-auto object-contain"
                             />
-                        </figure>
+                        </figure> */}
                     </div>
                 </div>
             </PageContainer>

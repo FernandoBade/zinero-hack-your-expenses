@@ -11,7 +11,7 @@ const variantMap: Record<ButtonVariant, string> = {
     [ButtonVariant.ACCENT]: "btn-accent",
     [ButtonVariant.OUTLINE]: "btn-outline",
     [ButtonVariant.GHOST]: "btn-ghost",
-    [ButtonVariant.LINK]: "btn-link",
+    [ButtonVariant.LINK]: "btn-link px-2",
 };
 
 const sizeMap: Record<ButtonSize, string> = {

@@ -1,4 +1,4 @@
-import type { ComponentChildren, JSX } from "preact";
+import type { ComponentChildren, ButtonHTMLAttributes, MouseEventHandler } from "preact";
 import type { I18nKey } from "@shared/i18n/types/i18n-key";
 import { IconName } from "@shared/enums/icon.enums";
 import { ButtonSize, ButtonVariant } from "@shared/enums/ui.enums";
@@ -16,6 +16,6 @@ export interface ButtonProps {
     readonly loading?: boolean;
     readonly iconLeft?: IconName;
     readonly iconRight?: IconName;
-    readonly type?: JSX.ButtonHTMLAttributes<HTMLButtonElement>["type"];
-    readonly onClick?: JSX.MouseEventHandler<HTMLButtonElement>;
+    readonly type?: ButtonHTMLAttributes<HTMLButtonElement>["type"];
+    readonly onClick?: MouseEventHandler<HTMLButtonElement>;
 }
