@@ -138,6 +138,12 @@ export default [
             ],
         },
     },
+    {
+        files: ["src/pages/sandbox/**/*.tsx"],
+        rules: {
+            "no-restricted-syntax": "off",
+        },
+    },
 
     {
         files: [

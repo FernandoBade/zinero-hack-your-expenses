@@ -1,4 +1,4 @@
-import type { JSX } from "preact";
+﻿import type { JSX } from "preact";
 import { useMemo, useState } from "preact/hooks";
 import { EyeClosedIcon, EyeIcon, FingerprintIcon } from "@phosphor-icons/react";
 import brandLogoHorizontal from "@shared/assets/images/ZINERO_transparent_horizontal.png";
@@ -118,7 +118,7 @@ export function LoginPage(): JSX.Element {
                                             </div>
                                             {error ? <Alert variant={AlertVariant.ERROR} style={AlertStyle.OUTLINE} message={error} /> : null}
                                             <div class="mb-2 text-right [&>button]:!text-base-100">
-                                                <Button type="button" variant={ButtonVariant.LINK} label={LOGIN_SUPPORT_KEY} />
+                                                <Button type="button" variant={ButtonVariant.LINK} label={LOGIN_SUPPORT_KEY} onClick={controller.onNavigateToForgotPassword} />
                                             </div>
 
                                             <div class="pb-4 flex items-center gap-4">
@@ -138,7 +138,7 @@ export function LoginPage(): JSX.Element {
 
                                             <div class="pt-1 text-center">
                                                 <span class="text-sm text-base-100">{t(SIGNUP_HINT_KEY)}</span>
-                                                <Button type="button" variant={ButtonVariant.LINK} label={SIGNUP_ACTION_KEY} />
+                                                <Button type="button" variant={ButtonVariant.LINK} label={SIGNUP_ACTION_KEY} onClick={controller.onNavigateToSignup} />
                                             </div>
                                         </div>
                                     </Form>
@@ -159,3 +159,4 @@ export function LoginPage(): JSX.Element {
         </section>
     );
 }
+

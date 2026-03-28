@@ -6,6 +6,8 @@ import type { InputProps } from "@/components/input/input.types";
 import { classNames } from "@/utils/classNames";
 import { t, tOptional } from "@/utils/i18n/translate";
 
+const REQUIRED_INDICATOR_KEY = "app.required_indicator";
+
 const inputTypeMap: Partial<Record<InputType, JSX.InputHTMLAttributes<HTMLInputElement>["type"]>> = {
     [InputType.TEXT]: InputType.TEXT,
     [InputType.EMAIL]: InputType.EMAIL,
@@ -21,7 +23,6 @@ const inputTypeMap: Partial<Record<InputType, JSX.InputHTMLAttributes<HTMLInputE
  * @param props Input configuration.
  * @returns Input field component.
  */
-
 export function Input({
     label,
     placeholder,
@@ -62,20 +63,23 @@ export function Input({
         <div class="form-control w-full">
             {label ? (
                 <label class="label" for={id}>
-                    <span class="label-text text-label font-ui">{t(label)}</span>
+                    <span class="label-text text-label font-ui">
+                        {t(label)}
+                        {required ? t(REQUIRED_INDICATOR_KEY) : undefined}
+                    </span>
                 </label>
             ) : null}
 
             <div class="flex w-full flex-col gap-2 sm:flex-row sm:items-center">
                 {prefixText ? <span class="badge badge-neutral self-start text-caption sm:self-auto">{t(prefixText)}</span> : null}
 
-                <label class={classNames("input input-bordered flex w-full min-w-0 items-center gap-2", error ? "input-error" : undefined)}>
+                <label class={classNames("input input-bordered flex w-full min-w-0 items-center gap-2 text-base-content", error ? "input-error" : undefined)}>
                     {leftSlot}
                     {icon && iconPosition === IconPosition.LEFT ? <Icon name={icon} /> : null}
                     <input
                         id={id}
                         class={classNames(
-                            "min-w-0 grow bg-transparent text-body outline-none",
+                            "min-w-0 grow bg-transparent text-body text-base-content outline-none placeholder:text-base-content/40",
                             usesNumericTypography ? "font-data" : "font-ui"
                         )}
                         name={name}
@@ -104,7 +108,7 @@ export function Input({
 
             {error ? (
                 <label class="label">
-                    <span class="label-text-alt text-caption text-error">{t(error)}</span>
+                    <span class="label-text-alt text-caption text-error !text-error">{t(error)}</span>
                 </label>
             ) : hint ? (
                 <label class="label">

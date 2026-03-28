@@ -12,6 +12,7 @@ export interface ButtonProps {
     readonly ariaLabel?: I18nKey;
     readonly variant?: ButtonVariant;
     readonly size?: ButtonSize;
+    readonly fullWidth?: boolean;
     readonly disabled?: boolean;
     readonly loading?: boolean;
     readonly iconLeft?: IconName;

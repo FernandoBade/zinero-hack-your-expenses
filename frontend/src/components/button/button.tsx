@@ -1,4 +1,4 @@
-import type { JSX } from "preact";
+import type { JSX, MouseEventHandler} from "preact";
 import { ButtonSize, ButtonVariant } from "@shared/enums/ui.enums";
 import { Icon } from "@/components/icon/icon";
 import type { ButtonProps } from "@/components/button/button.types";
@@ -38,6 +38,7 @@ export function Button({
     ariaLabel,
     variant = ButtonVariant.PRIMARY,
     size = ButtonSize.MD,
+    fullWidth = false,
     disabled = false,
     loading = false,
     iconLeft,
@@ -46,7 +47,7 @@ export function Button({
     onClick,
 }: ButtonProps): JSX.Element {
     const hasCustomContent = children !== undefined && children !== null;
-    const handleClick: JSX.MouseEventHandler<HTMLButtonElement> = (event) => {
+    const handleClick: MouseEventHandler<HTMLButtonElement> = (event) => {
         const button = event.currentTarget;
         const bounds = button.getBoundingClientRect();
         const hasPointerCoordinates = event.clientX !== 0 || event.clientY !== 0;
@@ -71,7 +72,8 @@ export function Button({
                 "btn btn-ripple inline-flex items-center justify-center gap-2 font-ui",
                 variantMap[variant],
                 sizeMap[size],
-                sizeTypographyMap[size]
+                sizeTypographyMap[size],
+                fullWidth ? "w-full" : undefined
             )}
             disabled={disabled || loading}
             aria-busy={loading}

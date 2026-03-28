@@ -376,7 +376,7 @@ export function PhoneInput({
             <select
                 id={`${id ?? name ?? "phone"}-country`}
                 class={classNames(
-                    "select select-ghost h-8 min-h-0 w-36 bg-transparent p-0 pr-6 text-caption font-ui focus:outline-none",
+                    "select select-ghost h-8 min-h-0 w-36 bg-transparent p-0 pr-6 text-body font-ui text-base-content focus:outline-none [&_option]:bg-base-100 [&_option]:text-base-content",
                     disabled ? "pointer-events-none opacity-70" : undefined
                 )}
                 value={effectiveCountryCode}
@@ -431,4 +431,5 @@ export function PhoneInput({
         />
     );
 }
+
 

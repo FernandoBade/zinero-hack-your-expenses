@@ -5,6 +5,11 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 const loginApiMock = vi.fn();
 const refreshApiMock = vi.fn();
 const logoutApiMock = vi.fn();
+const verifyEmailApiMock = vi.fn();
+const resendVerificationEmailApiMock = vi.fn();
+const requestPasswordResetApiMock = vi.fn();
+const resetPasswordApiMock = vi.fn();
+const createUserApiMock = vi.fn();
 const setAuthRefreshHandlerMock = vi.fn();
 const emitAuthEventMock = vi.fn();
 const setAuthenticatedMock = vi.fn();
@@ -15,6 +20,14 @@ vi.mock("@/api/auth/auth.api", () => ({
     login: (...args: unknown[]) => loginApiMock(...args),
     refresh: (...args: unknown[]) => refreshApiMock(...args),
     logout: (...args: unknown[]) => logoutApiMock(...args),
+    verifyEmail: (...args: unknown[]) => verifyEmailApiMock(...args),
+    resendVerificationEmail: (...args: unknown[]) => resendVerificationEmailApiMock(...args),
+    requestPasswordReset: (...args: unknown[]) => requestPasswordResetApiMock(...args),
+    resetPassword: (...args: unknown[]) => resetPasswordApiMock(...args),
+}));
+
+vi.mock("@/api/users/users.api", () => ({
+    createUser: (...args: unknown[]) => createUserApiMock(...args),
 }));
 
 vi.mock("@/api/http/httpClient", () => ({
@@ -28,7 +41,17 @@ vi.mock("@/state/auth.store", () => ({
     setUnauthenticated: (...args: unknown[]) => setUnauthenticatedMock(...args),
 }));
 
-import { initializeAuthService, login, logout, refresh } from "@/services/auth/auth.service";
+import {
+    initializeAuthService,
+    login,
+    logout,
+    refresh,
+    requestPasswordReset,
+    resendVerificationEmail,
+    resetPassword,
+    signup,
+    verifyEmailToken,
+} from "@/services/auth/auth.service";
 
 describe("auth.service", () => {
     beforeEach(() => {
@@ -48,9 +71,11 @@ describe("auth.service", () => {
 
         const result = await login("user@example.com", "wrong");
 
-        expect(result).toEqual({
+        expect(result).toMatchObject({
             success: false,
             messageKey: "error.email_not_verified",
+            errorCode: ErrorCode.EMAIL_NOT_VERIFIED,
+            data: { canResend: true },
             error: { canResend: true },
         });
         expect(setUnauthenticatedMock).toHaveBeenCalledTimes(1);
@@ -93,6 +118,92 @@ describe("auth.service", () => {
         expect(result).toEqual({ success: true });
         expect(setAuthenticatedMock).toHaveBeenCalledWith("access-token");
         expect(emitAuthEventMock).toHaveBeenCalledWith(AuthEvent.LOGIN_SUCCESS);
+    });
+
+    it("returns verification-required metadata after signup", async () => {
+        createUserApiMock.mockResolvedValue({
+            success: true,
+            data: { id: "user-id", email: "user@example.com" },
+        });
+
+        const result = await signup({
+            firstName: "User",
+            lastName: "Example",
+            email: "user@example.com",
+            password: "secret123",
+        });
+
+        expect(createUserApiMock).toHaveBeenCalledWith({
+            firstName: "User",
+            lastName: "Example",
+            email: "user@example.com",
+            password: "secret123",
+        });
+        expect(result).toEqual({
+            success: true,
+            data: { id: "user-id", email: "user@example.com" },
+            messageKey: "error.email_verification_required",
+        });
+    });
+
+    it("returns resend verification success message", async () => {
+        resendVerificationEmailApiMock.mockResolvedValue({
+            success: true,
+            data: { sent: true },
+        });
+
+        const result = await resendVerificationEmail("user@example.com");
+
+        expect(result).toEqual({
+            success: true,
+            data: { sent: true },
+            messageKey: "error.email_verification_requested",
+        });
+    });
+
+    it("maps verify-email success according to backend state", async () => {
+        verifyEmailApiMock.mockResolvedValue({
+            success: true,
+            data: { verified: true, alreadyVerified: true },
+        });
+
+        const result = await verifyEmailToken("token-value");
+
+        expect(result).toEqual({
+            success: true,
+            data: { verified: true, alreadyVerified: true },
+            messageKey: "error.email_already_verified",
+        });
+    });
+
+    it("returns password reset request success message", async () => {
+        requestPasswordResetApiMock.mockResolvedValue({
+            success: true,
+            data: { sent: true },
+        });
+
+        const result = await requestPasswordReset("user@example.com");
+
+        expect(result).toEqual({
+            success: true,
+            data: { sent: true },
+            messageKey: "error.password_reset_requested",
+        });
+    });
+
+    it("returns password reset success message", async () => {
+        resetPasswordApiMock.mockResolvedValue({
+            success: true,
+            data: { reset: true },
+        });
+
+        const result = await resetPassword("token-value", "secret123");
+
+        expect(result).toEqual({
+            success: true,
+            data: { reset: true },
+            messageKey: "error.password_reset_success",
+        });
     });
 
     it("registers refresh handler on initialize", () => {

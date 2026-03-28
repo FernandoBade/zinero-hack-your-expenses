@@ -1,4 +1,4 @@
-import { AppRoutePath } from "@shared/enums/routes.enums";
+﻿import { AppRoutePath } from "@shared/enums/routes.enums";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const navigateMock = vi.fn();
@@ -61,5 +61,21 @@ describe("login.controller", () => {
         expect(setError).toHaveBeenCalledWith(null);
         expect(setError).toHaveBeenCalledWith("error.invalid_credentials");
         expect(navigateMock).not.toHaveBeenCalled();
+    });
+
+    it("navigates to signup", () => {
+        const controller = createLoginController({ setError: vi.fn() });
+
+        controller.onNavigateToSignup();
+
+        expect(navigateMock).toHaveBeenCalledWith(AppRoutePath.SIGNUP);
+    });
+
+    it("navigates to forgot-password", () => {
+        const controller = createLoginController({ setError: vi.fn() });
+
+        controller.onNavigateToForgotPassword();
+
+        expect(navigateMock).toHaveBeenCalledWith(AppRoutePath.FORGOT_PASSWORD);
     });
 });

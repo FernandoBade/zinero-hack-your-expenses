@@ -13,6 +13,7 @@ import { createDashboardController } from "@/pages/dashboard/dashboard.controlle
 const DASHBOARD_TITLE = 'field.theme.label';
 const TOGGLE_THEME_LABEL = 'field.theme.label';
 const LOGIN_ROUTE_LABEL = 'field.user_id.label';
+const SANDBOX_ROUTE_LABEL = "app.sandbox";
 
 /**
  * @summary Renders the dashboard page with KPI cards, alerts, and transactional tables.
@@ -40,7 +41,13 @@ export function DashboardPage(): JSX.Element {
                         variant={ButtonVariant.GHOST}
                         label={LOGIN_ROUTE_LABEL}
                         iconLeft={IconName.CHEVRON_LEFT}
-                        onClick={() => navigate(AppRoutePath.LOGIN)}
+                        onClick={() => navigate(AppRoutePath.DASHBOARD)}
+                    />
+                    <Button
+                        variant={ButtonVariant.PRIMARY}
+                        label={SANDBOX_ROUTE_LABEL}
+                        iconLeft={IconName.INFO}
+                        onClick={() => navigate(AppRoutePath.SANDBOX)}
                     />
                 </div>
             </Card>

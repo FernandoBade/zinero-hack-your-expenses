@@ -1,4 +1,4 @@
-import { AppRoutePath } from "@shared/enums/routes.enums";
+﻿import { AppRoutePath } from "@shared/enums/routes.enums";
 import type { I18nKey } from "@shared/i18n/types/i18n-key";
 import { navigate } from "@/routes/navigation";
 import { login } from "@/services/auth/auth.service";
@@ -11,12 +11,13 @@ export interface LoginControllerDependencies {
 
 export interface LoginController {
     readonly onSubmit: (email: string, password: string) => Promise<void>;
+    readonly onNavigateToSignup: () => void;
+    readonly onNavigateToForgotPassword: () => void;
 }
 
 /**
  * @summary Builds login submit flow with validation, auth calls, and navigation.
  */
-
 export function createLoginController(dependencies: LoginControllerDependencies): LoginController {
     const onSubmit = async (email: string, password: string): Promise<void> => {
         dependencies.setError(null);
@@ -30,7 +31,17 @@ export function createLoginController(dependencies: LoginControllerDependencies)
         dependencies.setError(result.messageKey ?? LOGIN_ERROR_FALLBACK_MESSAGE);
     };
 
+    const onNavigateToSignup = (): void => {
+        navigate(AppRoutePath.SIGNUP);
+    };
+
+    const onNavigateToForgotPassword = (): void => {
+        navigate(AppRoutePath.FORGOT_PASSWORD);
+    };
+
     return {
         onSubmit,
+        onNavigateToSignup,
+        onNavigateToForgotPassword,
     };
 }
