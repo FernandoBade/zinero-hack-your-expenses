@@ -82,9 +82,9 @@ export function ForgotPasswordPage(): JSX.Element {
                 ) : null}
 
                 {successMessage ? (
-                    <div class="space-y-2 text-body text-base-100/78">
-                        <p>{t(FORGOT_PASSWORD_INSTRUCTION_PRIMARY_KEY)}</p>
-                        <p>{t(FORGOT_PASSWORD_INSTRUCTION_SECONDARY_KEY)}</p>
+                    <div class="space-y-2">
+                        <p class="text-body text-base-100">{t(FORGOT_PASSWORD_INSTRUCTION_PRIMARY_KEY)}</p>
+                        <p class="text-body text-base-100">{t(FORGOT_PASSWORD_INSTRUCTION_SECONDARY_KEY)}</p>
                     </div>
                 ) : (
                     <Form onSubmit={handleSubmit} disabled={isSubmitting}>
@@ -107,7 +107,7 @@ export function ForgotPasswordPage(): JSX.Element {
 
                             <Button type="submit" variant={ButtonVariant.PRIMARY} fullWidth loading={isSubmitting}>
                                 <span class="inline-flex items-center gap-2">
-                                    <PaperPlaneTiltIcon size={24} weight="regular" />
+                                    {!isSubmitting ? <PaperPlaneTiltIcon size={24} weight="regular" /> : null}
                                     <span class="text-button-lg font-semibold">{t(isSubmitting ? FORGOT_PASSWORD_SUBMITTING_KEY : FORGOT_PASSWORD_SUBMIT_KEY)}</span>
                                 </span>
                             </Button>

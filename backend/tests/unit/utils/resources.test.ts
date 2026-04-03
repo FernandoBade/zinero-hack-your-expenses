@@ -18,7 +18,7 @@ describe('shared i18n translate', () => {
     });
 
     it('translates a known key in the default locale', () => {
-        expect(translate('error.validation_error', Language.PT_BR)).toBe('Erro de validacao');
+        expect(translate('error.validation_error', Language.PT_BR)).toBe('Erro de validação');
     });
 
     it('loads and translates the english locale asynchronously', async () => {

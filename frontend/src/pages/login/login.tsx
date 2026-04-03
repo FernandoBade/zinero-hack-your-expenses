@@ -26,7 +26,7 @@ const LOGIN_DIVIDER_OR_KEY = 'auth.login.divider.or';
 const LOGIN_WITH_GOOGLE_KEY = 'auth.login.google.continue';
 const SIGNUP_HINT_KEY = 'auth.login.signup_prompt.text';
 const SIGNUP_ACTION_KEY = 'auth.login.signup_prompt.action';
-// const LOGIN_ILLUSTRATION_ALT_KEY = 'auth.login.illustration.alt';
+const LOGIN_GOOGLE_COMMING_SOON_KEY = 'app.coming_soon';
 const AUTH_SHOW_PASSWORD_KEY = 'auth.password.toggle.show';
 const AUTH_HIDE_PASSWORD_KEY = 'auth.password.toggle.hide';
 const BRAND_ALT_KEY = 'app.name';
@@ -94,9 +94,9 @@ export function LoginPage(): JSX.Element {
                                                         onClick={() => setShowPassword((currentValue) => !currentValue)}
                                                     >
                                                         {showPassword ? (
-                                                            <EyeClosedIcon size={20} weight="regular" />
-                                                        ) : (
                                                             <EyeIcon size={20} weight="regular" />
+                                                        ) : (
+                                                            <EyeClosedIcon size={20} weight="regular" />
                                                         )}
                                                     </button>
                                                 }
@@ -111,7 +111,7 @@ export function LoginPage(): JSX.Element {
                                             <div class="[&>button]:w-full">
                                                 <Button type="submit" variant={ButtonVariant.PRIMARY} loading={isSubmitting}>
                                                     <span class="inline-flex items-center gap-2">
-                                                        <FingerprintIcon size={24} weight="duotone" />
+                                                        {!isSubmitting ? <FingerprintIcon size={24} weight="duotone" /> : null}
                                                         <span class="text-button-lg font-semibold">{t(LOGIN_BUTTON_KEY)}</span>
                                                     </span>
                                                 </Button>
@@ -127,11 +127,11 @@ export function LoginPage(): JSX.Element {
                                                 <span class="h-px flex-1 bg-base-100/40" />
                                             </div>
 
-                                            <div class="[&>button]:w-full [&>button]:!border-base-100/80 [&>button]:!text-base-100">
+                                            <div class="[&>button]:w-full [&>button]:!border-base-100/80 [&>button]:!text-base-100" title={t(LOGIN_GOOGLE_COMMING_SOON_KEY)}>
                                                 <Button type="button" variant={ButtonVariant.OUTLINE} disabled>
                                                     <span class="inline-flex items-center gap-3 cursor-not-allowed">
                                                         <img src={googleLogoButton} alt="" class="h-6 w-6 cursor-not-allowed" aria-hidden="true" />
-                                                        <span class="text-button-lg font-semibold line-through text-stone-500 cursor-not-allowed">{t(LOGIN_WITH_GOOGLE_KEY) + " (soon)"}</span>
+                                                        <span class="text-button-lg font-semibold line-through text-stone-500 cursor-not-allowed">{t(LOGIN_WITH_GOOGLE_KEY)}</span>
                                                     </span>
                                                 </Button>
                                             </div>
@@ -145,14 +145,6 @@ export function LoginPage(): JSX.Element {
                                 </Card>
                             </div>
                         </div>
-
-                        {/* <figure class="hidden lg:flex lg:items-center lg:justify-center">
-                            <img
-                                src={loginIllustration}
-                                alt={t(LOGIN_ILLUSTRATION_ALT_KEY)}
-                                class="h-auto w-auto max-w-auto object-contain"
-                            />
-                        </figure> */}
                     </div>
                 </div>
             </PageContainer>

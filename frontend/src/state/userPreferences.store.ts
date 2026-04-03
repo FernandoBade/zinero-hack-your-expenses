@@ -36,32 +36,6 @@ let state: UserPreferencesState = {
 };
 
 
-function isLanguage(value: unknown): value is Language {
-    return value === Language.EN_US || value === Language.ES_ES || value === Language.PT_BR;
-}
-
-
-function isCurrency(value: unknown): value is Currency {
-    return (
-        value === Currency.ARS
-        || value === Currency.BRL
-        || value === Currency.COP
-        || value === Currency.EUR
-        || value === Currency.USD
-    );
-}
-
-
-function isUserPreferencesState(value: unknown): value is UserPreferencesState {
-    if (typeof value !== "object" || value === null) {
-        return false;
-    }
-
-    const candidate = value as Partial<UserPreferencesState>;
-    return isLanguage(candidate.language) && isCurrency(candidate.currency);
-}
-
-
 function resolveLanguageFromLocaleTag(localeTag: string): Language {
     const normalizedTag = localeTag.trim().toLowerCase();
     const supportedLanguageList = Object.values(Language) as readonly Language[];
@@ -88,16 +62,6 @@ function resolveBrowserLanguage(): Language {
     }
 
     return resolveLanguageFromLocaleTag(navigator.language);
-}
-
-
-function loadPersistedPreferences(): UserPreferencesState | null {
-    const persisted = storage.get<unknown>(StorageKey.USER_PREFERENCES);
-    if (!isUserPreferencesState(persisted)) {
-        return null;
-    }
-
-    return persisted;
 }
 
 
@@ -267,17 +231,15 @@ function ensureAuthStateSubscription(): void {
 }
 
 async function runInitialization(): Promise<void> {
-    const persistedPreferences = loadPersistedPreferences();
-    const hydratedPreferences: UserPreferencesState =
-        persistedPreferences ?? {
-            language: resolveBrowserLanguage(),
-            currency: DEFAULT_CURRENCY,
-        };
+    authenticatedUserId = resolveAuthenticatedUserId();
+    const browserPreferences: UserPreferencesState = {
+        language: resolveBrowserLanguage(),
+        currency: DEFAULT_CURRENCY,
+    };
 
-    applyState(hydratedPreferences, true);
+    applyState(browserPreferences, true);
     ensureAuthStateSubscription();
 
-    authenticatedUserId = resolveAuthenticatedUserId();
     authReconciliationSequence += 1;
     const reconciliationSequence = authReconciliationSequence;
 
@@ -294,7 +256,7 @@ async function runInitialization(): Promise<void> {
 }
 
 /**
- * @summary Initializes user preference state from storage, browser locale, and auth context.
+ * @summary Initializes user preference state from browser locale for public flows, then reconciles authenticated sessions with backend preferences.
  * @returns Promise resolved when hydration and reconciliation finish.
  */
 

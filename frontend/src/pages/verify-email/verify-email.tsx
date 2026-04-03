@@ -211,10 +211,10 @@ export function VerifyEmailPage(): JSX.Element {
                     />
                 ) : null}
 
-                <div class="space-y-2 text-body text-base-100/78">
-                    <p>{t(VERIFY_TIP_INBOX_KEY)}</p>
-                    <p>{t(VERIFY_TIP_SPAM_KEY)}</p>
-                    <p>{t(VERIFY_TIP_RESEND_KEY)}</p>
+                <div class="space-y-2">
+                    <p class="text-body text-base-100">{t(VERIFY_TIP_INBOX_KEY)}</p>
+                    <p class="text-body text-base-100">{t(VERIFY_TIP_SPAM_KEY)}</p>
+                    <p class="text-body text-base-100">{t(VERIFY_TIP_RESEND_KEY)}</p>
                 </div>
 
                 {showResendSection ? (
@@ -276,4 +276,3 @@ export function VerifyEmailPage(): JSX.Element {
         </AuthShell>
     );
 }
-

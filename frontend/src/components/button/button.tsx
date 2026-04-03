@@ -1,4 +1,5 @@
-import type { JSX, MouseEventHandler} from "preact";
+import type { JSX, MouseEventHandler } from "preact";
+import { SpinnerGapIcon } from "@phosphor-icons/react";
 import { ButtonSize, ButtonVariant } from "@shared/enums/ui.enums";
 import { Icon } from "@/components/icon/icon";
 import type { ButtonProps } from "@/components/button/button.types";
@@ -26,6 +27,12 @@ const sizeTypographyMap: Record<ButtonSize, string> = {
     [ButtonSize.LG]: "text-button-lg",
 };
 
+const loadingIconSizeMap: Record<ButtonSize, number> = {
+    [ButtonSize.SM]: 16,
+    [ButtonSize.MD]: 18,
+    [ButtonSize.LG]: 20,
+};
+
 /**
  * @summary Renders the design-system button with typed variants, sizes, and loading state.
  * @param props Button configuration.
@@ -47,7 +54,23 @@ export function Button({
     onClick,
 }: ButtonProps): JSX.Element {
     const hasCustomContent = children !== undefined && children !== null;
+    const isInteractionDisabled = disabled || loading;
+    const leftAdornment = loading ? (
+        <span class="inline-flex shrink-0 items-center mt-px animate-spin" aria-hidden="true">
+            <SpinnerGapIcon size={loadingIconSizeMap[size]} weight="bold" />
+        </span>
+    ) : iconLeft ? (
+        <span class="inline-flex items-center shrink-0 mt-px">
+            <Icon name={iconLeft} />
+        </span>
+    ) : null;
+
     const handleClick: MouseEventHandler<HTMLButtonElement> = (event) => {
+        if (isInteractionDisabled) {
+            event.preventDefault();
+            return;
+        }
+
         const button = event.currentTarget;
         const bounds = button.getBoundingClientRect();
         const hasPointerCoordinates = event.clientX !== 0 || event.clientY !== 0;
@@ -73,19 +96,16 @@ export function Button({
                 variantMap[variant],
                 sizeMap[size],
                 sizeTypographyMap[size],
+                loading ? "!cursor-progress !opacity-100" : undefined,
                 fullWidth ? "w-full" : undefined
             )}
-            disabled={disabled || loading}
+            disabled={disabled}
             aria-busy={loading}
+            aria-disabled={isInteractionDisabled}
             aria-label={tOptional(ariaLabel)}
             onClick={handleClick}
         >
-            {loading ? <span class="loading loading-spinner loading-xs self-center" aria-hidden="true" /> : null}
-            {!loading && iconLeft ? (
-                <span class="inline-flex items-center shrink-0 mt-px">
-                    <Icon name={iconLeft} />
-                </span>
-            ) : null}
+            {leftAdornment}
             {label ? <span class="inline-flex items-center leading-none">{t(label)}</span> : null}
             {!label && hasCustomContent ? <span class="inline-flex items-center leading-none">{children}</span> : null}
             {!loading && iconRight ? (

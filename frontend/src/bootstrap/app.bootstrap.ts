@@ -9,7 +9,7 @@ let bootstrappedPromise: Promise<void> | null = null;
 let localeSubscriptionInitialized = false;
 
 /**
- * @summary Initializes app stores and prepares locale catalogs before mounting the root Preact application.
+ * @summary Initializes public locale state before mount and lets authenticated sessions reconcile with backend preferences afterward.
  */
 async function runBootstrap(): Promise<void> {
     await initializeUserPreferencesStore();

@@ -12,5 +12,6 @@ export interface CheckboxProps {
     readonly disabled?: boolean;
     readonly id?: string;
     readonly name?: string;
+    readonly labelClassName?: string;
     readonly onChange?: (checked: boolean) => void;
 }

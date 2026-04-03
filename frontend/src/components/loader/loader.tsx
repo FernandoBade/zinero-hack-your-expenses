@@ -1,12 +1,13 @@
 import type { JSX } from "preact";
+import { SpinnerGapIcon } from "@phosphor-icons/react";
 import { LoaderSize } from "@shared/enums/ui.enums";
 import type { LoaderProps } from "@/components/loader/loader.types";
 import { classNames } from "@/utils/classNames";
 
-const sizeMap: Record<LoaderSize, string> = {
-    [LoaderSize.SM]: "loading-sm",
-    [LoaderSize.MD]: "loading-md",
-    [LoaderSize.LG]: "loading-lg",
+const sizeClassMap: Record<LoaderSize, string> = {
+    [LoaderSize.SM]: "size-4",
+    [LoaderSize.MD]: "size-5",
+    [LoaderSize.LG]: "size-6",
 };
 
 /**
@@ -16,6 +17,10 @@ const sizeMap: Record<LoaderSize, string> = {
  */
 
 export function Loader({ size = LoaderSize.MD }: LoaderProps): JSX.Element {
-    return <span class={classNames("loading loading-spinner", sizeMap[size])} aria-hidden="true" />;
+    return (
+        <span class="inline-flex animate-spin items-center justify-center" aria-hidden="true">
+            <SpinnerGapIcon className={classNames(sizeClassMap[size])} weight="bold" />
+        </span>
+    );
 }
 

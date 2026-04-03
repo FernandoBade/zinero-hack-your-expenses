@@ -1,5 +1,5 @@
 import type { JSX } from "preact";
-import { UserPlusIcon } from "@phosphor-icons/react";
+import { EyeClosedIcon, EyeIcon, UserPlusIcon } from "@phosphor-icons/react";
 import { useEffect, useMemo, useState } from "preact/hooks";
 import { Alert } from "@/components/alert/alert";
 import { AuthShell } from "@/components/auth-shell/auth-shell";
@@ -159,7 +159,12 @@ export function SignupPage(): JSX.Element {
     };
 
     return (
-        <AuthShell size="wide" title={SIGNUP_TITLE_KEY} subtitle={SIGNUP_SUBTITLE_KEY}>
+        <AuthShell
+            size="wide"
+            title={SIGNUP_TITLE_KEY}
+            subtitle={SIGNUP_SUBTITLE_KEY}
+            logoClassName="max-w-[18rem] sm:max-w-[20rem]"
+        >
             <div class="space-y-6">
                 {formError ? (
                     <Alert variant={AlertVariant.ERROR} style={AlertStyle.OUTLINE} message={formError} />
@@ -283,6 +288,8 @@ export function SignupPage(): JSX.Element {
                                 autoComplete="new-password"
                                 error={fieldErrors[FieldKey.PASSWORD]}
                                 required
+                                visibleIcon={<EyeClosedIcon size={22} weight="regular" />}
+                                hiddenIcon={<EyeIcon size={22} weight="regular" />}
                                 onChange={(value) => {
                                     setPassword(value);
                                     clearFieldError(FieldKey.PASSWORD);
@@ -298,6 +305,8 @@ export function SignupPage(): JSX.Element {
                                 autoComplete="new-password"
                                 error={fieldErrors[FieldKey.CONFIRM_PASSWORD]}
                                 required
+                                visibleIcon={<EyeClosedIcon size={22} weight="regular" />}
+                                hiddenIcon={<EyeIcon size={22} weight="regular" />}
                                 onChange={(value) => {
                                     setConfirmPassword(value);
                                     clearFieldError(FieldKey.CONFIRM_PASSWORD);
@@ -311,6 +320,7 @@ export function SignupPage(): JSX.Element {
                             label={SIGNUP_TERMS_LABEL_KEY}
                             checked={acceptedTerms}
                             error={fieldErrors[FieldKey.TERMS_ACCEPTED]}
+                            labelClassName="font-medium text-base-100"
                             onChange={(checked) => {
                                 setAcceptedTerms(checked);
                                 clearFieldError(FieldKey.TERMS_ACCEPTED);
@@ -320,7 +330,7 @@ export function SignupPage(): JSX.Element {
                         <div class="mx-auto w-full max-w-sm">
                             <Button type="submit" variant={ButtonVariant.PRIMARY} fullWidth loading={isSubmitting}>
                                 <span class="inline-flex items-center gap-2">
-                                    <UserPlusIcon size={28} weight="regular" />
+                                    {!isSubmitting ? <UserPlusIcon size={28} weight="regular" /> : null}
                                     <span class="text-button-lg font-semibold">{t(isSubmitting ? SIGNUP_SUBMITTING_KEY : SIGNUP_SUBMIT_KEY)}</span>
                                 </span>
                             </Button>
@@ -328,14 +338,11 @@ export function SignupPage(): JSX.Element {
                     </div>
                 </Form>
 
-                <div class="flex items-center justify-center gap-2 text-center text-body text-base-100/80">
-                    <span>{t(SIGNUP_LOGIN_TEXT_KEY)}</span>
-                    <Button type="button" variant={ButtonVariant.LINK} onClick={controller.onNavigateToLogin}>
-                        {t(SIGNUP_LOGIN_ACTION_KEY)}
-                    </Button>
+                <div class="pt-1 text-center">
+                    <span class="text-sm text-base-100">{t(SIGNUP_LOGIN_TEXT_KEY)}</span>
+                    <Button type="button" variant={ButtonVariant.LINK} label={SIGNUP_LOGIN_ACTION_KEY} onClick={controller.onNavigateToLogin} />
                 </div>
             </div>
         </AuthShell>
     );
 }
-

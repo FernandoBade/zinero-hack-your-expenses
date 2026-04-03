@@ -4,6 +4,7 @@ import { AppRoutePath } from "@shared/enums/routes.enums";
 import { ErrorCode } from "@shared/errors/error-codes";
 import { FieldKey } from "@shared/fields/field-keys";
 import { navigate, replace } from "@/routes/navigation";
+import { getLocale } from "@/state/locale.store";
 import type { AuthActionResult, AuthFieldErrors } from "@/services/auth/auth.service";
 import { resendVerificationEmail, signup } from "@/services/auth/auth.service";
 
@@ -90,6 +91,7 @@ export function createSignupController(): SignupController {
             email: form.email.trim().toLowerCase(),
             password: form.password,
             phone: form.phone.trim().length > 0 ? form.phone.trim() : undefined,
+            language: getLocale(),
         };
 
         const result = await signup(payload);

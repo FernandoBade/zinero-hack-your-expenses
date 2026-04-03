@@ -102,12 +102,12 @@ describe("userPreferences.store", () => {
         await store.initializeUserPreferencesStore();
         await store.initializeUserPreferencesStore();
 
-        expect(storageGetMock).toHaveBeenCalledTimes(1);
+        expect(storageGetMock).toHaveBeenCalledTimes(0);
         expect(storageSetMock).toHaveBeenCalledTimes(1);
         expect(subscribeAuthStateMock).toHaveBeenCalledTimes(1);
     });
 
-    it("uses persisted storage snapshot as the first hydration source", async () => {
+    it("ignores persisted language while unauthenticated and follows the browser locale", async () => {
         const persisted = makeStorageSnapshot({
             language: Language.ES_ES,
             currency: Currency.EUR,
@@ -117,22 +117,28 @@ describe("userPreferences.store", () => {
 
         await store.initializeUserPreferencesStore();
 
-        expect(store.getUserPreferences()).toEqual(persisted);
+        expect(store.getUserPreferences()).toEqual(
+            makePreferences({
+                language: Language.EN_US,
+                currency: Currency.USD,
+            })
+        );
         expect(fetchUserPreferencesMock).not.toHaveBeenCalled();
-        expect(document.documentElement.getAttribute("lang")).toBe(Language.ES_ES);
+        expect(document.documentElement.getAttribute("lang")).toBe(Language.EN_US);
     });
 
     it("reconciles with backend preferences when authenticated", async () => {
-        const persisted = makeStorageSnapshot({
-            language: Language.EN_US,
-            currency: Currency.USD,
-        });
         const backend = makeBackendPreferences({
             language: Language.PT_BR,
             currency: Currency.BRL,
         });
 
-        storageGetMock.mockReturnValue(persisted);
+        storageGetMock.mockReturnValue(
+            makeStorageSnapshot({
+                language: Language.EN_US,
+                currency: Currency.USD,
+            })
+        );
         getAccessTokenMock.mockReturnValue(makeAccessToken({ id: 42 }));
         fetchUserPreferencesMock.mockResolvedValue(backend);
 
@@ -180,16 +186,17 @@ describe("userPreferences.store", () => {
     });
 
     it("reconciles preferences after unauthenticated initialization when auth becomes authenticated", async () => {
-        const persisted = makeStorageSnapshot({
-            language: Language.EN_US,
-            currency: Currency.USD,
-        });
         const backend = makeBackendPreferences({
             language: Language.ES_ES,
             currency: Currency.EUR,
         });
 
-        storageGetMock.mockReturnValue(persisted);
+        storageGetMock.mockReturnValue(
+            makeStorageSnapshot({
+                language: Language.EN_US,
+                currency: Currency.USD,
+            })
+        );
         fetchUserPreferencesMock.mockResolvedValue(backend);
 
         const store = await loadStoreModule();
@@ -206,12 +213,12 @@ describe("userPreferences.store", () => {
     });
 
     it("ignores stale backend fetch results when logout happens during in-flight reconciliation", async () => {
-        const persisted = makeStorageSnapshot({
-            language: Language.PT_BR,
-            currency: Currency.BRL,
-        });
-
-        storageGetMock.mockReturnValue(persisted);
+        storageGetMock.mockReturnValue(
+            makeStorageSnapshot({
+                language: Language.PT_BR,
+                currency: Currency.BRL,
+            })
+        );
         getAccessTokenMock.mockReturnValue(null);
 
         let resolveFetch: ((value: ReturnType<typeof makeBackendPreferences>) => void) | undefined;
@@ -315,28 +322,33 @@ describe("userPreferences.store", () => {
     });
 
     it("keeps hydrated preferences when backend reconciliation throws", async () => {
-        const persisted = makeStorageSnapshot({
-            language: Language.ES_ES,
-            currency: Currency.EUR,
-        });
-
-        storageGetMock.mockReturnValue(persisted);
+        storageGetMock.mockReturnValue(
+            makeStorageSnapshot({
+                language: Language.ES_ES,
+                currency: Currency.EUR,
+            })
+        );
         getAccessTokenMock.mockReturnValue(makeAccessToken({ id: 99 }));
         fetchUserPreferencesMock.mockRejectedValue(new Error("backend unavailable"));
 
         const store = await loadStoreModule();
         await store.initializeUserPreferencesStore();
 
-        expect(store.getUserPreferences()).toEqual(persisted);
+        expect(store.getUserPreferences()).toEqual(
+            makePreferences({
+                language: Language.EN_US,
+                currency: Currency.USD,
+            })
+        );
     });
 
     it("keeps hydrated preferences when authenticated fetch returns no backend snapshot", async () => {
-        const persisted = makeStorageSnapshot({
-            language: Language.ES_ES,
-            currency: Currency.EUR,
-        });
-
-        storageGetMock.mockReturnValue(persisted);
+        storageGetMock.mockReturnValue(
+            makeStorageSnapshot({
+                language: Language.ES_ES,
+                currency: Currency.EUR,
+            })
+        );
         getAccessTokenMock.mockReturnValue(makeAccessToken({ id: 77 }));
         fetchUserPreferencesMock.mockResolvedValue(null);
 
@@ -344,7 +356,12 @@ describe("userPreferences.store", () => {
         await store.initializeUserPreferencesStore();
 
         expect(fetchUserPreferencesMock).toHaveBeenCalledWith(77);
-        expect(store.getUserPreferences()).toEqual(persisted);
+        expect(store.getUserPreferences()).toEqual(
+            makePreferences({
+                language: Language.EN_US,
+                currency: Currency.USD,
+            })
+        );
     });
 
     it("notifies subscribers immediately and on subsequent updates", async () => {

@@ -124,7 +124,7 @@ export async function login(email: string, password: string): Promise<AuthAction
 }
 
 /**
- * @summary Creates a new user account and keeps the onboarding flow within auth services.
+ * @summary Creates a new user account and persists the current public UI locale so auth emails follow the signup language.
  */
 export async function signup(payload: CreateUserInput): Promise<AuthActionResult<CreateUserOutput, VerificationResendFailureData>> {
     const response = await usersApi.createUser(payload);
