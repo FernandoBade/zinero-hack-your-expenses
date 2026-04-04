@@ -73,7 +73,7 @@ export function Input({
             <div class="flex w-full flex-col gap-2 sm:flex-row sm:items-center">
                 {prefixText ? <span class="badge badge-neutral self-start text-caption sm:self-auto">{t(prefixText)}</span> : null}
 
-                <label class={classNames("input input-bordered flex w-full min-w-0 items-center gap-2 text-base-content", error ? "input-error" : undefined)}>
+                <div class={classNames("input input-bordered flex w-full min-w-0 items-center gap-2 text-base-content", error ? "input-error" : undefined)}>
                     {leftSlot}
                     {icon && iconPosition === IconPosition.LEFT ? <Icon name={icon} /> : null}
                     <input
@@ -101,14 +101,14 @@ export function Input({
                     />
                     {icon && iconPosition === IconPosition.RIGHT ? <Icon name={icon} /> : null}
                     {rightSlot}
-                </label>
+                </div>
 
                 {suffixText ? <span class="badge badge-neutral self-start text-caption sm:self-auto">{t(suffixText)}</span> : null}
             </div>
 
             {error ? (
                 <label class="label">
-                    <span class="label-text-alt text-caption text-error !text-error">{t(error)}</span>
+                    <span class="label-text-alt text-caption text-error">{t(error)}</span>
                 </label>
             ) : hint ? (
                 <label class="label">

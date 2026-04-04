@@ -10,11 +10,11 @@ import {
     type CountryCode as LibCountryCode,
 } from "libphonenumber-js";
 
-const DEFAULT_PHONE_COUNTRY = CountryCode.US;
+const DEFAULT_PHONE_COUNTRY = CountryCode.OTHER;
 
 const COUNTRY_BY_LANGUAGE: Readonly<Record<Language, CountryCode>> = {
-    [Language.EN_US]: CountryCode.US,
-    [Language.ES_ES]: CountryCode.ES,
+    [Language.EN_US]: CountryCode.OTHER,
+    [Language.ES_ES]: CountryCode.OTHER,
     [Language.PT_BR]: CountryCode.BR,
 };
 
@@ -37,6 +37,11 @@ interface PhoneMaskPattern {
     readonly prefix: string;
     readonly groupSizes: readonly number[];
     readonly separators: readonly string[];
+}
+
+
+function isFreeformPhoneCountryInternal(countryCode: CountryCode): boolean {
+    return countryCode === CountryCode.OTHER;
 }
 
 
@@ -150,6 +155,10 @@ function resolveCountryMaxNationalDigits(countryCode: CountryCode): number {
         return sharedMaxDigits;
     }
 
+    if (isFreeformPhoneCountryInternal(countryCode)) {
+        return 64;
+    }
+
     let maxDigits = 20;
 
     for (let size = 1; size <= 20; size += 1) {
@@ -167,6 +176,10 @@ function resolveCountryMaxNationalDigits(countryCode: CountryCode): number {
 
 
 function trimToCountryLength(value: string, countryCode: CountryCode): string {
+    if (isFreeformPhoneCountryInternal(countryCode)) {
+        return value;
+    }
+
     let boundedDigits = value;
 
     while (boundedDigits.length > 0) {
@@ -248,6 +261,15 @@ export function resolvePhoneCountryFromLanguage(language: Language): CountryCode
 }
 
 /**
+ * @summary Indicates whether the selected country uses freeform phone entry instead of masking.
+ * @param countryCode Selected country code.
+ * @returns True when the phone input should bypass country formatting rules.
+ */
+export function isFreeformPhoneCountry(countryCode: CountryCode): boolean {
+    return isFreeformPhoneCountryInternal(countryCode);
+}
+
+/**
  * @summary Formats typed phone digits and emits canonical E.164 when the number is valid.
  * @param rawValue Raw typed value.
  * @param countryCode Selected country code.
@@ -258,6 +280,15 @@ export function parsePhoneDraft(
     rawValue: string,
     countryCode: CountryCode
 ): ParsedPhoneDraft {
+    if (isFreeformPhoneCountryInternal(countryCode)) {
+        const trimmedValue = rawValue.trim();
+
+        return {
+            displayValue: trimmedValue,
+            canonicalValue: trimmedValue,
+        };
+    }
+
     const digitsOnly = normalizePhoneDigits(rawValue, countryCode);
     if (digitsOnly.length === 0) {
         return {
@@ -296,6 +327,16 @@ export function normalizePhoneValue(
     countryCode: CountryCode
 ): NormalizedPhoneValue {
     const trimmedValue = value.trim();
+
+    if (isFreeformPhoneCountryInternal(countryCode)) {
+        return {
+            displayValue: trimmedValue,
+            canonicalValue: trimmedValue,
+            isValid: trimmedValue.length > 0,
+            isPossible: trimmedValue.length > 0,
+        };
+    }
+
     if (trimmedValue.length === 0) {
         return {
             displayValue: "",
@@ -387,6 +428,16 @@ export function validatePhoneValue(input: {
     readonly countryCode: CountryCode;
     readonly rules: PhoneValidationRules;
 }): PhoneInputValidationError | null {
+    if (isFreeformPhoneCountryInternal(input.countryCode)) {
+        const hasValue = input.displayValue.trim().length > 0 || input.canonicalValue.trim().length > 0;
+
+        if (input.rules.required && !hasValue) {
+            return PhoneInputValidationError.REQUIRED;
+        }
+
+        return null;
+    }
+
     const hasAnyDigits = hasDigit(input.displayValue);
     const hasCanonicalValue = input.canonicalValue.trim().length > 0;
     const digitsOnly = sanitizePhoneDigits(input.displayValue);

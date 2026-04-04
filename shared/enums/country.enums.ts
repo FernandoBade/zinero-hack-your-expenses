@@ -1,4 +1,4 @@
-/** @summary Supported ISO country codes for phone formatting and dial selection. */
+/** @summary Supported country codes for phone formatting, dial selection, and freeform fallback. */
 export enum CountryCode {
     AR = "AR",
     BR = "BR",
@@ -10,6 +10,9 @@ export enum CountryCode {
     FR = "FR",
     GB = "GB",
     MX = "MX",
+    OTHER = "OTHER",
+    PE = "PE",
     PT = "PT",
     US = "US",
+    VE = "VE",
 }

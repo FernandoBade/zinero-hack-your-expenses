@@ -11,5 +11,4 @@ export interface AuthShellProps {
     readonly subtitle: I18nKey;
     readonly children: ComponentChildren;
     readonly size?: AuthShellSize;
-    readonly logoClassName?: string;
 }

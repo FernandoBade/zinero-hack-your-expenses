@@ -34,29 +34,29 @@ describe("phoneInput country selector and E.164 canonical flow", () => {
     });
 
     it("sanitizes non-digit input and trims values to country metadata length", () => {
-        const parsedFromDirtyInput = parsePhoneDraft("+1 (212) ABC-555-0142", CountryCode.US);
-        const parsedFromLongInput = parsePhoneDraft("2125550142999999", CountryCode.US);
+        const parsedFromDirtyInput = parsePhoneDraft("+57 (300) ABC-123-4567", CountryCode.CO);
+        const parsedFromLongInput = parsePhoneDraft("3001234567999999", CountryCode.CO);
         const parsedFromLettersOnly = parsePhoneDraft("wqeqweqweqwe", CountryCode.BR);
 
-        expect(parsedFromDirtyInput.canonicalValue).toBe("+12125550142");
-        expect(parsedFromLongInput.canonicalValue).toBe("+12125550142");
+        expect(parsedFromDirtyInput.canonicalValue).toBe("+573001234567");
+        expect(parsedFromLongInput.canonicalValue).toBe("+573001234567");
         expect(parsedFromLettersOnly.canonicalValue).toBe("");
         expect(parsedFromLettersOnly.displayValue).toBe("");
     });
 
     it("normalizes dial-prefix input and enforces max digits from shared country metadata", () => {
         const brMaxDigits = getPhoneCountryOption(CountryCode.BR)?.maxDigits ?? 0;
-        const usMaxDigits = getPhoneCountryOption(CountryCode.US)?.maxDigits ?? 0;
+        const mxMaxDigits = getPhoneCountryOption(CountryCode.MX)?.maxDigits ?? 0;
 
         expect(getPhoneMaxNationalDigits(CountryCode.BR)).toBeGreaterThanOrEqual(10);
         expect(getPhoneMaxNationalDigits(CountryCode.CO)).toBeGreaterThanOrEqual(10);
         expect(getPhoneMaxNationalDigits(CountryCode.BR)).toBe(brMaxDigits);
-        expect(getPhoneMaxNationalDigits(CountryCode.US)).toBe(usMaxDigits);
+        expect(getPhoneMaxNationalDigits(CountryCode.MX)).toBe(mxMaxDigits);
 
         expect(normalizePhoneInputDigits("5511949482823", CountryCode.BR)).toBe("11949482823");
         expect(normalizePhoneInputDigits("573001234567", CountryCode.CO)).toBe("3001234567");
         expect(normalizePhoneInputDigits("119999999999999", CountryCode.BR).length).toBe(brMaxDigits);
-        expect(normalizePhoneInputDigits("212555014299999", CountryCode.US).length).toBe(usMaxDigits);
+        expect(normalizePhoneInputDigits("525512345678999", CountryCode.MX).length).toBe(mxMaxDigits);
     });
 
     it("keeps canonical empty for invalid values and reports validation error", () => {
@@ -112,14 +112,29 @@ describe("phoneInput country selector and E.164 canonical flow", () => {
 
     it("resolves default country by language and exposes shared options", () => {
         expect(resolvePhoneCountryFromLanguage(Language.PT_BR)).toBe(CountryCode.BR);
-        expect(resolvePhoneCountryFromLanguage(Language.EN_US)).toBe(CountryCode.US);
-        expect(resolvePhoneCountryFromLanguage(Language.ES_ES)).toBe(CountryCode.ES);
-        expect(resolvePhoneCountryFromLanguage("fr-FR" as Language)).toBe(CountryCode.US);
+        expect(resolvePhoneCountryFromLanguage(Language.EN_US)).toBe(CountryCode.OTHER);
+        expect(resolvePhoneCountryFromLanguage(Language.ES_ES)).toBe(CountryCode.OTHER);
+        expect(resolvePhoneCountryFromLanguage("fr-FR" as Language)).toBe(CountryCode.OTHER);
 
         const options = getPhoneCountryOptions();
-        expect(options.length).toBeGreaterThanOrEqual(12);
+        expect(options.length).toBe(8);
+        expect(options.map((option) => option.code)).toEqual([
+            CountryCode.AR,
+            CountryCode.BR,
+            CountryCode.CL,
+            CountryCode.CO,
+            CountryCode.MX,
+            CountryCode.PE,
+            CountryCode.VE,
+            CountryCode.OTHER,
+        ]);
         expect(getPhoneCountryOption(CountryCode.BR)?.dialCode).toBe("55");
         expect(getPhoneCountryOption(CountryCode.CO)?.placeholderExample).toBe("300 1234567");
+        expect(getPhoneCountryOption(CountryCode.PE)?.dialCode).toBe("51");
+        expect(getPhoneCountryOption(CountryCode.VE)?.dialCode).toBe("58");
+        expect(getPhoneCountryOption(CountryCode.OTHER)?.dialCode).toBe("");
+        expect(getPhoneCountryOption(CountryCode.US)).toBeUndefined();
+        expect(getPhoneCountryOption(CountryCode.PT)).toBeUndefined();
         expect(getPhoneCountryOption("XX" as CountryCode)).toBeUndefined();
     });
 
@@ -181,5 +196,36 @@ describe("phoneInput country selector and E.164 canonical flow", () => {
                 },
             })
         ).toBe(PhoneInputValidationError.INVALID);
+    });
+
+    it("keeps OTHER as freeform input and only validates required state", () => {
+        const parsed = parsePhoneDraft("+351 912 345 678 ext 99", CountryCode.OTHER);
+
+        expect(parsed.displayValue).toBe("+351 912 345 678 ext 99");
+        expect(parsed.canonicalValue).toBe("+351 912 345 678 ext 99");
+
+        expect(
+            validatePhoneValue({
+                displayValue: parsed.displayValue,
+                canonicalValue: parsed.canonicalValue,
+                countryCode: CountryCode.OTHER,
+                rules: {
+                    required: false,
+                    validateIncomplete: true,
+                },
+            })
+        ).toBeNull();
+
+        expect(
+            validatePhoneValue({
+                displayValue: "   ",
+                canonicalValue: "",
+                countryCode: CountryCode.OTHER,
+                rules: {
+                    required: true,
+                    validateIncomplete: true,
+                },
+            })
+        ).toBe(PhoneInputValidationError.REQUIRED);
     });
 });

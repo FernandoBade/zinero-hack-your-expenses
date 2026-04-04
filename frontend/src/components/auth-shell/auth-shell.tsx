@@ -12,6 +12,12 @@ const widthClassMap: Readonly<Record<AuthShellSize, string>> = {
     wide: "max-w-[52rem]",
 };
 
+const logoClassMap: Readonly<Record<AuthShellSize, string>> = {
+    compact: "max-w-[10rem] sm:max-w-[24rem]",
+    wide: "max-w-[10rem] sm:max-w-[24rem]",
+    form: "max-w-[10rem] sm:max-w-[24rem]",
+};
+
 const BRAND_ALT_KEY = "app.name";
 
 /**
@@ -19,7 +25,7 @@ const BRAND_ALT_KEY = "app.name";
  * @param props Shell configuration.
  * @returns Authentication shell layout.
  */
-export function AuthShell({ title, subtitle, children, size = "form", logoClassName }: AuthShellProps): JSX.Element {
+export function AuthShell({ title, subtitle, children, size = "form" }: AuthShellProps): JSX.Element {
     return (
         <section class="min-h-screen bg-gradient-to-br from-stone-900 to-stone-700">
             <PageContainer>
@@ -28,7 +34,11 @@ export function AuthShell({ title, subtitle, children, size = "form", logoClassN
                         <div class="[&>article]:!border-base-content/20 [&>article]:!shadow-2xl [&_.card-body]:!p-6 sm:[&_.card-body]:!p-8 [&_.label-text]:!text-base-100">
                             <Card bgColor="neutral">
                                 <header class="mb-6 flex flex-col items-center gap-5 text-center">
-                                    <img src={brandLogoHorizontal} alt={t(BRAND_ALT_KEY)} class={classNames("mb-6 w-auto px-4", logoClassName)} />
+                                    <img
+                                        src={brandLogoHorizontal}
+                                        alt={t(BRAND_ALT_KEY)}
+                                        class={classNames("mb-4 w-full px-4", logoClassMap[size])}
+                                    />
                                     <div class="space-y-2">
                                         <h1 class="text-page-title text-base-100">{t(title)}</h1>
                                         <h2 class="text-body font-semibold text-base-100">{t(subtitle)}</h2>

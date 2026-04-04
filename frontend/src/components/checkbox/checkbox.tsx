@@ -25,7 +25,7 @@ export function Checkbox({
 
     return (
         <div class="form-control gap-2">
-            <label class="grid cursor-pointer grid-cols-[auto_minmax(0,1fr)] items-start gap-3" for={id}>
+            <label class="mt-4 grid cursor-pointer grid-cols-[auto_minmax(0,1fr)] items-start gap-3" for={id}>
                 <input
                     id={id}
                     name={name}
@@ -37,7 +37,7 @@ export function Checkbox({
                 />
                 <span class={classNames("block text-body text-base-100", labelClassName)}>{label ? t(label) : children}</span>
             </label>
-            {error ? <span class="text-caption text-error !text-error">{t(error)}</span> : null}
+            {error ? <span class="text-caption text-error">{t(error)}</span> : null}
         </div>
     );
 }

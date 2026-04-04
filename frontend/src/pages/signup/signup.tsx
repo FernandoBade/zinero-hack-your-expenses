@@ -159,12 +159,7 @@ export function SignupPage(): JSX.Element {
     };
 
     return (
-        <AuthShell
-            size="wide"
-            title={SIGNUP_TITLE_KEY}
-            subtitle={SIGNUP_SUBTITLE_KEY}
-            logoClassName="max-w-[18rem] sm:max-w-[20rem]"
-        >
+        <AuthShell size="wide" title={SIGNUP_TITLE_KEY} subtitle={SIGNUP_SUBTITLE_KEY}>
             <div class="space-y-6">
                 {formError ? (
                     <Alert variant={AlertVariant.ERROR} style={AlertStyle.OUTLINE} message={formError} />
@@ -327,7 +322,7 @@ export function SignupPage(): JSX.Element {
                             }}
                         />
 
-                        <div class="mx-auto w-full max-w-sm">
+                        <div class="pt-4 mx-auto w-full max-w-sm">
                             <Button type="submit" variant={ButtonVariant.PRIMARY} fullWidth loading={isSubmitting}>
                                 <span class="inline-flex items-center gap-2">
                                     {!isSubmitting ? <UserPlusIcon size={28} weight="regular" /> : null}
@@ -338,7 +333,7 @@ export function SignupPage(): JSX.Element {
                     </div>
                 </Form>
 
-                <div class="pt-1 text-center">
+                <div class="text-center">
                     <span class="text-sm text-base-100">{t(SIGNUP_LOGIN_TEXT_KEY)}</span>
                     <Button type="button" variant={ButtonVariant.LINK} label={SIGNUP_LOGIN_ACTION_KEY} onClick={controller.onNavigateToLogin} />
                 </div>
