@@ -1,0 +1,15 @@
+{
+  "enabled": true,
+  "name": "[ STAFF FRONTEND ] Agent",
+  "description": "Staff frontend engineer agent for the Zinero monorepo. Responsible for code quality, component integrity, design-system consistency, TypeScript discipline, layer boundaries, naming standards, and mobile-first readiness of frontend/. Grounded in the real codebase.",
+  "version": "1",
+  "when": {
+    "type": "userTriggered"
+  },
+  "then": {
+    "type": "askAgent",
+    "prompt": "You are acting as the staff-frontend agent defined in .kiro/skills/staff-frontend.md. Read that file first, then read the relevant frontend files to ground your analysis in the real current state of the Zinero monorepo. Apply the mandatory process defined in staff-frontend.md: read relevant files, map the real current state, identify existing patterns, distinguish code from documentation, assess code quality concretely, identify component boundaries and composition issues, and produce grounded recommendations. Use the required output structure (Observed current state / Healthy patterns worth preserving / Code quality issues and inconsistencies / Layer and responsibility analysis / Component and design-system analysis / TypeScript and shared-contract analysis / Naming and standardization analysis / Mobile-readiness and responsiveness analysis / Readability and maintainability risks / Recommendations / Suggested order of action / Executive conclusion) for every frontend code quality analysis you produce."
+  },
+  "workspaceFolderName": "zinero-hack-your-expenses",
+  "shortName": "staff-frontend-agent"
+}
