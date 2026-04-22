@@ -683,4 +683,111 @@ describe('CategoryController', () => {
   });
 });
 
+describe('CategoryController — authorization enforcement', () => {
+  let logSpy: jest.SpyInstance;
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    logSpy = jest.spyOn(commons, 'createLog').mockResolvedValue();
+  });
+
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
+
+  describe('getCategories — MASTER only', () => {
+    it('returns 403 for a non-MASTER authenticated user', async () => {
+      const getSpy = jest.spyOn(CategoryService.prototype, 'getCategories');
+      const req = createMockRequest({ user: { id: 1, profile: undefined } });
+      const res = createMockResponse();
+      const next = createNext();
+
+      await CategoryController.getCategories(req, res, next);
+
+      expect(getSpy).not.toHaveBeenCalled();
+      expect(res.status).toHaveBeenCalledWith(HTTPStatus.FORBIDDEN);
+      expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ errorCode: Resource.UNAUTHORIZED_OPERATION }));
+    });
+  });
+
+  describe('getCategoryById — ownership enforcement', () => {
+    it('returns 403 when the category belongs to a different user', async () => {
+      const category = makeCategory({ id: 30, userId: 10 });
+      jest.spyOn(CategoryService.prototype, 'getCategoryById').mockResolvedValue({ success: true, data: category });
+      const req = createMockRequest({ user: { id: 99 }, params: { id: '30' } });
+      const res = createMockResponse();
+      const next = createNext();
+
+      await CategoryController.getCategoryById(req, res, next);
+
+      expect(res.status).toHaveBeenCalledWith(HTTPStatus.FORBIDDEN);
+      expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ errorCode: Resource.UNAUTHORIZED_OPERATION }));
+    });
+  });
+
+  describe('getCategoriesByUser — ownership enforcement', () => {
+    it('returns 403 when requesting another user\'s categories', async () => {
+      const getSpy = jest.spyOn(CategoryService.prototype, 'getCategoriesByUser');
+      const req = createMockRequest({ user: { id: 1 }, params: { userId: '2' } });
+      const res = createMockResponse();
+      const next = createNext();
+
+      await CategoryController.getCategoriesByUser(req, res, next);
+
+      expect(getSpy).not.toHaveBeenCalled();
+      expect(res.status).toHaveBeenCalledWith(HTTPStatus.FORBIDDEN);
+      expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ errorCode: Resource.UNAUTHORIZED_OPERATION }));
+    });
+  });
+
+  describe('updateCategory — ownership enforcement', () => {
+    it('returns 400 when forbidden ownership fields are supplied during update', async () => {
+      const existing = makeCategory({ id: 31, userId: authUser.id });
+      jest.spyOn(CategoryService.prototype, 'getCategoryById').mockResolvedValue({ success: true, data: existing });
+      const updateSpy = jest.spyOn(CategoryService.prototype, 'updateCategory');
+      const req = createAuthRequest({ params: { id: '31' }, body: { userId: 77 } });
+      const res = createMockResponse();
+      const next = createNext();
+
+      await CategoryController.updateCategory(req, res, next);
+
+      expect(updateSpy).not.toHaveBeenCalled();
+      expect(res.status).toHaveBeenCalledWith(HTTPStatus.BAD_REQUEST);
+      expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ errorCode: Resource.VALIDATION_ERROR }));
+    });
+
+    it('returns 403 when updating a category owned by another user', async () => {
+      const existing = makeCategory({ id: 32, userId: 10 });
+      jest.spyOn(CategoryService.prototype, 'getCategoryById').mockResolvedValue({ success: true, data: existing });
+      const updateSpy = jest.spyOn(CategoryService.prototype, 'updateCategory');
+      const req = createMockRequest({ user: { id: 99 }, params: { id: '32' }, body: { name: 'Hacked' } });
+      const res = createMockResponse();
+      const next = createNext();
+
+      await CategoryController.updateCategory(req, res, next);
+
+      expect(updateSpy).not.toHaveBeenCalled();
+      expect(res.status).toHaveBeenCalledWith(HTTPStatus.FORBIDDEN);
+      expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ errorCode: Resource.UNAUTHORIZED_OPERATION }));
+    });
+  });
+
+  describe('deleteCategory — ownership enforcement', () => {
+    it('returns 403 when deleting a category owned by another user', async () => {
+      const snapshot = makeCategory({ id: 33, userId: 10 });
+      jest.spyOn(CategoryService.prototype, 'getCategoryById').mockResolvedValue({ success: true, data: snapshot });
+      const deleteSpy = jest.spyOn(CategoryService.prototype, 'deleteCategory');
+      const req = createMockRequest({ user: { id: 99 }, params: { id: '33' } });
+      const res = createMockResponse();
+      const next = createNext();
+
+      await CategoryController.deleteCategory(req, res, next);
+
+      expect(deleteSpy).not.toHaveBeenCalled();
+      expect(res.status).toHaveBeenCalledWith(HTTPStatus.FORBIDDEN);
+      expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ errorCode: Resource.UNAUTHORIZED_OPERATION }));
+    });
+  });
+});
+
 

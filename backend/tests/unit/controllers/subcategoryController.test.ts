@@ -1,6 +1,7 @@
 import SubcategoryController from '../../../src/controller/subcategoryController';
 import { SubcategoryService } from '../../../src/service/subcategoryService';
 import { CategoryService } from '../../../src/service/categoryService';
+import { CategoryColor, CategoryType } from '../../../../shared/enums/category.enums';
 import { HTTPStatus } from '../../../../shared/enums/http-status.enums';
 import { LogCategory, LogOperation, LogType } from '../../../../shared/enums/log.enums';
 import { SortOrder } from '../../../../shared/enums/operator.enums';
@@ -28,6 +29,28 @@ const makeSubcategory = (
   id: overrides.id ?? 1,
   name: overrides.name ?? 'Groceries',
   categoryId: overrides.categoryId ?? 1,
+  active: overrides.active ?? true,
+  createdAt: overrides.createdAt ?? DEFAULT_ISO_DATE,
+  updatedAt: overrides.updatedAt ?? DEFAULT_ISO_DATE,
+});
+
+const makeCategory = (
+  overrides: Partial<{
+    id: number;
+    name: string;
+    type: CategoryType;
+    color?: CategoryColor;
+    userId: number;
+    active?: boolean;
+    createdAt: string;
+    updatedAt: string;
+  }> = {}
+) => ({
+  id: overrides.id ?? 1,
+  name: overrides.name ?? 'Food',
+  type: overrides.type ?? CategoryType.EXPENSE,
+  color: overrides.color ?? CategoryColor.RED,
+  userId: overrides.userId ?? authUser.id,
   active: overrides.active ?? true,
   createdAt: overrides.createdAt ?? DEFAULT_ISO_DATE,
   updatedAt: overrides.updatedAt ?? DEFAULT_ISO_DATE,
@@ -825,6 +848,129 @@ describe('SubcategoryController', () => {
         next
       );
       expect(next).not.toHaveBeenCalled();
+    });
+  });
+});
+
+describe('SubcategoryController — authorization enforcement', () => {
+  let logSpy: jest.SpyInstance;
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    logSpy = jest.spyOn(commons, 'createLog').mockResolvedValue();
+  });
+
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
+
+  describe('getSubcategories — MASTER only', () => {
+    it('returns 403 for a non-MASTER authenticated user', async () => {
+      const getSpy = jest.spyOn(SubcategoryService.prototype, 'getSubcategories');
+      const req = createMockRequest({ user: { id: 1, profile: undefined } });
+      const res = createMockResponse();
+      const next = createNext();
+
+      await SubcategoryController.getSubcategories(req, res, next);
+
+      expect(getSpy).not.toHaveBeenCalled();
+      expect(res.status).toHaveBeenCalledWith(HTTPStatus.FORBIDDEN);
+      expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ errorCode: Resource.UNAUTHORIZED_OPERATION }));
+    });
+  });
+
+  describe('getSubcategoryById — ownership enforcement', () => {
+    it('returns 403 when the parent category belongs to a different user', async () => {
+      const subcategory = makeSubcategory({ id: 30, categoryId: 40 });
+      jest.spyOn(SubcategoryService.prototype, 'getSubcategoryById').mockResolvedValue({ success: true, data: subcategory });
+      jest.spyOn(CategoryService.prototype, 'getCategoryById').mockResolvedValue({
+        success: true,
+        data: makeCategory({ id: 40, userId: 10 }),
+      });
+      const req = createMockRequest({ user: { id: 99 }, params: { id: '30' } });
+      const res = createMockResponse();
+      const next = createNext();
+
+      await SubcategoryController.getSubcategoryById(req, res, next);
+
+      expect(res.status).toHaveBeenCalledWith(HTTPStatus.FORBIDDEN);
+      expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ errorCode: Resource.UNAUTHORIZED_OPERATION }));
+    });
+  });
+
+  describe('getSubcategoriesByCategory — ownership enforcement', () => {
+    it('returns 403 when the category belongs to a different user', async () => {
+      jest.spyOn(CategoryService.prototype, 'getCategoryById').mockResolvedValue({
+        success: true,
+        data: makeCategory({ id: 41, userId: 10 }),
+      });
+      const getSpy = jest.spyOn(SubcategoryService.prototype, 'getSubcategoriesByCategory');
+      const req = createMockRequest({ user: { id: 99 }, params: { categoryId: '41' } });
+      const res = createMockResponse();
+      const next = createNext();
+
+      await SubcategoryController.getSubcategoriesByCategory(req, res, next);
+
+      expect(getSpy).not.toHaveBeenCalled();
+      expect(res.status).toHaveBeenCalledWith(HTTPStatus.FORBIDDEN);
+      expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ errorCode: Resource.UNAUTHORIZED_OPERATION }));
+    });
+  });
+
+  describe('getSubcategoriesByUser — ownership enforcement', () => {
+    it('returns 403 when requesting another user\'s subcategories', async () => {
+      const getSpy = jest.spyOn(SubcategoryService.prototype, 'getSubcategoriesByUser');
+      const req = createMockRequest({ user: { id: 1 }, params: { userId: '2' } });
+      const res = createMockResponse();
+      const next = createNext();
+
+      await SubcategoryController.getSubcategoriesByUser(req, res, next);
+
+      expect(getSpy).not.toHaveBeenCalled();
+      expect(res.status).toHaveBeenCalledWith(HTTPStatus.FORBIDDEN);
+      expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ errorCode: Resource.UNAUTHORIZED_OPERATION }));
+    });
+  });
+
+  describe('updateSubcategory — ownership enforcement', () => {
+    it('returns 403 when updating a subcategory whose parent category belongs to another user', async () => {
+      const existing = makeSubcategory({ id: 31, categoryId: 42 });
+      jest.spyOn(SubcategoryService.prototype, 'getSubcategoryById').mockResolvedValue({ success: true, data: existing });
+      jest.spyOn(CategoryService.prototype, 'getCategoryById').mockResolvedValue({
+        success: true,
+        data: makeCategory({ id: 42, userId: 10 }),
+      });
+      const updateSpy = jest.spyOn(SubcategoryService.prototype, 'updateSubcategory');
+      const req = createMockRequest({ user: { id: 99 }, params: { id: '31' }, body: { name: 'Hacked' } });
+      const res = createMockResponse();
+      const next = createNext();
+
+      await SubcategoryController.updateSubcategory(req, res, next);
+
+      expect(updateSpy).not.toHaveBeenCalled();
+      expect(res.status).toHaveBeenCalledWith(HTTPStatus.FORBIDDEN);
+      expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ errorCode: Resource.UNAUTHORIZED_OPERATION }));
+    });
+  });
+
+  describe('deleteSubcategory — ownership enforcement', () => {
+    it('returns 403 when deleting a subcategory whose parent category belongs to another user', async () => {
+      const snapshot = makeSubcategory({ id: 32, categoryId: 43 });
+      jest.spyOn(SubcategoryService.prototype, 'getSubcategoryById').mockResolvedValue({ success: true, data: snapshot });
+      jest.spyOn(CategoryService.prototype, 'getCategoryById').mockResolvedValue({
+        success: true,
+        data: makeCategory({ id: 43, userId: 10 }),
+      });
+      const deleteSpy = jest.spyOn(SubcategoryService.prototype, 'deleteSubcategory');
+      const req = createMockRequest({ user: { id: 99 }, params: { id: '32' } });
+      const res = createMockResponse();
+      const next = createNext();
+
+      await SubcategoryController.deleteSubcategory(req, res, next);
+
+      expect(deleteSpy).not.toHaveBeenCalled();
+      expect(res.status).toHaveBeenCalledWith(HTTPStatus.FORBIDDEN);
+      expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ errorCode: Resource.UNAUTHORIZED_OPERATION }));
     });
   });
 });

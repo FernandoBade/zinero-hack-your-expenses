@@ -428,4 +428,96 @@ describe('TagController', () => {
     });
 });
 
+describe('TagController — authorization enforcement', () => {
+    let logSpy: jest.SpyInstance;
+
+    beforeEach(() => {
+        jest.clearAllMocks();
+        logSpy = jest.spyOn(commons, 'createLog').mockResolvedValue();
+    });
+
+    afterEach(() => {
+        jest.restoreAllMocks();
+    });
+
+    describe('getTags — MASTER only', () => {
+        it('returns 403 for a non-MASTER authenticated user', async () => {
+            const getSpy = jest.spyOn(TagService.prototype, 'getTags');
+            const req = createMockRequest({ user: { id: 1, profile: undefined } });
+            const res = createMockResponse();
+            const next = createNext();
+
+            await TagController.getTags(req, res, next);
+
+            expect(getSpy).not.toHaveBeenCalled();
+            expect(res.status).toHaveBeenCalledWith(HTTPStatus.FORBIDDEN);
+            expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ errorCode: Resource.UNAUTHORIZED_OPERATION }));
+        });
+    });
+
+    describe('getTagById — ownership enforcement', () => {
+        it('returns 403 when the tag belongs to a different user', async () => {
+            const tag = makeTag({ id: 30, userId: 10 });
+            jest.spyOn(TagService.prototype, 'getTagById').mockResolvedValue({ success: true, data: tag });
+            const req = createMockRequest({ user: { id: 99 }, params: { id: '30' } });
+            const res = createMockResponse();
+            const next = createNext();
+
+            await TagController.getTagById(req, res, next);
+
+            expect(res.status).toHaveBeenCalledWith(HTTPStatus.FORBIDDEN);
+            expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ errorCode: Resource.UNAUTHORIZED_OPERATION }));
+        });
+    });
+
+    describe('getTagsByUser — ownership enforcement', () => {
+        it('returns 403 when requesting another user\'s tags', async () => {
+            const getSpy = jest.spyOn(TagService.prototype, 'getTagsByUser');
+            const req = createMockRequest({ user: { id: 1 }, params: { userId: '2' } });
+            const res = createMockResponse();
+            const next = createNext();
+
+            await TagController.getTagsByUser(req, res, next);
+
+            expect(getSpy).not.toHaveBeenCalled();
+            expect(res.status).toHaveBeenCalledWith(HTTPStatus.FORBIDDEN);
+            expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ errorCode: Resource.UNAUTHORIZED_OPERATION }));
+        });
+    });
+
+    describe('updateTag — ownership enforcement', () => {
+        it('returns 403 when updating a tag owned by another user', async () => {
+            const existing = makeTag({ id: 31, userId: 10 });
+            jest.spyOn(TagService.prototype, 'getTagById').mockResolvedValue({ success: true, data: existing });
+            const updateSpy = jest.spyOn(TagService.prototype, 'updateTag');
+            const req = createMockRequest({ user: { id: 99 }, params: { id: '31' }, body: { name: 'Hacked' } });
+            const res = createMockResponse();
+            const next = createNext();
+
+            await TagController.updateTag(req, res, next);
+
+            expect(updateSpy).not.toHaveBeenCalled();
+            expect(res.status).toHaveBeenCalledWith(HTTPStatus.FORBIDDEN);
+            expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ errorCode: Resource.UNAUTHORIZED_OPERATION }));
+        });
+    });
+
+    describe('deleteTag — ownership enforcement', () => {
+        it('returns 403 when deleting a tag owned by another user', async () => {
+            const snapshot = makeTag({ id: 32, userId: 10 });
+            jest.spyOn(TagService.prototype, 'getTagById').mockResolvedValue({ success: true, data: snapshot });
+            const deleteSpy = jest.spyOn(TagService.prototype, 'deleteTag');
+            const req = createMockRequest({ user: { id: 99 }, params: { id: '32' } });
+            const res = createMockResponse();
+            const next = createNext();
+
+            await TagController.deleteTag(req, res, next);
+
+            expect(deleteSpy).not.toHaveBeenCalled();
+            expect(res.status).toHaveBeenCalledWith(HTTPStatus.FORBIDDEN);
+            expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ errorCode: Resource.UNAUTHORIZED_OPERATION }));
+        });
+    });
+});
+
 

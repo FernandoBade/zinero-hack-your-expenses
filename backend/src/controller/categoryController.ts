@@ -171,6 +171,11 @@ class CategoryController {
                 return answerAPI(req, res, HTTPStatus.FORBIDDEN, undefined, ErrorCode.UNAUTHORIZED_OPERATION);
             }
 
+            const forbiddenFieldErrors = getForbiddenFieldErrors(req.body, ['userId']);
+            if (forbiddenFieldErrors.length > 0) {
+                return answerAPI(req, res, HTTPStatus.BAD_REQUEST, forbiddenFieldErrors, ErrorCode.VALIDATION_ERROR);
+            }
+
             const parseResult = validateUpdateCategory(req.body, req.language as Locale);
             if (!parseResult.success) {
                 return answerAPI(req, res, HTTPStatus.BAD_REQUEST, parseResult.errors, ErrorCode.VALIDATION_ERROR);

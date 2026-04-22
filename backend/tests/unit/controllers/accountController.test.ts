@@ -811,6 +811,21 @@ describe('AccountController — authorization enforcement', () => {
     });
 
     describe('updateAccount — ownership enforcement', () => {
+        it('returns 400 when forbidden ownership fields are supplied during update', async () => {
+            const existing = makeAccount({ id: 17, userId: authUser.id });
+            jest.spyOn(AccountService.prototype, 'getAccountById').mockResolvedValue({ success: true, data: existing });
+            const updateSpy = jest.spyOn(AccountService.prototype, 'updateAccount');
+            const req = createAuthRequest({ params: { id: '17' }, body: { userId: 77 } });
+            const res = createMockResponse();
+            const next = createNext();
+
+            await AccountController.updateAccount(req, res, next);
+
+            expect(updateSpy).not.toHaveBeenCalled();
+            expect(res.status).toHaveBeenCalledWith(HTTPStatus.BAD_REQUEST);
+            expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ errorCode: Resource.VALIDATION_ERROR }));
+        });
+
         it('returns 403 when updating an account owned by another user', async () => {
             const existing = makeAccount({ id: 7, userId: 10 });
             jest.spyOn(AccountService.prototype, 'getAccountById').mockResolvedValue({ success: true, data: existing });
