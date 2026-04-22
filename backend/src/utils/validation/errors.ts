@@ -12,6 +12,13 @@ export interface ValidationError {
 }
 
 /**
+ * Represents the standard validation result shape used across request validators.
+ */
+export type ValidationResult<T> =
+    | { success: true; data: T }
+    | { success: false; errors: ValidationError[] };
+
+/**
  * @summary Creates a structured validation error payload with machine-stable error identity.
  */
 export function createValidationError(

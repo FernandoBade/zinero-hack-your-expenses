@@ -103,6 +103,16 @@ describe('validation guards', () => {
 
 describe('validateRequest', () => {
     describe('validateCreateUser', () => {
+        it('returns a body validation error for non-object input', () => {
+            const result = validateCreateUser(null, lang);
+
+            expect(result.success).toBe(false);
+            if (result.success) return;
+            expect(result.errors).toEqual([
+                createValidationError('body', Resource.VALIDATION_ERROR),
+            ]);
+        });
+
         it('returns errors for invalid input', () => {
             const result = validateCreateUser(
                 { firstName: 'A', lastName: 'Doe', email: 'user@example.com', password: '123456' },
@@ -180,6 +190,14 @@ describe('validateRequest', () => {
             expect(result.data.hideValues).toBe(false);
             expect(result.data.active).toBe(true);
         });
+
+        it('drops nullable optional fields instead of returning them in the payload', () => {
+            const result = validateUpdateUser({ phone: null, birthDate: null }, lang);
+
+            expect(result.success).toBe(true);
+            if (!result.success) return;
+            expect(result.data).toEqual({});
+        });
     });
 
     describe('validateCreateAccount', () => {
@@ -214,6 +232,23 @@ describe('validateRequest', () => {
             expect(result.data.observation).toBe('note');
             expect(result.data.balance).toBe('250.50');
             expect(result.data.active).toBe(true);
+        });
+
+        it('normalizes localized balance input', () => {
+            const result = validateCreateAccount(
+                {
+                    name: 'Main',
+                    institution: 'Bank',
+                    type: AccountType.CHECKING,
+                    balance: '1.234,56',
+                    userId: 2,
+                },
+                lang
+            );
+
+            expect(result.success).toBe(true);
+            if (!result.success) return;
+            expect(result.data.balance).toBe('1234.56');
         });
     });
 
@@ -379,6 +414,24 @@ describe('validateRequest', () => {
             expect(result.data.limit).toBe('5000.00');
             expect(result.data.active).toBe(true);
         });
+
+        it('normalizes localized balance and limit input', () => {
+            const result = validateCreateCreditCard(
+                {
+                    name: 'Card',
+                    flag: CreditCardFlag.VISA,
+                    balance: '1.234,56',
+                    limit: '9.876,54',
+                    userId: 1,
+                },
+                lang
+            );
+
+            expect(result.success).toBe(true);
+            if (!result.success) return;
+            expect(result.data.balance).toBe('1234.56');
+            expect(result.data.limit).toBe('9876.54');
+        });
     });
 
     describe('validateUpdateCreditCard', () => {
@@ -399,6 +452,14 @@ describe('validateRequest', () => {
             expect(result.data.flag).toBe(CreditCardFlag.AMEX);
             expect(result.data.accountId).toBe(2);
             expect(result.data.limit).toBe('8000.00');
+        });
+
+        it('drops nullable accountId instead of returning it in the payload', () => {
+            const result = validateUpdateCreditCard({ accountId: null }, lang);
+
+            expect(result.success).toBe(true);
+            if (!result.success) return;
+            expect(result.data).toEqual({});
         });
     });
 
@@ -519,6 +580,56 @@ describe('validateRequest', () => {
             expect(result.data.accountId).toBe(2);
             expect(result.data.tags).toEqual([1, 2]);
             expect(result.data.active).toBe(true);
+        });
+
+        it('rejects creditCardId when the source is ACCOUNT', () => {
+            const result = validateCreateTransaction(
+                {
+                    value: '25.00',
+                    date: '2024-01-01T00:00:00.000Z',
+                    categoryId: 2,
+                    transactionType: TransactionType.INCOME,
+                    transactionSource: TransactionSource.ACCOUNT,
+                    isInstallment: false,
+                    isRecurring: false,
+                    accountId: 2,
+                    creditCardId: 4,
+                },
+                lang
+            );
+
+            expect(result.success).toBe(false);
+            if (result.success) return;
+            expect(result.errors).toEqual(
+                expect.arrayContaining([
+                    createValidationError('creditCardId', Resource.INVALID_CREDIT_CARD_ID),
+                ])
+            );
+        });
+
+        it('rejects accountId when the source is CREDIT_CARD', () => {
+            const result = validateCreateTransaction(
+                {
+                    value: '25.00',
+                    date: '2024-01-01T00:00:00.000Z',
+                    categoryId: 2,
+                    transactionType: TransactionType.INCOME,
+                    transactionSource: TransactionSource.CREDIT_CARD,
+                    isInstallment: false,
+                    isRecurring: false,
+                    accountId: 2,
+                    creditCardId: 4,
+                },
+                lang
+            );
+
+            expect(result.success).toBe(false);
+            if (result.success) return;
+            expect(result.errors).toEqual(
+                expect.arrayContaining([
+                    createValidationError('accountId', Resource.INVALID_ACCOUNT_ID),
+                ])
+            );
         });
 
         it('normalizes monetary values with comma separators', () => {
@@ -648,6 +759,22 @@ describe('validateRequest', () => {
                     }),
                 ])
             );
+        });
+
+        it('drops nullable relation fields instead of returning them in the payload', () => {
+            const result = validateUpdateTransaction(
+                {
+                    accountId: null,
+                    creditCardId: null,
+                    categoryId: null,
+                    subcategoryId: null,
+                },
+                lang
+            );
+
+            expect(result.success).toBe(true);
+            if (!result.success) return;
+            expect(result.data).toEqual({});
         });
     });
 
