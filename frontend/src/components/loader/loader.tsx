@@ -1,5 +1,5 @@
 import type { JSX } from "preact";
-import { SpinnerGapIcon } from "@phosphor-icons/react";
+import { SpinnerGapIcon } from "@phosphor-icons/react/ssr";
 import { LoaderSize } from "@shared/enums/ui.enums";
 import type { LoaderProps } from "@/components/loader/loader.types";
 import { classNames } from "@/utils/classNames";

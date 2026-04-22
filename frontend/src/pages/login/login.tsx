@@ -1,6 +1,6 @@
 import type { JSX } from "preact";
 import { useMemo, useState } from "preact/hooks";
-import { EyeClosedIcon, EyeIcon, FingerprintIcon } from "@phosphor-icons/react";
+import { EyeClosedIcon, EyeIcon, FingerprintIcon } from "@phosphor-icons/react/ssr";
 import googleLogoButton from "@shared/assets/images/google-logo-button.png";
 import { InputType } from "@shared/enums/input.enums";
 import { AlertVariant, AlertStyle, ButtonVariant } from "@shared/enums/ui.enums";

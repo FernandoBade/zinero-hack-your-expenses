@@ -1,4 +1,4 @@
-import type { CreateAccountInput, UpdateAccountInput } from "../../../../../shared/domains/account/account.types";
+import type { CreateOwnedAccountInput, UpdateAccountInput } from "../../../../../shared/domains/account/account.types";
 import { AccountType } from "../../../../../shared/enums/account.enums";
 import { ErrorCode } from "../../../../../shared/errors/error-codes";
 import type { Locale } from "../../../../../shared/i18n/types/locale";
@@ -18,7 +18,7 @@ import { isBlankString, isMonetaryNonNegative, normalizeMonetaryValue } from "..
 export function validateCreateAccount(
     data: unknown,
     _locale?: Locale
-): ValidationResult<CreateAccountInput> {
+): ValidationResult<CreateOwnedAccountInput> {
     const errors: ValidationError[] = [];
     const bodyResult = parseValidationBody(data);
 

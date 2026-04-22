@@ -1,5 +1,5 @@
 import type { JSX } from "preact";
-import { CheckCircleIcon } from "@phosphor-icons/react";
+import { CheckCircleIcon } from "@phosphor-icons/react/ssr";
 import { useMemo, useState } from "preact/hooks";
 import { useSearchParams } from "wouter-preact";
 import { Alert } from "@/components/alert/alert";

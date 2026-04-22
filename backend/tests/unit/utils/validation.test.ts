@@ -32,7 +32,7 @@ import { AccountType } from '../../../../shared/enums/account.enums';
 import { CategoryColor, CategoryType } from '../../../../shared/enums/category.enums';
 import { CreditCardFlag } from '../../../../shared/enums/creditCard.enums';
 import { TransactionSource, TransactionType } from '../../../../shared/enums/transaction.enums';
-import { Currency, Language, Profile, Theme } from '../../../../shared/enums/user.enums';
+import { Currency, Language, Theme } from '../../../../shared/enums/user.enums';
 
 const lang = Language.EN_US;
 
@@ -138,9 +138,7 @@ describe('validateRequest', () => {
                     theme: Theme.DARK,
                     language: Language.EN_US,
                     currency: Currency.BRL,
-                    profile: Profile.STARTER,
                     hideValues: true,
-                    active: true,
                 },
                 lang
             );
@@ -151,7 +149,6 @@ describe('validateRequest', () => {
             expect(result.data.birthDate).toBe('1990-01-01T00:00:00.000Z');
             expect(result.data.theme).toBe(Theme.DARK);
             expect(result.data.hideValues).toBe(true);
-            expect(result.data.active).toBe(true);
         });
 
         it('does not require language when omitted', () => {
@@ -182,13 +179,12 @@ describe('validateRequest', () => {
         });
 
         it('returns normalized data for valid input', () => {
-            const result = validateUpdateUser({ email: 'TEST@EXAMPLE.COM', hideValues: false, active: true }, lang);
+            const result = validateUpdateUser({ email: 'TEST@EXAMPLE.COM', hideValues: false }, lang);
 
             expect(result.success).toBe(true);
             if (!result.success) return;
             expect(result.data.email).toBe('test@example.com');
             expect(result.data.hideValues).toBe(false);
-            expect(result.data.active).toBe(true);
         });
 
         it('drops nullable optional fields instead of returning them in the payload', () => {

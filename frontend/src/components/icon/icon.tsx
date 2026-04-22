@@ -20,7 +20,7 @@ import {
     WarningCircleIcon,
     XCircleIcon,
     XSquareIcon,
-} from "@phosphor-icons/react";
+} from "@phosphor-icons/react/ssr";
 import type { IconProps as PhosphorIconProps } from "@phosphor-icons/react";
 import { IconName } from "@shared/enums/icon.enums";
 import type { IconProps } from "@/components/icon/icon.types";

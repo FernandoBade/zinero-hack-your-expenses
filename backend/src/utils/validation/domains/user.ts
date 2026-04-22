@@ -1,4 +1,4 @@
-import { Theme, Language, Currency, Profile } from "../../../../../shared/enums/user.enums";
+import { Theme, Language, Currency } from "../../../../../shared/enums/user.enums";
 import { ErrorCode } from "../../../../../shared/errors/error-codes";
 import type { Locale } from "../../../../../shared/i18n/types/locale";
 import type { CreateUserInput, UpdateUserInput } from "../../../../../shared/domains/user/user.types";
@@ -64,23 +64,11 @@ export function validateCreateUser(
         errors.push(createValidationError('currency', ErrorCode.INVALID_CURRENCY_VALUE));
     }
 
-    if (body.profile !== undefined && !isEnum(body.profile, Profile)) {
-        errors.push(createValidationError('profile', ErrorCode.INVALID_PROFILE_VALUE));
-    }
-
     if (body.hideValues !== undefined && !isBoolean(body.hideValues)) {
         errors.push(createValidationError('hideValues', ErrorCode.INVALID_TYPE, {
             path: 'hideValues',
             expected: 'boolean',
             received: String(body.hideValues)
-        }));
-    }
-
-    if (body.active !== undefined && !isBoolean(body.active)) {
-        errors.push(createValidationError('active', ErrorCode.INVALID_TYPE, {
-            path: 'active',
-            expected: 'boolean',
-            received: String(body.active)
         }));
     }
 
@@ -100,9 +88,7 @@ export function validateCreateUser(
             theme: body.theme as Theme | undefined,
             language: body.language as Language | undefined,
             currency: body.currency as Currency | undefined,
-            profile: body.profile as Profile | undefined,
             hideValues: body.hideValues as boolean | undefined,
-            active: body.active as boolean | undefined,
         }
     };
 }
@@ -195,12 +181,6 @@ export function validateUpdateUser(
         result.currency = body.currency;
     }
 
-    if (body.profile !== undefined && !isEnum(body.profile, Profile)) {
-        errors.push(createValidationError('profile', ErrorCode.INVALID_PROFILE_VALUE));
-    } else if (body.profile !== undefined) {
-        result.profile = body.profile;
-    }
-
     if (body.hideValues !== undefined) {
         if (!isBoolean(body.hideValues)) {
             errors.push(createValidationError('hideValues', ErrorCode.INVALID_TYPE, {
@@ -211,16 +191,6 @@ export function validateUpdateUser(
         } else {
             result.hideValues = body.hideValues;
         }
-    }
-
-    if (body.active !== undefined && !isBoolean(body.active)) {
-        errors.push(createValidationError('active', ErrorCode.INVALID_TYPE, {
-            path: 'active',
-            expected: 'boolean',
-            received: String(body.active)
-        }));
-    } else if (body.active !== undefined) {
-        result.active = body.active;
     }
 
     if (errors.length > 0) {

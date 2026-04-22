@@ -1,5 +1,5 @@
 import type { JSX } from "preact";
-import { PaperPlaneTiltIcon } from "@phosphor-icons/react";
+import { PaperPlaneTiltIcon } from "@phosphor-icons/react/ssr";
 import { useMemo, useState } from "preact/hooks";
 import { Alert } from "@/components/alert/alert";
 import { AuthShell } from "@/components/auth-shell/auth-shell";

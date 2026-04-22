@@ -1,4 +1,4 @@
-import type { CreateCategoryInput, UpdateCategoryInput } from "../../../../../shared/domains/category/category.types";
+import type { CreateOwnedCategoryInput, UpdateCategoryInput } from "../../../../../shared/domains/category/category.types";
 import { CategoryType, CategoryColor } from "../../../../../shared/enums/category.enums";
 import { ErrorCode } from "../../../../../shared/errors/error-codes";
 import type { Locale } from "../../../../../shared/i18n/types/locale";
@@ -18,7 +18,7 @@ import { isBlankString } from "../common/money";
 export function validateCreateCategory(
     data: unknown,
     _locale?: Locale
-): ValidationResult<CreateCategoryInput> {
+): ValidationResult<CreateOwnedCategoryInput> {
     const errors: ValidationError[] = [];
     const bodyResult = parseValidationBody(data);
 

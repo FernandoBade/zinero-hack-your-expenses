@@ -1,5 +1,5 @@
 import type { JSX, MouseEventHandler } from "preact";
-import { SpinnerGapIcon } from "@phosphor-icons/react";
+import { SpinnerGapIcon } from "@phosphor-icons/react/ssr";
 import { ButtonSize, ButtonVariant } from "@shared/enums/ui.enums";
 import { Icon } from "@/components/icon/icon";
 import type { ButtonProps } from "@/components/button/button.types";

@@ -6,6 +6,7 @@ import { LogCategory, LogOperation, LogType } from '../../../shared/enums/log.en
 import { Profile } from '../../../shared/enums/user.enums';
 import { validateCreateUser, validateUpdateUser } from '../utils/validation/validateRequest';
 import { createValidationError, ValidationError } from '../utils/validation/errors';
+import { getForbiddenFieldErrors } from '../utils/validation/forbiddenFields';
 import { ErrorCode } from '../../../shared/errors/error-codes';
 import { Locale } from '../../../shared/i18n/types/locale';
 import { parsePagination, buildMeta } from '../utils/pagination';
@@ -26,6 +27,11 @@ class UserController {
         const userService = new UserService();
 
         try {
+            const forbiddenFieldErrors = getForbiddenFieldErrors(req.body, ['profile', 'active']);
+            if (forbiddenFieldErrors.length > 0) {
+                return answerAPI(req, res, HTTPStatus.BAD_REQUEST, forbiddenFieldErrors, ErrorCode.VALIDATION_ERROR);
+            }
+
             const parseResult = validateCreateUser(req.body, req.language as Locale);
 
             if (!parseResult.success) {
@@ -201,6 +207,11 @@ class UserController {
 
         if (!canAccessRequestedUser(req.user, userId)) {
             return answerAPI(req, res, HTTPStatus.FORBIDDEN, undefined, ErrorCode.UNAUTHORIZED_OPERATION);
+        }
+
+        const forbiddenFieldErrors = getForbiddenFieldErrors(req.body, ['profile', 'active']);
+        if (forbiddenFieldErrors.length > 0) {
+            return answerAPI(req, res, HTTPStatus.BAD_REQUEST, forbiddenFieldErrors, ErrorCode.VALIDATION_ERROR);
         }
 
         const userService = new UserService();

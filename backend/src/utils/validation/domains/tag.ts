@@ -1,4 +1,4 @@
-import type { CreateTagInput, UpdateTagInput } from "../../../../../shared/domains/tag/tag.types";
+import type { CreateOwnedTagInput, UpdateTagInput } from "../../../../../shared/domains/tag/tag.types";
 import { ErrorCode } from "../../../../../shared/errors/error-codes";
 import type { Locale } from "../../../../../shared/i18n/types/locale";
 import { createValidationError, type ValidationError, type ValidationResult } from "../errors";
@@ -17,7 +17,7 @@ import { isBlankString } from "../common/money";
 export function validateCreateTag(
     data: unknown,
     _locale?: Locale
-): ValidationResult<CreateTagInput> {
+): ValidationResult<CreateOwnedTagInput> {
     const errors: ValidationError[] = [];
     const bodyResult = parseValidationBody(data);
 

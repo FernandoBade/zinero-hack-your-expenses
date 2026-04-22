@@ -176,6 +176,11 @@ class TagController {
                 return answerAPI(req, res, HTTPStatus.FORBIDDEN, undefined, ErrorCode.UNAUTHORIZED_OPERATION);
             }
 
+            const forbiddenFieldErrors = getForbiddenFieldErrors(req.body, ['userId']);
+            if (forbiddenFieldErrors.length > 0) {
+                return answerAPI(req, res, HTTPStatus.BAD_REQUEST, forbiddenFieldErrors, ErrorCode.VALIDATION_ERROR);
+            }
+
             const parseResult = validateUpdateTag(req.body, req.language as Locale);
 
             if (!parseResult.success) {

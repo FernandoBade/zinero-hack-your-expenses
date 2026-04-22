@@ -1,4 +1,4 @@
-import type { CreateCreditCardInput, UpdateCreditCardInput } from "../../../../../shared/domains/creditCard/creditCard.types";
+import type { CreateOwnedCreditCardInput, UpdateCreditCardInput } from "../../../../../shared/domains/creditCard/creditCard.types";
 import { CreditCardFlag } from "../../../../../shared/enums/creditCard.enums";
 import { ErrorCode } from "../../../../../shared/errors/error-codes";
 import type { Locale } from "../../../../../shared/i18n/types/locale";
@@ -18,7 +18,7 @@ import { isBlankString, isMonetaryNonNegative, normalizeMonetaryValue } from "..
 export function validateCreateCreditCard(
     data: unknown,
     _locale?: Locale
-): ValidationResult<CreateCreditCardInput> {
+): ValidationResult<CreateOwnedCreditCardInput> {
     const errors: ValidationError[] = [];
     const bodyResult = parseValidationBody(data);
 

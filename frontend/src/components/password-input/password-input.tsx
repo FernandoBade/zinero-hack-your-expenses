@@ -1,6 +1,6 @@
 import type { JSX } from "preact";
 import { useState } from "preact/hooks";
-import { EyeClosedIcon, EyeIcon } from "@phosphor-icons/react";
+import { EyeClosedIcon, EyeIcon } from "@phosphor-icons/react/ssr";
 import { Input } from "@/components/input/input";
 import type { PasswordInputProps } from "@/components/password-input/password-input.types";
 import { classNames } from "@/utils/classNames";
