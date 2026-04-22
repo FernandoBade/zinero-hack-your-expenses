@@ -4,6 +4,18 @@ import { transactions, transactionTags, SelectTransaction, InsertTransaction } f
 import { FilterOperator, SortOrder } from '../../../shared/enums/operator.enums';
 import { TransactionSource, TransactionType } from '../../../shared/enums/transaction.enums';
 
+export type TransactionFilters = {
+    accountId?: { operator: FilterOperator.EQ | FilterOperator.IN; value: number | number[] };
+    creditCardId?: { operator: FilterOperator.EQ | FilterOperator.IN; value: number | number[] };
+    categoryId?: { operator: FilterOperator.EQ | FilterOperator.IN; value: number | number[] };
+    subcategoryId?: { operator: FilterOperator.EQ | FilterOperator.IN; value: number | number[] };
+    tagIds?: { operator: FilterOperator.IN; value: number[] };
+    transactionType?: { operator: FilterOperator.EQ | FilterOperator.IN; value: TransactionType | TransactionType[] };
+    transactionSource?: { operator: FilterOperator.EQ | FilterOperator.IN; value: TransactionSource | TransactionSource[] };
+    active?: { operator: FilterOperator.EQ; value: boolean };
+    date?: { operator: FilterOperator.BETWEEN; value: [Date | null, Date | null] };
+};
+
 /**
  * Repository for transaction database operations.
  * Provides type-safe CRUD operations for transactions using Drizzle ORM.
@@ -49,17 +61,7 @@ export class TransactionRepository {
      * @returns Array of transaction records.
      */
     async findMany(
-        filters?: {
-            accountId?: { operator: FilterOperator.EQ | FilterOperator.IN; value: number | number[] };
-            creditCardId?: { operator: FilterOperator.EQ | FilterOperator.IN; value: number | number[] };
-            categoryId?: { operator: FilterOperator.EQ | FilterOperator.IN; value: number | number[] };
-            subcategoryId?: { operator: FilterOperator.EQ | FilterOperator.IN; value: number | number[] };
-            tagIds?: { operator: FilterOperator.IN; value: number[] };
-            transactionType?: { operator: FilterOperator.EQ | FilterOperator.IN; value: TransactionType | TransactionType[] };
-            transactionSource?: { operator: FilterOperator.EQ | FilterOperator.IN; value: TransactionSource | TransactionSource[] };
-            active?: { operator: FilterOperator.EQ; value: boolean };
-            date?: { operator: FilterOperator.BETWEEN; value: [Date | null, Date | null] };
-        },
+        filters?: TransactionFilters,
         options?: {
             limit?: number;
             offset?: number;
@@ -184,17 +186,7 @@ export class TransactionRepository {
      * @returns Total count of matching transactions.
      */
     async count(
-        filters?: {
-            accountId?: { operator: FilterOperator.EQ | FilterOperator.IN; value: number | number[] };
-            creditCardId?: { operator: FilterOperator.EQ | FilterOperator.IN; value: number | number[] };
-            categoryId?: { operator: FilterOperator.EQ | FilterOperator.IN; value: number | number[] };
-            subcategoryId?: { operator: FilterOperator.EQ | FilterOperator.IN; value: number | number[] };
-            tagIds?: { operator: FilterOperator.IN; value: number[] };
-            transactionType?: { operator: FilterOperator.EQ | FilterOperator.IN; value: TransactionType | TransactionType[] };
-            transactionSource?: { operator: FilterOperator.EQ | FilterOperator.IN; value: TransactionSource | TransactionSource[] };
-            active?: { operator: FilterOperator.EQ; value: boolean };
-            date?: { operator: FilterOperator.BETWEEN; value: [Date | null, Date | null] };
-        },
+        filters?: TransactionFilters,
         connection: typeof db = db
     ): Promise<number> {
         let query = connection.select({ count: transactions.id }).from(transactions);

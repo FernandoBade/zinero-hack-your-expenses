@@ -14,6 +14,16 @@ import { ALLOWED_IMAGE_MIME_TYPES } from '../../../shared/enums/upload.enums';
 import { UploadValidation } from '../utils/upload/upload.constants';
 import { canAccessRequestedUser } from '../utils/auth/authorization';
 
+const hasUserCredentialFields = (value: unknown): boolean => {
+    if (!value || typeof value !== 'object' || Array.isArray(value)) {
+        return false;
+    }
+
+    return ['email', 'password', 'currentPassword'].some((field) =>
+        Object.prototype.hasOwnProperty.call(value, field)
+    );
+};
+
 class UserController {
     /** @summary Creates a new user using validated input from the request body.
      * Logs the result and returns the created user on success.
@@ -209,6 +219,10 @@ class UserController {
             return answerAPI(req, res, HTTPStatus.FORBIDDEN, undefined, ErrorCode.UNAUTHORIZED_OPERATION);
         }
 
+        if (req.user?.id !== userId && hasUserCredentialFields(req.body)) {
+            return answerAPI(req, res, HTTPStatus.FORBIDDEN, undefined, ErrorCode.UNAUTHORIZED_OPERATION);
+        }
+
         const forbiddenFieldErrors = getForbiddenFieldErrors(req.body, ['profile', 'active']);
         if (forbiddenFieldErrors.length > 0) {
             return answerAPI(req, res, HTTPStatus.BAD_REQUEST, forbiddenFieldErrors, ErrorCode.VALIDATION_ERROR);
@@ -230,7 +244,10 @@ class UserController {
 
             const updatedUser = await userService.updateUser(userId, parseResult.data);
             if (!updatedUser.success) {
-                return answerAPI(req, res, HTTPStatus.BAD_REQUEST, undefined, updatedUser.error);
+                const status = updatedUser.error === ErrorCode.INVALID_CREDENTIALS
+                    ? HTTPStatus.UNAUTHORIZED
+                    : HTTPStatus.BAD_REQUEST;
+                return answerAPI(req, res, status, undefined, updatedUser.error);
             }
 
             const delta = buildLogDelta(existingUser.data, updatedUser.data, ['password']);

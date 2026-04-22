@@ -118,6 +118,7 @@ export const esESUiCatalog = {
     "field.country.label": "País",
     "field.credit_card_id.label": "Tarjeta de crédito",
     "field.currency.label": "Moneda",
+    "field.current_password.label": "Contraseña actual",
     "field.date.label": "Fecha",
     "field.display_value.label": "Valor mostrado",
     "field.email.label": "Correo electrónico",

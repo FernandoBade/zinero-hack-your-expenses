@@ -11,6 +11,7 @@ export const FieldKey = {
   COUNTRY: "country",
   CREDIT_CARD_ID: "creditCardId",
   CURRENCY: "currency",
+  CURRENT_PASSWORD: "currentPassword",
   DATE: "date",
   DISPLAY_VALUE: "displayValue",
   EMAIL: "email",

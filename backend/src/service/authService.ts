@@ -376,7 +376,11 @@ export class AuthService {
             return { success: false, error: ErrorCode.EXPIRED_OR_INVALID_TOKEN };
         }
 
-        const updateResult = await this.userService.updateUser(tokenResult.data.userId, { password: newPassword });
+        const updateResult = await this.userService.updateUser(
+            tokenResult.data.userId,
+            { password: newPassword },
+            { skipCurrentPasswordCheck: true }
+        );
         if (!updateResult.success) {
             return { success: false, error: updateResult.error };
         }

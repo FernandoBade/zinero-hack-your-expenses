@@ -179,12 +179,25 @@ describe('validateRequest', () => {
         });
 
         it('returns normalized data for valid input', () => {
-            const result = validateUpdateUser({ email: 'TEST@EXAMPLE.COM', hideValues: false }, lang);
+            const result = validateUpdateUser({
+                email: 'TEST@EXAMPLE.COM',
+                currentPassword: 'secret123',
+                hideValues: false
+            }, lang);
 
             expect(result.success).toBe(true);
             if (!result.success) return;
             expect(result.data.email).toBe('test@example.com');
+            expect(result.data.currentPassword).toBe('secret123');
             expect(result.data.hideValues).toBe(false);
+        });
+
+        it('returns errors when currentPassword is too short', () => {
+            const result = validateUpdateUser({ currentPassword: '123' }, lang);
+
+            expect(result.success).toBe(false);
+            if (result.success) return;
+            expect(result.errors).toEqual([createValidationError('currentPassword', Resource.PASSWORD_TOO_SHORT)]);
         });
 
         it('drops nullable optional fields instead of returning them in the payload', () => {
@@ -249,12 +262,12 @@ describe('validateRequest', () => {
     });
 
     describe('validateUpdateAccount', () => {
-        it('returns errors for invalid input', () => {
+        it('ignores forbidden ownership fields in update payloads', () => {
             const result = validateUpdateAccount({ userId: 0 }, lang);
 
-            expect(result.success).toBe(false);
-            if (result.success) return;
-            expect(result.errors).toEqual([createValidationError('userId', Resource.VALIDATION_ERROR)]);
+            expect(result.success).toBe(true);
+            if (!result.success) return;
+            expect(result.data).toEqual({});
         });
 
         it('returns normalized data for valid input', () => {
@@ -304,12 +317,12 @@ describe('validateRequest', () => {
     });
 
     describe('validateUpdateCategory', () => {
-        it('returns errors for invalid input', () => {
+        it('ignores forbidden ownership fields in update payloads', () => {
             const result = validateUpdateCategory({ userId: -1 }, lang);
 
-            expect(result.success).toBe(false);
-            if (result.success) return;
-            expect(result.errors).toEqual([createValidationError('userId', Resource.VALIDATION_ERROR)]);
+            expect(result.success).toBe(true);
+            if (!result.success) return;
+            expect(result.data).toEqual({});
         });
 
         it('returns normalized data for valid input', () => {
@@ -431,6 +444,14 @@ describe('validateRequest', () => {
     });
 
     describe('validateUpdateCreditCard', () => {
+        it('ignores forbidden ownership fields in update payloads', () => {
+            const result = validateUpdateCreditCard({ userId: 0 }, lang);
+
+            expect(result.success).toBe(true);
+            if (!result.success) return;
+            expect(result.data).toEqual({});
+        });
+
         it('returns errors for invalid input', () => {
             const result = validateUpdateCreditCard({ accountId: 0 }, lang);
 
@@ -487,12 +508,12 @@ describe('validateRequest', () => {
     });
 
     describe('validateUpdateTag', () => {
-        it('returns errors for invalid input', () => {
+        it('ignores forbidden ownership fields in update payloads', () => {
             const result = validateUpdateTag({ userId: 0 }, lang);
 
-            expect(result.success).toBe(false);
-            if (result.success) return;
-            expect(result.errors).toEqual([createValidationError('userId', Resource.VALIDATION_ERROR)]);
+            expect(result.success).toBe(true);
+            if (!result.success) return;
+            expect(result.data).toEqual({});
         });
 
         it('returns normalized data for valid input', () => {

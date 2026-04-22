@@ -65,6 +65,7 @@ export interface UpdateUserInput {
     lastName?: UserName;
     email?: EmailAddress;
     password?: Password;
+    currentPassword?: Password;
     phone?: PhoneNumber;
     birthDate?: ISODateString;
     theme?: Theme;

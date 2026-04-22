@@ -217,14 +217,6 @@ export function validateUpdateAccount(
         }
     }
 
-    if (body.userId !== undefined) {
-        if (!isNumber(body.userId) || body.userId <= 0) {
-            errors.push(createValidationError('userId', ErrorCode.VALIDATION_ERROR));
-        } else {
-            result.userId = body.userId;
-        }
-    }
-
     if (body.active !== undefined && !isBoolean(body.active)) {
         errors.push(createValidationError('active', ErrorCode.INVALID_TYPE, {
             path: 'active',

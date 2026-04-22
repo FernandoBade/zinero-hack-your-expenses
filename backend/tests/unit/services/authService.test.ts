@@ -843,7 +843,11 @@ describe('AuthService', () => {
             const service = new AuthService();
             const result = await service.resetPassword('reset-token', 'new-password');
 
-            expect(updateSpy).toHaveBeenCalledWith(44, { password: 'new-password' });
+            expect(updateSpy).toHaveBeenCalledWith(
+                44,
+                { password: 'new-password' },
+                { skipCurrentPasswordCheck: true }
+            );
             expect(revokeSpy).toHaveBeenCalledWith(44, TokenType.REFRESH);
             expect(result).toEqual({ success: true, data: { reset: true } });
         });

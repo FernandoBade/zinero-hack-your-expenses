@@ -243,14 +243,6 @@ export function validateUpdateCreditCard(
         }
     }
 
-    if (body.userId !== undefined) {
-        if (!isNumber(body.userId) || body.userId <= 0) {
-            errors.push(createValidationError('userId', ErrorCode.VALIDATION_ERROR));
-        } else {
-            result.userId = body.userId;
-        }
-    }
-
     if (body.accountId !== undefined && body.accountId !== null) {
         if (!isNumber(body.accountId) || body.accountId <= 0) {
             errors.push(createValidationError('accountId', ErrorCode.VALIDATION_ERROR));

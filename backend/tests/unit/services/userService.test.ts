@@ -1,4 +1,5 @@
 import bcrypt from 'bcrypt';
+import { TokenType } from '../../../../shared/enums/auth.enums';
 import { UserService } from '../../../src/service/userService';
 import { UserRepository } from '../../../src/repositories/userRepository';
 import { TokenService } from '../../../src/service/tokenService';
@@ -515,21 +516,72 @@ describe('UserService', () => {
             }
         });
 
+        it('returns invalid credentials when password changes without current password proof', async () => {
+            const current = makeDbUser({ id: 5, password: 'hashed-current' });
+            jest.spyOn(UserRepository.prototype, 'findById').mockResolvedValue(current);
+            const updateSpy = jest.spyOn(UserRepository.prototype, 'update');
+
+            const service = new UserService();
+            const result = await service.updateUser(5, { password: 'new-password' });
+
+            expect(compareMock).not.toHaveBeenCalled();
+            expect(updateSpy).not.toHaveBeenCalled();
+            expect(result).toEqual({ success: false, error: Resource.INVALID_CREDENTIALS });
+        });
+
+        it('returns invalid credentials when email changes without current password proof', async () => {
+            const current = makeDbUser({ id: 5, password: 'hashed-current' });
+            jest.spyOn(UserRepository.prototype, 'findById').mockResolvedValue(current);
+            const lookupSpy = jest.spyOn(UserRepository.prototype, 'findMany');
+
+            const service = new UserService();
+            const result = await service.updateUser(5, { email: 'new@example.com' });
+
+            expect(compareMock).not.toHaveBeenCalled();
+            expect(lookupSpy).not.toHaveBeenCalled();
+            expect(result).toEqual({ success: false, error: Resource.INVALID_CREDENTIALS });
+        });
+
+        it('returns invalid credentials when current password proof is wrong', async () => {
+            const current = makeDbUser({ id: 5, password: 'hashed-current' });
+            jest.spyOn(UserRepository.prototype, 'findById').mockResolvedValue(current);
+            compareMock.mockResolvedValue(false);
+            const updateSpy = jest.spyOn(UserRepository.prototype, 'update');
+
+            const service = new UserService();
+            const result = await service.updateUser(5, {
+                password: 'new-password',
+                currentPassword: 'wrong-password',
+            });
+
+            expect(compareMock).toHaveBeenCalledWith('wrong-password', current.password);
+            expect(updateSpy).not.toHaveBeenCalled();
+            expect(result).toEqual({ success: false, error: Resource.INVALID_CREDENTIALS });
+        });
+
         it('removes password update when password matches current hash', async () => {
             const current = makeDbUser({ id: 5, password: 'hashed' });
             jest.spyOn(UserRepository.prototype, 'findById').mockResolvedValue(current);
-            compareMock.mockResolvedValue(true);
+            compareMock
+                .mockResolvedValueOnce(true)
+                .mockResolvedValueOnce(true);
             const updated = makeDbUser({ id: 5, password: current.password, firstName: 'Updated' });
             const updateSpy = jest.spyOn(UserRepository.prototype, 'update').mockResolvedValue(updated);
 
             const service = new UserService();
-            const result = await service.updateUser(5, { password: 'hashed', firstName: 'Updated' });
+            const result = await service.updateUser(5, {
+                password: 'hashed',
+                currentPassword: 'current-password',
+                firstName: 'Updated',
+            });
 
-            expect(compareMock).toHaveBeenCalledWith('hashed', current.password);
+            expect(compareMock).toHaveBeenNthCalledWith(1, 'current-password', current.password);
+            expect(compareMock).toHaveBeenNthCalledWith(2, 'hashed', current.password);
             expect(hashMock).not.toHaveBeenCalled();
             expect(updateSpy).toHaveBeenCalledTimes(1);
             const updateArg = updateSpy.mock.calls[0][1];
             expect(updateArg).not.toHaveProperty('password');
+            expect(updateArg).not.toHaveProperty('currentPassword');
             expect(result).toEqual(
                 expect.objectContaining({
                     success: true,
@@ -541,15 +593,21 @@ describe('UserService', () => {
         it('rehashes password when updated password differs', async () => {
             const current = makeDbUser({ id: 6, password: 'hashed-old' });
             jest.spyOn(UserRepository.prototype, 'findById').mockResolvedValue(current);
-            compareMock.mockResolvedValue(false);
+            compareMock
+                .mockResolvedValueOnce(true)
+                .mockResolvedValueOnce(false);
             hashMock.mockResolvedValue('hashed-new');
             const updated = makeDbUser({ id: 6, password: 'hashed-new' });
             const updateSpy = jest.spyOn(UserRepository.prototype, 'update').mockResolvedValue(updated);
 
             const service = new UserService();
-            const result = await service.updateUser(6, { password: 'new-password' });
+            const result = await service.updateUser(6, {
+                password: 'new-password',
+                currentPassword: 'current-password',
+            });
 
-            expect(compareMock).toHaveBeenCalledWith('new-password', current.password);
+            expect(compareMock).toHaveBeenNthCalledWith(1, 'current-password', current.password);
+            expect(compareMock).toHaveBeenNthCalledWith(2, 'new-password', current.password);
             expect(hashMock).toHaveBeenCalledWith('new-password', 10);
             expect(updateSpy).toHaveBeenCalledWith(6, expect.objectContaining({ password: 'hashed-new' }));
             expect(result).toEqual(
@@ -564,24 +622,180 @@ describe('UserService', () => {
             }
         });
 
+        it('normalizes email and returns email in use when another user already owns it', async () => {
+            const current = makeDbUser({ id: 7, email: 'current@example.com', password: 'hashed-current' });
+            jest.spyOn(UserRepository.prototype, 'findById').mockResolvedValue(current);
+            compareMock.mockResolvedValue(true);
+            const findManySpy = jest.spyOn(UserRepository.prototype, 'findMany').mockResolvedValue([
+                makeDbUser({ id: 88, email: 'new@example.com' }),
+            ]);
+            const updateSpy = jest.spyOn(UserRepository.prototype, 'update');
+
+            const service = new UserService();
+            const result = await service.updateUser(7, {
+                email: ' NEW@EXAMPLE.COM ',
+                currentPassword: 'current-password',
+            });
+
+            expect(compareMock).toHaveBeenCalledWith('current-password', current.password);
+            expect(findManySpy).toHaveBeenCalledWith(
+                { email: { operator: FilterOperator.EQ, value: 'new@example.com' } },
+                { limit: 2 }
+            );
+            expect(updateSpy).not.toHaveBeenCalled();
+            expect(result).toEqual({ success: false, error: Resource.EMAIL_IN_USE });
+        });
+
+        it('re-verifies email and revokes refresh tokens when email changes', async () => {
+            const current = makeDbUser({ id: 8, email: 'current@example.com', password: 'hashed-current' });
+            const updated = makeDbUser({
+                id: 8,
+                email: 'new@example.com',
+                emailVerifiedAt: null,
+                password: current.password,
+            });
+            jest.spyOn(UserRepository.prototype, 'findById').mockResolvedValue(current);
+            jest.spyOn(UserRepository.prototype, 'findMany').mockResolvedValue([]);
+            compareMock.mockResolvedValue(true);
+            const updateSpy = jest.spyOn(UserRepository.prototype, 'update').mockResolvedValue(updated);
+            const deleteTokensSpy = jest.spyOn(TokenService.prototype, 'deleteByUserIdAndType')
+                .mockResolvedValueOnce(1)
+                .mockResolvedValueOnce(2);
+            const createTokenSpy = jest.spyOn(TokenService.prototype, 'createEmailVerificationToken').mockResolvedValue({
+                success: true,
+                data: { token: 'verify-token', expiresAt: new Date('2099-01-01T00:00:00Z') },
+            });
+            sendEmailVerificationMock.mockResolvedValue();
+
+            const service = new UserService();
+            const result = await service.updateUser(8, {
+                email: ' NEW@EXAMPLE.COM ',
+                currentPassword: 'current-password',
+            });
+
+            expect(compareMock).toHaveBeenCalledWith('current-password', current.password);
+            expect(updateSpy).toHaveBeenCalledWith(8, expect.objectContaining({
+                email: 'new@example.com',
+                emailVerifiedAt: null,
+            }));
+            expect(deleteTokensSpy).toHaveBeenNthCalledWith(1, 8, TokenType.EMAIL_VERIFICATION);
+            expect(createTokenSpy).toHaveBeenCalledWith(8);
+            expect(sendEmailVerificationMock).toHaveBeenCalledWith(
+                'new@example.com',
+                'verify-token',
+                8,
+                updated.language
+            );
+            expect(deleteTokensSpy).toHaveBeenNthCalledWith(2, 8, TokenType.REFRESH);
+            expect(result).toEqual(
+                expect.objectContaining({
+                    success: true,
+                    data: expect.objectContaining({
+                        id: 8,
+                        email: 'new@example.com',
+                        emailVerifiedAt: null,
+                    }),
+                })
+            );
+        });
+
+        it('rolls back the persisted user when email verification follow-up fails', async () => {
+            const current = makeDbUser({ id: 9, email: 'current@example.com', password: 'hashed-current' });
+            const updated = makeDbUser({
+                id: 9,
+                email: 'new@example.com',
+                emailVerifiedAt: null,
+                password: current.password,
+            });
+            jest.spyOn(UserRepository.prototype, 'findById').mockResolvedValue(current);
+            jest.spyOn(UserRepository.prototype, 'findMany').mockResolvedValue([]);
+            compareMock.mockResolvedValue(true);
+            const updateSpy = jest.spyOn(UserRepository.prototype, 'update')
+                .mockResolvedValueOnce(updated)
+                .mockResolvedValueOnce(current);
+            const deleteTokensSpy = jest.spyOn(TokenService.prototype, 'deleteByUserIdAndType')
+                .mockResolvedValueOnce(1)
+                .mockResolvedValueOnce(1);
+            jest.spyOn(TokenService.prototype, 'createEmailVerificationToken').mockResolvedValue({
+                success: true,
+                data: { token: 'verify-token', expiresAt: new Date('2099-01-01T00:00:00Z') },
+            });
+            sendEmailVerificationMock.mockRejectedValueOnce(new Error('smtp unavailable'));
+
+            const service = new UserService();
+            const result = await service.updateUser(9, {
+                email: 'new@example.com',
+                currentPassword: 'current-password',
+                firstName: 'Changed',
+            });
+
+            expect(updateSpy).toHaveBeenNthCalledWith(1, 9, expect.objectContaining({
+                email: 'new@example.com',
+                emailVerifiedAt: null,
+                firstName: 'Changed',
+            }));
+            expect(updateSpy).toHaveBeenNthCalledWith(2, 9, expect.objectContaining({
+                firstName: current.firstName,
+                email: current.email,
+                emailVerifiedAt: current.emailVerifiedAt,
+                password: current.password,
+            }));
+            expect(deleteTokensSpy).toHaveBeenNthCalledWith(1, 9, TokenType.EMAIL_VERIFICATION);
+            expect(deleteTokensSpy).toHaveBeenNthCalledWith(2, 9, TokenType.EMAIL_VERIFICATION);
+            expect(result).toEqual({ success: false, error: Resource.INTERNAL_SERVER_ERROR });
+        });
+
+        it('allows trusted reset-password updates without current password proof', async () => {
+            const current = makeDbUser({ id: 10, password: 'hashed-old' });
+            jest.spyOn(UserRepository.prototype, 'findById').mockResolvedValue(current);
+            compareMock.mockResolvedValue(false);
+            hashMock.mockResolvedValue('hashed-reset');
+            const updated = makeDbUser({ id: 10, password: 'hashed-reset' });
+            const updateSpy = jest.spyOn(UserRepository.prototype, 'update').mockResolvedValue(updated);
+
+            const service = new UserService();
+            const result = await service.updateUser(
+                10,
+                { password: 'reset-password' },
+                { skipCurrentPasswordCheck: true }
+            );
+
+            expect(compareMock).toHaveBeenCalledTimes(1);
+            expect(compareMock).toHaveBeenCalledWith('reset-password', current.password);
+            expect(hashMock).toHaveBeenCalledWith('reset-password', 10);
+            expect(updateSpy).toHaveBeenCalledWith(10, expect.objectContaining({ password: 'hashed-reset' }));
+            expect(result).toEqual(expect.objectContaining({
+                success: true,
+                data: expect.objectContaining({ id: 10 }),
+            }));
+        });
+
         it('strips forbidden privilege fields before updating', async () => {
             const current = makeDbUser({ id: 16, password: 'hashed-old' });
             jest.spyOn(UserRepository.prototype, 'findById').mockResolvedValue(current);
             const updateSpy = jest.spyOn(UserRepository.prototype, 'update').mockResolvedValue(current);
 
             const service = new UserService();
-            await service.updateUser(16, { firstName: 'New', profile: 'master' as any, active: false as any } as any);
+            await service.updateUser(16, {
+                firstName: 'New',
+                currentPassword: 'secret123' as any,
+                profile: 'master' as any,
+                active: false as any,
+            } as any);
 
             const updateArg = updateSpy.mock.calls[0][1] as Record<string, unknown>;
             expect(updateArg).toEqual(expect.objectContaining({ firstName: 'New' }));
             expect(updateArg).not.toHaveProperty('profile');
             expect(updateArg).not.toHaveProperty('active');
+            expect(updateArg).not.toHaveProperty('currentPassword');
         });
 
         it('throws when repository update rejects', async () => {
             const current = makeDbUser({ id: 7, password: 'hashed-old' });
             jest.spyOn(UserRepository.prototype, 'findById').mockResolvedValue(current);
-            compareMock.mockResolvedValue(false);
+            compareMock
+                .mockResolvedValueOnce(true)
+                .mockResolvedValueOnce(false);
             hashMock.mockResolvedValue('hashed-new');
             jest.spyOn(UserRepository.prototype, 'update').mockRejectedValue(new Error(Resource.INTERNAL_SERVER_ERROR));
 
@@ -589,7 +803,10 @@ describe('UserService', () => {
             let caught: unknown;
 
             try {
-                await service.updateUser(7, { password: 'new-password' });
+                await service.updateUser(7, {
+                    password: 'new-password',
+                    currentPassword: 'current-password',
+                });
             } catch (error) {
                 caught = error;
             }

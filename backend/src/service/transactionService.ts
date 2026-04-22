@@ -1,13 +1,13 @@
 import { eq, inArray } from 'drizzle-orm';
 import { FilterOperator, SortOrder } from '../../../shared/enums/operator.enums';
-import { TransactionSortField, TransactionSource, TransactionType } from '../../../shared/enums/transaction.enums';
+import { TransactionSortField, TransactionSource } from '../../../shared/enums/transaction.enums';
 import { ErrorCode } from '../../../shared/errors/error-codes';
 import { SelectTransaction, InsertTransaction, transactionTags } from '../db/schema';
 import { withTransaction, db } from '../db';
 import { AccountRepository } from '../repositories/accountRepository';
 import { CreditCardRepository } from '../repositories/creditCardRepository';
 import { TagRepository } from '../repositories/tagRepository';
-import { TransactionRepository } from '../repositories/transactionRepository';
+import { TransactionRepository, type TransactionFilters } from '../repositories/transactionRepository';
 import { getSignedTransactionDelta, invertMonetaryDelta, isZeroMonetaryDelta } from '../utils/monetary.utils';
 import { QueryOptions } from '../utils/pagination';
 import { resolveTransactionOwnerUserId } from '../utils/auth/authorization';
@@ -121,17 +121,7 @@ export class TransactionService {
      */
 
     async getTransactions(
-        filters?: {
-            accountId?: { operator: FilterOperator.EQ | FilterOperator.IN; value: number | number[] };
-            creditCardId?: { operator: FilterOperator.EQ | FilterOperator.IN; value: number | number[] };
-            categoryId?: { operator: FilterOperator.EQ | FilterOperator.IN; value: number | number[] };
-            subcategoryId?: { operator: FilterOperator.EQ | FilterOperator.IN; value: number | number[] };
-            tagIds?: { operator: FilterOperator.IN; value: number[] };
-            transactionType?: { operator: FilterOperator.EQ | FilterOperator.IN; value: TransactionType | TransactionType[] };
-            transactionSource?: { operator: FilterOperator.EQ | FilterOperator.IN; value: TransactionSource | TransactionSource[] };
-            active?: { operator: FilterOperator.EQ; value: boolean };
-            date?: { operator: FilterOperator.BETWEEN; value: [Date | null, Date | null] };
-        },
+        filters?: TransactionFilters,
         options?: QueryOptions<SelectTransaction>
     ): Promise<{ success: true; data: TransactionWithTags[] } | { success: false; error: ErrorCode }> {
         try {
@@ -153,17 +143,7 @@ export class TransactionService {
      * @returns Total transaction count.
      */
 
-    async countTransactions(filters?: {
-        accountId?: { operator: FilterOperator.EQ | FilterOperator.IN; value: number | number[] };
-        creditCardId?: { operator: FilterOperator.EQ | FilterOperator.IN; value: number | number[] };
-        categoryId?: { operator: FilterOperator.EQ | FilterOperator.IN; value: number | number[] };
-        subcategoryId?: { operator: FilterOperator.EQ | FilterOperator.IN; value: number | number[] };
-        tagIds?: { operator: FilterOperator.IN; value: number[] };
-        transactionType?: { operator: FilterOperator.EQ | FilterOperator.IN; value: TransactionType | TransactionType[] };
-        transactionSource?: { operator: FilterOperator.EQ | FilterOperator.IN; value: TransactionSource | TransactionSource[] };
-        active?: { operator: FilterOperator.EQ; value: boolean };
-        date?: { operator: FilterOperator.BETWEEN; value: [Date | null, Date | null] };
-    }): Promise<{ success: true; data: number } | { success: false; error: ErrorCode }> {
+    async countTransactions(filters?: TransactionFilters): Promise<{ success: true; data: number } | { success: false; error: ErrorCode }> {
         try {
             const count = await this.transactionRepository.count(filters);
             return { success: true, data: count };

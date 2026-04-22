@@ -316,7 +316,6 @@ describe('SubcategoryService', () => {
                 success: true,
                 data: [makeCategory({ id: 1 }), makeCategory({ id: 2 })],
             });
-            const firstBatch = [makeDbSubcategory({ id: 1, categoryId: 1 })];
             const allBatch = [
                 makeDbSubcategory({ id: 1, categoryId: 1 }),
                 makeDbSubcategory({ id: 2, categoryId: 2 }),
@@ -326,19 +325,13 @@ describe('SubcategoryService', () => {
                 makeSubcategory({ id: 2, categoryId: 2 }),
             ];
             const findManySpy = jest.spyOn(SubcategoryRepository.prototype, 'findMany')
-                .mockResolvedValueOnce(firstBatch)
-                .mockResolvedValueOnce(allBatch);
+                .mockResolvedValue(allBatch);
 
             const service = new SubcategoryService();
             const result = await service.getSubcategoriesByUser(5, { limit: 5, offset: 0, sort: 'name', order: SortOrder.ASC });
 
-            expect(findManySpy).toHaveBeenNthCalledWith(
-                1,
-                { categoryId: { operator: FilterOperator.EQ, value: 1 } },
-                { limit: 5, offset: 0, sort: 'name', order: 'asc' }
-            );
-            expect(findManySpy).toHaveBeenNthCalledWith(
-                2,
+            expect(findManySpy).toHaveBeenCalledTimes(1);
+            expect(findManySpy).toHaveBeenCalledWith(
                 { categoryId: { operator: FilterOperator.IN, value: [1, 2] } },
                 { limit: 5, offset: 0, sort: 'name', order: 'asc' }
             );

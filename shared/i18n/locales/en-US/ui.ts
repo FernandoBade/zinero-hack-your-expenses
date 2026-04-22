@@ -116,6 +116,7 @@ export const enUSUiCatalog = {
     "field.country.label": "Country",
     "field.credit_card_id.label": "Credit card",
     "field.currency.label": "Currency",
+    "field.current_password.label": "Current password",
     "field.date.label": "Date",
     "field.display_value.label": "Display value",
     "field.email.label": "Email",

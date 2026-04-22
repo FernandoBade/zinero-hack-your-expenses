@@ -118,6 +118,7 @@ export const ptBRUiCatalog = {
     "field.country.label": "País",
     "field.credit_card_id.label": "Cartão de crédito",
     "field.currency.label": "Moeda",
+    "field.current_password.label": "Senha atual",
     "field.date.label": "Data",
     "field.display_value.label": "Valor exibido",
     "field.email.label": "E-mail",

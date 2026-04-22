@@ -2,6 +2,7 @@ import bcrypt from 'bcrypt';
 import path from 'path';
 import { Readable } from 'stream';
 import { Client as FtpClient } from 'basic-ftp';
+import { TokenType } from '../../../shared/enums/auth.enums';
 import { FilterOperator, SortOrder } from '../../../shared/enums/operator.enums';
 import { UserRepository } from '../repositories/userRepository';
 import { ErrorCode } from '../../../shared/errors/error-codes';
@@ -29,6 +30,10 @@ const resolveAvatarExtension = (mimeType: string) => {
         return UploadFileExtension.PNG;
     }
     return UploadFileExtension.JPG;
+};
+
+type UpdateUserOptions = {
+    skipCurrentPasswordCheck?: boolean;
 };
 
 /**
@@ -77,6 +82,35 @@ export class UserService {
     }
 
     /**
+     * @summary Normalizes email values before lookup and persistence.
+     */
+    private normalizeEmail(email: string): string {
+        return email.trim().toLowerCase();
+    }
+
+    /**
+     * @summary Builds a full mutable user snapshot for compensating rollbacks.
+     */
+    private buildRestorableUserUpdate(current: SelectUser): Partial<InsertUser> {
+        return {
+            firstName: current.firstName,
+            lastName: current.lastName,
+            email: current.email,
+            password: current.password,
+            birthDate: current.birthDate,
+            phone: current.phone,
+            avatarUrl: current.avatarUrl,
+            theme: current.theme,
+            language: current.language,
+            currency: current.currency,
+            profile: current.profile,
+            hideValues: current.hideValues,
+            active: current.active,
+            emailVerifiedAt: current.emailVerifiedAt,
+        };
+    }
+
+    /**
      * Creates a new user with a unique email and hashed password.
      * Validates that the email is not already registered.
      *
@@ -92,7 +126,7 @@ export class UserService {
         delete rawData.profile;
         delete rawData.active;
         const safeData: CreateUserInput = rawData;
-        safeData.email = safeData.email.trim().toLowerCase();
+        safeData.email = this.normalizeEmail(safeData.email);
 
         const existingUsers = await this.userRepository.findMany({
             email: { operator: FilterOperator.EQ, value: safeData.email }
@@ -307,9 +341,14 @@ export class UserService {
      * @summary Updates user data with optional password rehashing.
      * @param id - ID of the user to update.
      * @param data - Partial user data.
+     * @param options - Internal options for trusted password-reset flows.
      * @returns Updated user or error if not found.
      */
-    async updateUser(id: number, data: UpdateUserInput): Promise<{ success: true; data: SanitizedUser } | { success: false; error: ErrorCode }> {
+    async updateUser(
+        id: number,
+        data: UpdateUserInput,
+        options: UpdateUserOptions = {}
+    ): Promise<{ success: true; data: SanitizedUser } | { success: false; error: ErrorCode }> {
         const current = await this.userRepository.findById(id);
         if (!current) {
             return { success: false, error: ErrorCode.NO_RECORDS_FOUND };
@@ -321,14 +360,55 @@ export class UserService {
         };
         delete rawData.profile;
         delete rawData.active;
-        const safeData: UpdateUserInput = rawData;
+        const safeData: UpdateUserInput = { ...rawData };
+        const requiresCurrentPassword = !options.skipCurrentPasswordCheck
+            && (safeData.email !== undefined || safeData.password !== undefined);
 
-        if (safeData.password && current.password) {
-            const isSamePassword = await bcrypt.compare(safeData.password, current.password);
-            if (!isSamePassword) {
-                safeData.password = await bcrypt.hash(safeData.password, USER_SERVICE_CONFIG.passwordHashRounds);
+        if (safeData.email !== undefined) {
+            safeData.email = this.normalizeEmail(safeData.email);
+        }
+
+        if (requiresCurrentPassword) {
+            const hasValidCurrentPassword = Boolean(
+                safeData.currentPassword
+                && current.password
+                && await bcrypt.compare(safeData.currentPassword, current.password)
+            );
+            if (!hasValidCurrentPassword) {
+                return { success: false, error: ErrorCode.INVALID_CREDENTIALS };
+            }
+        }
+
+        delete safeData.currentPassword;
+
+        if (safeData.password !== undefined) {
+            if (current.password) {
+                const isSamePassword = await bcrypt.compare(safeData.password, current.password);
+                if (!isSamePassword) {
+                    safeData.password = await bcrypt.hash(safeData.password, USER_SERVICE_CONFIG.passwordHashRounds);
+                } else {
+                    delete safeData.password;
+                }
             } else {
-                delete safeData.password;
+                safeData.password = await bcrypt.hash(safeData.password, USER_SERVICE_CONFIG.passwordHashRounds);
+            }
+        }
+
+        let emailChanged = false;
+        if (safeData.email !== undefined) {
+            if (safeData.email === current.email) {
+                delete safeData.email;
+            } else {
+                const existingUsers = await this.userRepository.findMany({
+                    email: { operator: FilterOperator.EQ, value: safeData.email }
+                }, {
+                    limit: 2,
+                });
+                const conflictingUser = existingUsers.find((user) => user.id !== id);
+                if (conflictingUser) {
+                    return { success: false, error: ErrorCode.EMAIL_IN_USE };
+                }
+                emailChanged = true;
             }
         }
 
@@ -339,7 +419,50 @@ export class UserService {
         if (birthDate !== undefined) {
             updateData.birthDate = new Date(birthDate);
         }
+        if (emailChanged) {
+            updateData.emailVerifiedAt = null;
+        }
+
+        if (Object.keys(updateData).length === 0) {
+            return {
+                success: true,
+                data: this.sanitizeUser(current)
+            };
+        }
+
+        const restoreData = this.buildRestorableUserUpdate(current);
         const updated = await this.userRepository.update(id, updateData);
+
+        if (emailChanged) {
+            try {
+                await this.tokenService.deleteByUserIdAndType(id, TokenType.EMAIL_VERIFICATION);
+                const tokenResult = await this.tokenService.createEmailVerificationToken(id);
+                if (!tokenResult.success || !tokenResult.data) {
+                    throw new Error('EmailVerificationTokenCreationFailed');
+                }
+
+                await sendEmailVerificationEmail(
+                    updated.email,
+                    tokenResult.data.token,
+                    updated.id,
+                    updated.language
+                );
+                await this.tokenService.deleteByUserIdAndType(id, TokenType.REFRESH);
+            } catch {
+                try {
+                    await this.userRepository.update(id, restoreData);
+                } catch {
+                    // Ignore rollback failures to preserve the original update error.
+                }
+                try {
+                    await this.tokenService.deleteByUserIdAndType(id, TokenType.EMAIL_VERIFICATION);
+                } catch {
+                    // Ignore cleanup failures after rollback.
+                }
+                return { success: false, error: ErrorCode.INTERNAL_SERVER_ERROR };
+            }
+        }
+
         return {
             success: true,
             data: this.sanitizeUser(updated)

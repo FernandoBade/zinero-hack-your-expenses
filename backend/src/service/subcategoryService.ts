@@ -164,16 +164,6 @@ export class SubcategoryService {
         const categoryIds = userCategories.data.map(c => c.id);
 
         try {
-            const subcategories = await this.subcategoryRepository.findMany({
-                categoryId: { operator: FilterOperator.EQ, value: categoryIds[0] }
-            }, {
-                limit: options?.limit,
-                offset: options?.offset,
-                sort: options?.sort as keyof SelectSubcategory,
-                order: options?.order === SortOrder.DESC ? SortOrder.DESC : SortOrder.ASC,
-            });
-            void subcategories;
-
             const allSubcategories = await this.subcategoryRepository.findMany({
                 categoryId: { operator: FilterOperator.IN, value: categoryIds }
             }, {

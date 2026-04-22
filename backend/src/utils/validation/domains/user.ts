@@ -147,6 +147,14 @@ export function validateUpdateUser(
         }
     }
 
+    if (body.currentPassword !== undefined) {
+        if (!isString(body.currentPassword) || !hasMinLength(body.currentPassword, 6)) {
+            errors.push(createValidationError('currentPassword', ErrorCode.PASSWORD_TOO_SHORT));
+        } else {
+            result.currentPassword = body.currentPassword;
+        }
+    }
+
     if (body.phone !== undefined && body.phone !== null) {
         if (!isString(body.phone)) {
             errors.push(createValidationError('phone', ErrorCode.INVALID_PHONE_TYPE));

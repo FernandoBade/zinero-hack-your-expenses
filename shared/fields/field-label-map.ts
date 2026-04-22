@@ -14,6 +14,7 @@ export const fieldLabelMap: Record<FieldKeyType, I18nKey> = {
   [FieldKey.COUNTRY]: "field.country.label",
   [FieldKey.CREDIT_CARD_ID]: "field.credit_card_id.label",
   [FieldKey.CURRENCY]: "field.currency.label",
+  [FieldKey.CURRENT_PASSWORD]: "field.current_password.label",
   [FieldKey.DATE]: "field.date.label",
   [FieldKey.DISPLAY_VALUE]: "field.display_value.label",
   [FieldKey.EMAIL]: "field.email.label",

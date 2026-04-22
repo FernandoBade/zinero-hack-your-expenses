@@ -634,14 +634,44 @@ describe('UserController', () => {
             expect(logSpy).not.toHaveBeenCalled();
         });
 
+        it('returns 403 when a MASTER user attempts to change another user credentials', async () => {
+            const findOneSpy = jest.spyOn(UserService.prototype, 'findOne');
+            const updateUserSpy = jest.spyOn(UserService.prototype, 'updateUser');
+            const req = createMockRequest({
+                params: { id: '3' },
+                body: { email: 'new@example.com', currentPassword: 'secret123' },
+                user: { id: 1, profile: Profile.MASTER },
+            });
+            const res = createMockResponse();
+            const next = createNext();
+
+            await UserController.updateUser(req, res, next);
+
+            expect(findOneSpy).not.toHaveBeenCalled();
+            expect(updateUserSpy).not.toHaveBeenCalled();
+            expect(res.status).toHaveBeenCalledWith(HTTPStatus.FORBIDDEN);
+            expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
+                success: false,
+                errorCode: Resource.UNAUTHORIZED_OPERATION,
+            }));
+            expect(logSpy).not.toHaveBeenCalled();
+        });
+
         it('returns 200 when update succeeds', async () => {
             const existing = makeUser({ id: 3 });
-            const sanitized = makeSanitizedUser({ id: 3, firstName: 'Jane' });
-            const expectedDelta = { firstName: { from: existing.firstName, to: sanitized.firstName } };
+            const sanitized = makeSanitizedUser({ id: 3, firstName: 'Jane', email: 'jane@example.com' });
+            const expectedDelta = {
+                firstName: { from: existing.firstName, to: sanitized.firstName },
+                email: { from: existing.email, to: sanitized.email },
+            };
             jest.spyOn(UserService.prototype, 'findOne').mockResolvedValue({ success: true, data: existing });
             jest.spyOn(UserService.prototype, 'updateUser').mockResolvedValue({ success: true, data: sanitized });
 
-            const req = createMockRequest({ params: { id: '3' }, body: { firstName: 'Jane', email: 'jane@example.com' }, user: { id: 3 } });
+            const req = createMockRequest({
+                params: { id: '3' },
+                body: { firstName: 'Jane', email: 'JANE@EXAMPLE.COM', currentPassword: 'secret123' },
+                user: { id: 3 },
+            });
             const res = createMockResponse();
             const next = createNext();
 
@@ -650,6 +680,7 @@ describe('UserController', () => {
             expect(UserService.prototype.updateUser).toHaveBeenCalledWith(3, {
                 firstName: 'Jane',
                 email: 'jane@example.com',
+                currentPassword: 'secret123',
             });
             expect(res.status).toHaveBeenCalledWith(HTTPStatus.OK);
             expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ success: true, data: sanitized }));
@@ -680,6 +711,32 @@ describe('UserController', () => {
             expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
                 success: false,
                 errorCode: Resource.INTERNAL_SERVER_ERROR,
+            }));
+            expect(logSpy).not.toHaveBeenCalled();
+        });
+
+        it('returns 401 when update service reports invalid credentials', async () => {
+            const existing = makeUser({ id: 3 });
+            const updateUserSpy = jest.spyOn(UserService.prototype, 'updateUser').mockResolvedValue({
+                success: false,
+                error: Resource.INVALID_CREDENTIALS,
+            });
+            jest.spyOn(UserService.prototype, 'findOne').mockResolvedValue({ success: true, data: existing });
+            const req = createMockRequest({
+                params: { id: '3' },
+                body: { email: 'jane@example.com' },
+                user: { id: 3 },
+            });
+            const res = createMockResponse();
+            const next = createNext();
+
+            await UserController.updateUser(req, res, next);
+
+            expect(updateUserSpy).toHaveBeenCalledTimes(1);
+            expect(res.status).toHaveBeenCalledWith(HTTPStatus.UNAUTHORIZED);
+            expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
+                success: false,
+                errorCode: Resource.INVALID_CREDENTIALS,
             }));
             expect(logSpy).not.toHaveBeenCalled();
         });
