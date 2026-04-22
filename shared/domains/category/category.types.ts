@@ -27,6 +27,10 @@ export interface CreateCategoryInput {
     type: CategoryType;
     color?: CategoryColor;
     active?: boolean;
+}
+
+/** @summary Backend-only category creation payload with derived ownership. */
+export interface CreateOwnedCategoryInput extends CreateCategoryInput {
     userId: UserId;
 }
 
@@ -36,7 +40,6 @@ export interface UpdateCategoryInput {
     type?: CategoryType;
     color?: CategoryColor;
     active?: boolean;
-    userId?: UserId;
 }
 
 /** @summary Input payload for listing categories. */

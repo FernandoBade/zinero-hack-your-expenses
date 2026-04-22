@@ -281,46 +281,35 @@ describe('CategoryService', () => {
     });
 
     describe('updateCategory', () => {
-        it('returns user not found when new user is invalid', async () => {
-            const getUserSpy = jest.spyOn(UserService.prototype, 'getUserById').mockResolvedValue({
-                success: false,
-                error: Resource.USER_NOT_FOUND,
-            });
-            const updateSpy = jest.spyOn(CategoryRepository.prototype, 'update');
+        it('ignores userId reassignment attempts', async () => {
+            const updated = makeDbCategory({ id: 3, userId: 4, name: 'Updated' });
+            const updateSpy = jest.spyOn(CategoryRepository.prototype, 'update').mockResolvedValue(updated);
 
             const service = new CategoryService();
-            const result = await service.updateCategory(3, { userId: 99 });
+            const result = await service.updateCategory(3, { userId: 99, name: 'Updated' } as any);
 
-            expect(getUserSpy).toHaveBeenCalledWith(99);
-            expect(updateSpy).not.toHaveBeenCalled();
-            expect(result).toEqual({ success: false, error: Resource.USER_NOT_FOUND });
-            expect(result.success).toBe(false);
-            if (!result.success) {
-                expect(result.error).toBe(Resource.USER_NOT_FOUND);
-            }
+            expect(updateSpy).toHaveBeenCalledWith(3, expect.objectContaining({ name: 'Updated' }));
+            expect(updateSpy).not.toHaveBeenCalledWith(3, expect.objectContaining({ userId: 99 }));
+            expect(result).toEqual({ success: true, data: makeCategory({ id: 3, userId: 4, name: 'Updated' }) });
         });
 
         it('updates category when validation succeeds', async () => {
-            const sanitized = makeSanitizedUser({ id: 4 });
-            jest.spyOn(UserService.prototype, 'getUserById').mockResolvedValue({ success: true, data: sanitized });
             const updated = makeDbCategory({ id: 4, userId: 4, name: 'Updated' });
             const expected = makeCategory({ id: 4, userId: 4, name: 'Updated' });
             const updateSpy = jest.spyOn(CategoryRepository.prototype, 'update').mockResolvedValue(updated);
 
             const service = new CategoryService();
-            const result = await service.updateCategory(4, { userId: 4, name: 'Updated' });
+            const result = await service.updateCategory(4, { name: 'Updated' });
 
-            expect(updateSpy).toHaveBeenCalledWith(4, expect.objectContaining({ userId: 4, name: 'Updated' }));
+            expect(updateSpy).toHaveBeenCalledWith(4, expect.objectContaining({ name: 'Updated' }));
             expect(result).toEqual({ success: true, data: expected });
         });
 
         it('returns internal server error when repository update throws', async () => {
-            const sanitized = makeSanitizedUser({ id: 5 });
-            jest.spyOn(UserService.prototype, 'getUserById').mockResolvedValue({ success: true, data: sanitized });
             jest.spyOn(CategoryRepository.prototype, 'update').mockRejectedValue(new Error(Resource.INTERNAL_SERVER_ERROR));
 
             const service = new CategoryService();
-            const result = await service.updateCategory(5, { userId: 5 });
+            const result = await service.updateCategory(5, { name: 'Updated' });
 
             expect(result).toEqual({ success: false, error: Resource.INTERNAL_SERVER_ERROR });
             expect(result.success).toBe(false);

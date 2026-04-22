@@ -229,6 +229,29 @@ describe('TransactionService', () => {
             }
         });
 
+        it('returns unauthorized when actor does not own the source account', async () => {
+            jest.spyOn(AccountService.prototype, 'getAccountById').mockResolvedValue({
+                success: true,
+                data: makeAccount({ id: 1, userId: 7 }),
+            });
+            const createSpy = jest.spyOn(TransactionRepository.prototype, 'create');
+
+            const service = new TransactionService();
+            const result = await service.createTransaction({
+                value: '100.00',
+                date: '2024-01-01T00:00:00.000Z',
+                transactionType: TransactionType.EXPENSE,
+                transactionSource: TransactionSource.ACCOUNT,
+                isInstallment: false,
+                isRecurring: false,
+                accountId: 1,
+                categoryId: 1,
+            }, 99);
+
+            expect(createSpy).not.toHaveBeenCalled();
+            expect(result).toEqual({ success: false, error: Resource.UNAUTHORIZED_OPERATION });
+        });
+
         it('returns category not found or inactive when category is invalid', async () => {
             jest.spyOn(AccountService.prototype, 'getAccountById').mockResolvedValue({ success: true, data: makeAccount({ id: 1 }) });
             jest.spyOn(CategoryService.prototype, 'getCategoryById').mockResolvedValue({
@@ -283,6 +306,64 @@ describe('TransactionService', () => {
             if (!result.success) {
                 expect(result.error).toBe(Resource.SUBCATEGORY_NOT_FOUND_OR_INACTIVE);
             }
+        });
+
+        it('returns unauthorized when category belongs to another user', async () => {
+            jest.spyOn(AccountService.prototype, 'getAccountById').mockResolvedValue({
+                success: true,
+                data: makeAccount({ id: 1, userId: 5 }),
+            });
+            jest.spyOn(CategoryService.prototype, 'getCategoryById').mockResolvedValue({
+                success: true,
+                data: makeCategoryEntity({ id: 99, active: true, userId: 8 }),
+            });
+            const createSpy = jest.spyOn(TransactionRepository.prototype, 'create');
+
+            const service = new TransactionService();
+            const result = await service.createTransaction({
+                value: '100.00',
+                date: '2024-01-01T00:00:00.000Z',
+                transactionType: TransactionType.EXPENSE,
+                transactionSource: TransactionSource.ACCOUNT,
+                isInstallment: false,
+                isRecurring: false,
+                accountId: 1,
+                categoryId: 99,
+            });
+
+            expect(createSpy).not.toHaveBeenCalled();
+            expect(result).toEqual({ success: false, error: Resource.UNAUTHORIZED_OPERATION });
+        });
+
+        it('returns unauthorized when subcategory parent category belongs to another user', async () => {
+            jest.spyOn(AccountService.prototype, 'getAccountById').mockResolvedValue({
+                success: true,
+                data: makeAccount({ id: 1, userId: 5 }),
+            });
+            jest.spyOn(SubcategoryService.prototype, 'getSubcategoryById').mockResolvedValue({
+                success: true,
+                data: makeSubcategoryEntity({ id: 3, active: true, categoryId: 40 }),
+            });
+            jest.spyOn(CategoryService.prototype, 'getCategoryById').mockResolvedValue({
+                success: true,
+                data: makeCategoryEntity({ id: 40, active: true, userId: 8 }),
+            });
+            const createSpy = jest.spyOn(TransactionRepository.prototype, 'create');
+
+            const service = new TransactionService();
+            const result = await service.createTransaction({
+                value: '100.00',
+                date: '2024-01-01T00:00:00.000Z',
+                transactionType: TransactionType.EXPENSE,
+                transactionSource: TransactionSource.ACCOUNT,
+                isInstallment: false,
+                isRecurring: false,
+                accountId: 1,
+                subcategoryId: 3,
+            });
+
+            expect(createSpy).not.toHaveBeenCalled();
+            expect(result).toEqual({ success: false, error: Resource.UNAUTHORIZED_OPERATION });
         });
 
         it('creates transaction when validations succeed', async () => {
@@ -368,7 +449,6 @@ describe('TransactionService', () => {
 
             expect(tagSpy).toHaveBeenCalledWith({
                 id: { operator: FilterOperator.IN, value: [1, 2] },
-                userId: { operator: FilterOperator.EQ, value: account.userId },
                 active: { operator: FilterOperator.EQ, value: true },
             }, undefined, expect.anything());
             expect(connection.delete).toHaveBeenCalledWith(transactionTags);
@@ -381,9 +461,42 @@ describe('TransactionService', () => {
             expect(result).toEqual({ success: true, data: expected });
         });
 
+        it('returns unauthorized when tags belong to another user', async () => {
+            const account = makeAccount({ id: 1, userId: 5 });
+            jest.spyOn(AccountService.prototype, 'getAccountById').mockResolvedValue({ success: true, data: account });
+            jest.spyOn(CategoryService.prototype, 'getCategoryById').mockResolvedValue({
+                success: true,
+                data: makeCategoryEntity({ id: 2, active: true, userId: 5 }),
+            });
+            jest.spyOn(TagRepository.prototype, 'findMany').mockResolvedValue([
+                { id: 1, name: 'Urgent', userId: 9, active: true, createdAt: new Date(), updatedAt: new Date() },
+            ]);
+            const createSpy = jest.spyOn(TransactionRepository.prototype, 'create');
+
+            const service = new TransactionService();
+            const result = await service.createTransaction({
+                value: '75.00',
+                date: '2024-02-05T00:00:00.000Z',
+                transactionType: TransactionType.EXPENSE,
+                transactionSource: TransactionSource.ACCOUNT,
+                isInstallment: false,
+                isRecurring: false,
+                accountId: 1,
+                categoryId: 2,
+                tags: [1],
+            });
+
+            expect(createSpy).not.toHaveBeenCalled();
+            expect(result).toEqual({ success: false, error: Resource.UNAUTHORIZED_OPERATION });
+        });
+
         it('creates transaction for credit card source when validations succeed', async () => {
             jest.spyOn(CreditCardService.prototype, 'getCreditCardById').mockResolvedValue({ success: true, data: makeCreditCardEntity({ id: 10 }) });
             jest.spyOn(SubcategoryService.prototype, 'getSubcategoryById').mockResolvedValue({ success: true, data: makeSubcategoryEntity({ id: 4, active: true }) });
+            jest.spyOn(CategoryService.prototype, 'getCategoryById').mockResolvedValue({
+                success: true,
+                data: makeCategoryEntity({ id: 1, active: true, userId: 1 }),
+            });
             const balanceSpy = jest.spyOn(CreditCardRepository.prototype, 'applyCreditCardDelta').mockResolvedValue(makeDbCreditCard({ id: 10, balance: '280.00' }));
             const created = makeDbTransaction({
                 id: 11,
@@ -844,6 +957,25 @@ describe('TransactionService', () => {
             if (!result.success) {
                 expect(result.error).toBe(Resource.SUBCATEGORY_NOT_FOUND_OR_INACTIVE);
             }
+        });
+
+        it('returns unauthorized when switching to an account owned by another user', async () => {
+            const current = makeDbTransaction({ id: 25, transactionSource: TransactionSource.ACCOUNT, accountId: 1, categoryId: 1 });
+            jest.spyOn(TransactionRepository.prototype, 'findByIdForUpdate').mockResolvedValue(current);
+            jest.spyOn(AccountService.prototype, 'getAccountById')
+                .mockResolvedValueOnce({ success: true, data: makeAccount({ id: 1, userId: 5 }) })
+                .mockResolvedValueOnce({ success: true, data: makeAccount({ id: 2, userId: 9 }) });
+            const updateSpy = jest.spyOn(TransactionRepository.prototype, 'update');
+
+            const service = new TransactionService();
+            const result = await service.updateTransaction(25, {
+                accountId: 2,
+                transactionSource: TransactionSource.ACCOUNT,
+                categoryId: 1,
+            });
+
+            expect(updateSpy).not.toHaveBeenCalled();
+            expect(result).toEqual({ success: false, error: Resource.UNAUTHORIZED_OPERATION });
         });
 
         it('updates and clears credit card when account source is used', async () => {

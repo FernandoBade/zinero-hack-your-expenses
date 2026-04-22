@@ -11,20 +11,7 @@ import { Locale } from '../../../shared/i18n/types/locale';
 import { parsePagination, buildMeta } from '../utils/pagination';
 import { ALLOWED_IMAGE_MIME_TYPES } from '../../../shared/enums/upload.enums';
 import { UploadValidation } from '../utils/upload/upload.constants';
-
-/**
- * @summary Checks whether the requester can access the target user resource.
- */
-function canAccessRequestedUser(
-    requester: Request['user'] | undefined,
-    requestedUserId: number
-): boolean {
-    if (!requester) {
-        return false;
-    }
-
-    return requester.id === requestedUserId || requester.profile === Profile.MASTER;
-}
+import { canAccessRequestedUser } from '../utils/auth/authorization';
 
 class UserController {
     /** @summary Creates a new user using validated input from the request body.
@@ -80,7 +67,7 @@ class UserController {
     }
 
         /**
-     * @summary Returns paginated users using query-based sorting and pagination metadata.
+     * @summary Returns paginated users. Restricted to MASTER profile users only.
      * @param req - Express request object.
      * @param res - Express response returning the user list or an error.
      * @param next - Express next function for error handling.
@@ -88,6 +75,10 @@ class UserController {
      */
 
     static async getUsers(req: Request, res: Response, next: NextFunction) {
+        if (req.user?.profile !== Profile.MASTER) {
+            return answerAPI(req, res, HTTPStatus.FORBIDDEN, undefined, ErrorCode.UNAUTHORIZED_OPERATION);
+        }
+
         const userService = new UserService();
 
         try {
@@ -149,7 +140,7 @@ class UserController {
     }
 
         /**
-     * @summary Searches users by partial email and returns paginated results.
+     * @summary Searches users by partial email. Restricted to MASTER profile users only.
      * @param req - Express request with email in the query string.
      * @param res - Express response returning matched users.
      * @param next - Express next function for error handling.
@@ -157,6 +148,10 @@ class UserController {
      */
 
     static async getUsersByEmail(req: Request, res: Response, next: NextFunction) {
+        if (req.user?.profile !== Profile.MASTER) {
+            return answerAPI(req, res, HTTPStatus.FORBIDDEN, undefined, ErrorCode.UNAUTHORIZED_OPERATION);
+        }
+
         const searchTerm = req.query.email as string;
 
         if (!searchTerm || searchTerm.length < 3) {
@@ -191,7 +186,7 @@ class UserController {
     }
 
     /** @summary Updates an existing user by ID using validated input.
-     * Ensures user exists before updating and logs the result.
+     * Enforces ownership before updating and logs the result.
      *
      * @param req - Express request with user ID and updated data.
      * @param res - Express response returning the updated user.
@@ -202,6 +197,10 @@ class UserController {
         const userId = Number(req.params.id);
         if (isNaN(userId) || userId <= 0) {
             return answerAPI(req, res, HTTPStatus.BAD_REQUEST, undefined, ErrorCode.INVALID_USER_ID);
+        }
+
+        if (!canAccessRequestedUser(req.user, userId)) {
+            return answerAPI(req, res, HTTPStatus.FORBIDDEN, undefined, ErrorCode.UNAUTHORIZED_OPERATION);
         }
 
         const userService = new UserService();
@@ -233,7 +232,7 @@ class UserController {
     }
 
         /**
-     * @summary Deletes a user by id and records an audit snapshot when available.
+     * @summary Deletes a user by id after ownership check and records an audit snapshot when available.
      * @param req - Express request with the ID of the user to delete.
      * @param res - Express response confirming deletion.
      * @param next - Express next function for error handling.
@@ -245,6 +244,10 @@ class UserController {
 
         if (isNaN(userId) || userId <= 0) {
             return answerAPI(req, res, HTTPStatus.BAD_REQUEST, undefined, ErrorCode.INVALID_USER_ID);
+        }
+
+        if (!canAccessRequestedUser(req.user, userId)) {
+            return answerAPI(req, res, HTTPStatus.FORBIDDEN, undefined, ErrorCode.UNAUTHORIZED_OPERATION);
         }
 
         const userService = new UserService();

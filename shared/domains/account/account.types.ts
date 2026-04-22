@@ -39,8 +39,12 @@ export interface CreateAccountInput {
     type: AccountType;
     observation?: AccountObservation;
     balance?: AccountBalance;
-    userId: UserId;
     active?: boolean;
+}
+
+/** @summary Backend-only account creation payload with derived ownership. */
+export interface CreateOwnedAccountInput extends CreateAccountInput {
+    userId: UserId;
 }
 
 /** @summary Input payload for account updates. */
@@ -50,7 +54,6 @@ export interface UpdateAccountInput {
     type?: AccountType;
     observation?: AccountObservation;
     balance?: AccountBalance;
-    userId?: UserId;
     active?: boolean;
 }
 

@@ -4,18 +4,36 @@ import { buildLogDelta, createLog, answerAPI, formatError, sanitizeLogDetail } f
 import { validateCreateTag, validateUpdateTag } from '../utils/validation/validateRequest';
 import { HTTPStatus } from '../../../shared/enums/http-status.enums';
 import { LogCategory, LogOperation, LogType } from '../../../shared/enums/log.enums';
+import { Profile } from '../../../shared/enums/user.enums';
 import { ErrorCode } from '../../../shared/errors/error-codes';
 import { parsePagination, buildMeta } from '../utils/pagination';
 import { Locale } from '../../../shared/i18n/types/locale';
+import { getForbiddenFieldErrors } from '../utils/validation/forbiddenFields';
+import { canAccessOwnedResource } from '../utils/auth/authorization';
 
 /** @summary Orchestrates HTTP request flows for tag resource endpoints. */
 class TagController {
-    /** @summary Creates a new tag using validated input. */
+    /** @summary Creates a new tag using validated input.
+     * The userId is always taken from the authenticated session.
+     */
     static async createTag(req: Request, res: Response, next: NextFunction) {
+        const requesterId = req.user?.id;
+        if (!requesterId) {
+            return answerAPI(req, res, HTTPStatus.UNAUTHORIZED, undefined, ErrorCode.EXPIRED_OR_INVALID_TOKEN);
+        }
+
         const tagService = new TagService();
 
         try {
-            const parseResult = validateCreateTag(req.body, req.language as Locale);
+            const forbiddenFieldErrors = getForbiddenFieldErrors(req.body, ['userId']);
+            if (forbiddenFieldErrors.length > 0) {
+                return answerAPI(req, res, HTTPStatus.BAD_REQUEST, forbiddenFieldErrors, ErrorCode.VALIDATION_ERROR);
+            }
+
+            const parseResult = validateCreateTag(
+                { ...req.body, userId: requesterId },
+                req.language as Locale
+            );
 
             if (!parseResult.success) {
                 return answerAPI(
@@ -36,13 +54,17 @@ class TagController {
             await createLog(LogType.SUCCESS, LogOperation.CREATE, LogCategory.TAG, created.data, created.data!.userId);
             return answerAPI(req, res, HTTPStatus.CREATED, created.data!);
         } catch (error) {
-            await createLog(LogType.ERROR, LogOperation.CREATE, LogCategory.TAG, formatError(error), req.user?.id, next);
+            await createLog(LogType.ERROR, LogOperation.CREATE, LogCategory.TAG, formatError(error), requesterId, next);
             return answerAPI(req, res, HTTPStatus.INTERNAL_SERVER_ERROR, undefined, ErrorCode.INTERNAL_SERVER_ERROR);
         }
     }
 
-    /** @summary Retrieves all tags with optional pagination. */
+    /** @summary Retrieves all tags with optional pagination. Restricted to MASTER profile users only. */
     static async getTags(req: Request, res: Response, next: NextFunction) {
+        if (req.user?.profile !== Profile.MASTER) {
+            return answerAPI(req, res, HTTPStatus.FORBIDDEN, undefined, ErrorCode.UNAUTHORIZED_OPERATION);
+        }
+
         const tagService = new TagService();
 
         try {
@@ -70,7 +92,7 @@ class TagController {
         }
     }
 
-    /** @summary Retrieves a tag by its unique identifier. */
+    /** @summary Retrieves a tag by its unique identifier. Enforces ownership. */
     static async getTagById(req: Request, res: Response, next: NextFunction) {
         const id = Number(req.params.id);
         if (isNaN(id) || id <= 0) {
@@ -86,6 +108,10 @@ class TagController {
                 return answerAPI(req, res, HTTPStatus.BAD_REQUEST, undefined, tag.error);
             }
 
+            if (!canAccessOwnedResource(req.user?.id, tag.data.userId, req.user?.profile)) {
+                return answerAPI(req, res, HTTPStatus.FORBIDDEN, undefined, ErrorCode.UNAUTHORIZED_OPERATION);
+            }
+
             return answerAPI(req, res, HTTPStatus.OK, tag.data);
         } catch (error) {
             await createLog(LogType.ERROR, LogOperation.CREATE, LogCategory.TAG, formatError(error), req.user?.id, next);
@@ -93,11 +119,15 @@ class TagController {
         }
     }
 
-    /** @summary Retrieves all tags owned by a specific user. */
+    /** @summary Retrieves all tags owned by a specific user. Enforces ownership. */
     static async getTagsByUser(req: Request, res: Response, next: NextFunction) {
         const userId = Number(req.params.userId);
         if (isNaN(userId) || userId <= 0) {
             return answerAPI(req, res, HTTPStatus.BAD_REQUEST, undefined, ErrorCode.INVALID_USER_ID);
+        }
+
+        if (!canAccessOwnedResource(req.user?.id, userId, req.user?.profile)) {
+            return answerAPI(req, res, HTTPStatus.FORBIDDEN, undefined, ErrorCode.UNAUTHORIZED_OPERATION);
         }
 
         const tagService = new TagService();
@@ -127,7 +157,7 @@ class TagController {
         }
     }
 
-    /** @summary Updates tag information using validated input. */
+    /** @summary Updates tag information using validated input. Enforces ownership. */
     static async updateTag(req: Request, res: Response, next: NextFunction) {
         const id = Number(req.params.id);
         if (isNaN(id) || id <= 0) {
@@ -140,6 +170,10 @@ class TagController {
             const existing = await tagService.getTagById(id);
             if (!existing.success) {
                 return answerAPI(req, res, HTTPStatus.BAD_REQUEST, undefined, existing.error);
+            }
+
+            if (!canAccessOwnedResource(req.user?.id, existing.data.userId, req.user?.profile)) {
+                return answerAPI(req, res, HTTPStatus.FORBIDDEN, undefined, ErrorCode.UNAUTHORIZED_OPERATION);
             }
 
             const parseResult = validateUpdateTag(req.body, req.language as Locale);
@@ -162,7 +196,7 @@ class TagController {
         }
     }
 
-    /** @summary Deletes a tag by ID. */
+    /** @summary Deletes a tag by ID. Enforces ownership. */
     static async deleteTag(req: Request, res: Response, next: NextFunction) {
         const id = Number(req.params.id);
 
@@ -174,7 +208,16 @@ class TagController {
 
         try {
             const snapshotResult = await tagService.getTagById(id);
-            const snapshot = snapshotResult.success ? sanitizeLogDetail(snapshotResult.data) : undefined;
+
+            if (!snapshotResult.success) {
+                return answerAPI(req, res, HTTPStatus.BAD_REQUEST, undefined, snapshotResult.error);
+            }
+
+            if (!canAccessOwnedResource(req.user?.id, snapshotResult.data.userId, req.user?.profile)) {
+                return answerAPI(req, res, HTTPStatus.FORBIDDEN, undefined, ErrorCode.UNAUTHORIZED_OPERATION);
+            }
+
+            const snapshot = sanitizeLogDetail(snapshotResult.data);
             const result = await tagService.deleteTag(id);
 
             if (!result.success) {
@@ -197,4 +240,3 @@ class TagController {
 }
 
 export default TagController;
-

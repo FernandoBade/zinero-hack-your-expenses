@@ -1,13 +1,16 @@
 import SubcategoryController from '../../../src/controller/subcategoryController';
 import { SubcategoryService } from '../../../src/service/subcategoryService';
+import { CategoryService } from '../../../src/service/categoryService';
 import { HTTPStatus } from '../../../../shared/enums/http-status.enums';
 import { LogCategory, LogOperation, LogType } from '../../../../shared/enums/log.enums';
 import { SortOrder } from '../../../../shared/enums/operator.enums';
+import { Profile } from '../../../../shared/enums/user.enums';
 import { ErrorCode as Resource } from '../../../../shared/errors/error-codes';
 import * as commons from '../../../src/utils/commons';
 import { createMockRequest, createMockResponse, createNext } from '../../helpers/mockExpress';
 
 const authUser = { id: 999 };
+const masterUser = { id: 1, profile: Profile.MASTER };
 const DEFAULT_ISO_DATE = '2024-01-01T00:00:00.000Z';
 const createAuthRequest = (overrides: Parameters<typeof createMockRequest>[0] = {}) =>
   createMockRequest({ user: authUser, ...overrides });
@@ -45,7 +48,7 @@ describe('SubcategoryController', () => {
   describe('createSubcategory', () => {
     it('returns 400 without calling service when validation fails', async () => {
       const createSpy = jest.spyOn(SubcategoryService.prototype, 'createSubcategory');
-      const req = createMockRequest({ body: { name: '', categoryId: 0 } });
+      const req = createAuthRequest({ body: { name: '', categoryId: 0 } });
       const res = createMockResponse();
       const next = createNext();
 
@@ -68,7 +71,7 @@ describe('SubcategoryController', () => {
       const createSpy = jest
         .spyOn(SubcategoryService.prototype, 'createSubcategory')
         .mockResolvedValue({ success: false, error: Resource.CATEGORY_NOT_FOUND });
-      const req = createMockRequest({ body: input });
+      const req = createMockRequest({ user: { id: input.userId }, body: input });
       const res = createMockResponse();
       const next = createNext();
 
@@ -94,11 +97,27 @@ describe('SubcategoryController', () => {
       expect(next).not.toHaveBeenCalled();
     });
 
+    it('maps unauthorized create errors to HTTP 403', async () => {
+      const input = makeSubcategoryInput({ userId: authUser.id });
+      jest.spyOn(SubcategoryService.prototype, 'createSubcategory').mockResolvedValue({
+        success: false,
+        error: Resource.UNAUTHORIZED_OPERATION,
+      });
+      const req = createAuthRequest({ body: input });
+      const res = createMockResponse();
+      const next = createNext();
+
+      await SubcategoryController.createSubcategory(req, res, next);
+
+      expect(res.status).toHaveBeenCalledWith(HTTPStatus.FORBIDDEN);
+      expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ errorCode: Resource.UNAUTHORIZED_OPERATION }));
+    });
+
     it('returns 201 and logs when subcategory is created', async () => {
       const input = makeSubcategoryInput({ userId: 4 });
       const created = makeSubcategory({ id: 12, categoryId: input.categoryId });
       const createSpy = jest.spyOn(SubcategoryService.prototype, 'createSubcategory').mockResolvedValue({ success: true, data: created });
-      const req = createAuthRequest({ body: input });
+      const req = createMockRequest({ user: { id: input.userId }, body: input });
       const res = createMockResponse();
       const next = createNext();
 
@@ -120,7 +139,7 @@ describe('SubcategoryController', () => {
         LogOperation.CREATE,
         LogCategory.CATEGORY,
         created,
-        authUser.id
+        input.userId
       );
       expect(next).not.toHaveBeenCalled();
     });
@@ -128,7 +147,7 @@ describe('SubcategoryController', () => {
     it('returns 500 and logs when service throws', async () => {
       const input = makeSubcategoryInput({ userId: 3 });
       jest.spyOn(SubcategoryService.prototype, 'createSubcategory').mockRejectedValue(new Error('boom'));
-      const req = createAuthRequest({ body: input });
+      const req = createMockRequest({ user: { id: input.userId }, body: input });
       const res = createMockResponse();
       const next = createNext();
 
@@ -146,7 +165,7 @@ describe('SubcategoryController', () => {
         LogOperation.CREATE,
         LogCategory.CATEGORY,
         expect.any(Object),
-        authUser.id,
+        input.userId,
         next
       );
       expect(next).not.toHaveBeenCalled();
@@ -158,7 +177,7 @@ describe('SubcategoryController', () => {
       const subs = [makeSubcategory({ id: 1 }), makeSubcategory({ id: 2 })];
       jest.spyOn(SubcategoryService.prototype, 'getSubcategories').mockResolvedValue({ success: true, data: subs });
       jest.spyOn(SubcategoryService.prototype, 'countSubcategories').mockResolvedValue({ success: true, data: subs.length });
-      const req = createMockRequest({ query: { page: '1', pageSize: '1', sort: 'name', order: 'asc' } });
+      const req = createMockRequest({ user: masterUser, query: { page: '1', pageSize: '1', sort: 'name', order: 'asc' } });
       const res = createMockResponse();
       const next = createNext();
 
@@ -188,7 +207,7 @@ describe('SubcategoryController', () => {
     it('returns 400 when listing service fails', async () => {
       const listSpy = jest.spyOn(SubcategoryService.prototype, 'getSubcategories').mockResolvedValue({ success: false, error: Resource.INTERNAL_SERVER_ERROR });
       const countSpy = jest.spyOn(SubcategoryService.prototype, 'countSubcategories').mockResolvedValue({ success: true, data: 0 });
-      const req = createMockRequest({ query: {} });
+      const req = createMockRequest({ user: masterUser, query: {} });
       const res = createMockResponse();
       const next = createNext();
 
@@ -209,7 +228,7 @@ describe('SubcategoryController', () => {
     it('returns 400 when count service fails', async () => {
       const listSpy = jest.spyOn(SubcategoryService.prototype, 'getSubcategories').mockResolvedValue({ success: true, data: [] });
       const countSpy = jest.spyOn(SubcategoryService.prototype, 'countSubcategories').mockResolvedValue({ success: false, error: Resource.INTERNAL_SERVER_ERROR });
-      const req = createMockRequest({ query: {} });
+      const req = createMockRequest({ user: masterUser, query: {} });
       const res = createMockResponse();
       const next = createNext();
 
@@ -230,7 +249,7 @@ describe('SubcategoryController', () => {
     it('returns 500 and logs when service throws', async () => {
       jest.spyOn(SubcategoryService.prototype, 'getSubcategories').mockRejectedValue(new Error('boom'));
       jest.spyOn(SubcategoryService.prototype, 'countSubcategories').mockResolvedValue({ success: true, data: 0 });
-      const req = createAuthRequest({ query: {} });
+      const req = createMockRequest({ user: masterUser, query: {} });
       const res = createMockResponse();
       const next = createNext();
 
@@ -248,7 +267,7 @@ describe('SubcategoryController', () => {
         LogOperation.CREATE,
         LogCategory.CATEGORY,
         expect.any(Object),
-        authUser.id,
+        masterUser.id,
         next
       );
       expect(next).not.toHaveBeenCalled();
@@ -277,9 +296,13 @@ describe('SubcategoryController', () => {
 
     it('returns 200 with data when service succeeds', async () => {
       const subs = [makeSubcategory({ id: 2, categoryId: 3 })];
+      jest.spyOn(CategoryService.prototype, 'getCategoryById').mockResolvedValue({
+        success: true,
+        data: { id: 3, userId: 3, active: true },
+      } as any);
       jest.spyOn(SubcategoryService.prototype, 'getSubcategoriesByCategory').mockResolvedValue({ success: true, data: subs });
       jest.spyOn(SubcategoryService.prototype, 'countSubcategoriesByCategory').mockResolvedValue({ success: true, data: subs.length });
-      const req = createMockRequest({ params: { categoryId: '3' }, query: { page: '1', pageSize: '2' } });
+      const req = createMockRequest({ user: { id: 3 }, params: { categoryId: '3' }, query: { page: '1', pageSize: '2' } });
       const res = createMockResponse();
       const next = createNext();
 
@@ -306,9 +329,13 @@ describe('SubcategoryController', () => {
     });
 
     it('returns 400 when count service fails', async () => {
+      jest.spyOn(CategoryService.prototype, 'getCategoryById').mockResolvedValue({
+        success: true,
+        data: { id: 2, userId: 2, active: true },
+      } as any);
       const listSpy = jest.spyOn(SubcategoryService.prototype, 'getSubcategoriesByCategory').mockResolvedValue({ success: true, data: [] });
       const countSpy = jest.spyOn(SubcategoryService.prototype, 'countSubcategoriesByCategory').mockResolvedValue({ success: false, error: Resource.INTERNAL_SERVER_ERROR });
-      const req = createMockRequest({ params: { categoryId: '2' }, query: {} });
+      const req = createMockRequest({ user: { id: 2 }, params: { categoryId: '2' }, query: {} });
       const res = createMockResponse();
       const next = createNext();
 
@@ -327,9 +354,13 @@ describe('SubcategoryController', () => {
     });
 
     it('returns 500 and logs when service throws', async () => {
+      jest.spyOn(CategoryService.prototype, 'getCategoryById').mockResolvedValue({
+        success: true,
+        data: { id: 4, userId: 4, active: true },
+      } as any);
       jest.spyOn(SubcategoryService.prototype, 'getSubcategoriesByCategory').mockRejectedValue(new Error('boom'));
       jest.spyOn(SubcategoryService.prototype, 'countSubcategoriesByCategory').mockResolvedValue({ success: true, data: 0 });
-      const req = createAuthRequest({ params: { categoryId: '4' }, query: {} });
+      const req = createMockRequest({ user: { id: 4 }, params: { categoryId: '4' }, query: {} });
       const res = createMockResponse();
       const next = createNext();
 
@@ -347,7 +378,7 @@ describe('SubcategoryController', () => {
         LogOperation.CREATE,
         LogCategory.CATEGORY,
         expect.any(Object),
-        authUser.id,
+        4,
         next
       );
       expect(next).not.toHaveBeenCalled();
@@ -393,9 +424,13 @@ describe('SubcategoryController', () => {
     });
 
     it('returns 200 when subcategory is found', async () => {
-      const sub = makeSubcategory({ id: 6 });
+      const sub = makeSubcategory({ id: 6, categoryId: 3 });
       jest.spyOn(SubcategoryService.prototype, 'getSubcategoryById').mockResolvedValue({ success: true, data: sub });
-      const req = createMockRequest({ params: { id: '6' } });
+      jest.spyOn(CategoryService.prototype, 'getCategoryById').mockResolvedValue({
+        success: true,
+        data: { id: 3, userId: 3, active: true },
+      } as any);
+      const req = createMockRequest({ user: { id: 3 }, params: { id: '6' } });
       const res = createMockResponse();
       const next = createNext();
 
@@ -458,7 +493,7 @@ describe('SubcategoryController', () => {
       const subs = [makeSubcategory({ id: 2, categoryId: 3 })];
       jest.spyOn(SubcategoryService.prototype, 'getSubcategoriesByUser').mockResolvedValue({ success: true, data: subs });
       jest.spyOn(SubcategoryService.prototype, 'countSubcategoriesByUser').mockResolvedValue({ success: true, data: subs.length });
-      const req = createMockRequest({ params: { userId: '3' }, query: { page: '1', pageSize: '2' } });
+      const req = createMockRequest({ user: { id: 3 }, params: { userId: '3' }, query: { page: '1', pageSize: '2' } });
       const res = createMockResponse();
       const next = createNext();
 
@@ -487,7 +522,7 @@ describe('SubcategoryController', () => {
     it('returns 400 when count service fails', async () => {
       const listSpy = jest.spyOn(SubcategoryService.prototype, 'getSubcategoriesByUser').mockResolvedValue({ success: true, data: [] });
       const countSpy = jest.spyOn(SubcategoryService.prototype, 'countSubcategoriesByUser').mockResolvedValue({ success: false, error: Resource.INTERNAL_SERVER_ERROR });
-      const req = createMockRequest({ params: { userId: '2' }, query: {} });
+      const req = createMockRequest({ user: { id: 2 }, params: { userId: '2' }, query: {} });
       const res = createMockResponse();
       const next = createNext();
 
@@ -508,7 +543,7 @@ describe('SubcategoryController', () => {
     it('returns 500 and logs when service throws', async () => {
       jest.spyOn(SubcategoryService.prototype, 'getSubcategoriesByUser').mockRejectedValue(new Error('boom'));
       jest.spyOn(SubcategoryService.prototype, 'countSubcategoriesByUser').mockResolvedValue({ success: true, data: 0 });
-      const req = createAuthRequest({ params: { userId: '4' }, query: {} });
+      const req = createMockRequest({ user: { id: 4 }, params: { userId: '4' }, query: {} });
       const res = createMockResponse();
       const next = createNext();
 
@@ -526,7 +561,7 @@ describe('SubcategoryController', () => {
         LogOperation.CREATE,
         LogCategory.CATEGORY,
         expect.any(Object),
-        authUser.id,
+        4,
         next
       );
       expect(next).not.toHaveBeenCalled();
@@ -552,7 +587,7 @@ describe('SubcategoryController', () => {
 
     it('returns 400 when subcategory does not exist', async () => {
       jest.spyOn(SubcategoryService.prototype, 'getSubcategoryById').mockResolvedValue({ success: false, error: Resource.NO_RECORDS_FOUND });
-      const req = createMockRequest({ params: { id: '6' }, body: { name: 'Updated' } });
+      const req = createAuthRequest({ params: { id: '6' }, body: { name: 'Updated' } });
       const res = createMockResponse();
       const next = createNext();
 
@@ -568,8 +603,12 @@ describe('SubcategoryController', () => {
     it('returns 400 when validation fails', async () => {
       const existing = makeSubcategory({ id: 8 });
       jest.spyOn(SubcategoryService.prototype, 'getSubcategoryById').mockResolvedValue({ success: true, data: existing });
+      jest.spyOn(CategoryService.prototype, 'getCategoryById').mockResolvedValue({
+        success: true,
+        data: { id: existing.categoryId, userId: 8, active: true },
+      } as any);
       const updateSpy = jest.spyOn(SubcategoryService.prototype, 'updateSubcategory');
-      const req = createMockRequest({ params: { id: '8' }, body: { name: '' } });
+      const req = createMockRequest({ user: { id: 8 }, params: { id: '8' }, body: { name: '' } });
       const res = createMockResponse();
       const next = createNext();
 
@@ -586,8 +625,12 @@ describe('SubcategoryController', () => {
     it('returns 400 when update service returns error', async () => {
       const existing = makeSubcategory({ id: 9 });
       jest.spyOn(SubcategoryService.prototype, 'getSubcategoryById').mockResolvedValue({ success: true, data: existing });
-      jest.spyOn(SubcategoryService.prototype, 'updateSubcategory').mockResolvedValue({ success: false, error: Resource.USER_NOT_FOUND });
-      const req = createMockRequest({ params: { id: '9' }, body: { userId: 99 } });
+      jest.spyOn(CategoryService.prototype, 'getCategoryById').mockResolvedValue({
+        success: true,
+        data: { id: existing.categoryId, userId: authUser.id, active: true },
+      } as any);
+      jest.spyOn(SubcategoryService.prototype, 'updateSubcategory').mockResolvedValue({ success: false, error: Resource.CATEGORY_NOT_FOUND });
+      const req = createAuthRequest({ params: { id: '9' }, body: { name: 'Updated' } });
       const res = createMockResponse();
       const next = createNext();
 
@@ -595,7 +638,7 @@ describe('SubcategoryController', () => {
 
       expect(res.status).toHaveBeenCalledWith(HTTPStatus.BAD_REQUEST);
       expect(res.json).toHaveBeenCalledWith(
-        expect.objectContaining({ success: false, errorCode: Resource.USER_NOT_FOUND })
+        expect.objectContaining({ success: false, errorCode: Resource.CATEGORY_NOT_FOUND })
       );
       expect(logSpy).not.toHaveBeenCalled();
     });
@@ -605,14 +648,18 @@ describe('SubcategoryController', () => {
       const updated = makeSubcategory({ id: 11, categoryId: 3, name: 'Updated' });
       const expectedDelta = { name: { from: existing.name, to: updated.name } };
       jest.spyOn(SubcategoryService.prototype, 'getSubcategoryById').mockResolvedValue({ success: true, data: existing });
+      jest.spyOn(CategoryService.prototype, 'getCategoryById').mockResolvedValue({
+        success: true,
+        data: { id: existing.categoryId, userId: authUser.id, active: true },
+      } as any);
       jest.spyOn(SubcategoryService.prototype, 'updateSubcategory').mockResolvedValue({ success: true, data: updated });
-      const req = createAuthRequest({ params: { id: '11' }, body: { name: 'Updated', userId: 1 } });
+      const req = createAuthRequest({ params: { id: '11' }, body: { name: 'Updated' } });
       const res = createMockResponse();
       const next = createNext();
 
       await SubcategoryController.updateSubcategory(req, res, next);
 
-      expect(SubcategoryService.prototype.updateSubcategory).toHaveBeenCalledWith(11, { name: 'Updated' }, 1);
+      expect(SubcategoryService.prototype.updateSubcategory).toHaveBeenCalledWith(11, { name: 'Updated' }, authUser.id);
       expect(res.status).toHaveBeenCalledWith(HTTPStatus.OK);
       expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ success: true, data: updated }));
       expect(logSpy).toHaveBeenCalledWith(
@@ -624,9 +671,34 @@ describe('SubcategoryController', () => {
       );
     });
 
+    it('maps unauthorized update errors to HTTP 403', async () => {
+      const existing = makeSubcategory({ id: 13 });
+      jest.spyOn(SubcategoryService.prototype, 'getSubcategoryById').mockResolvedValue({ success: true, data: existing });
+      jest.spyOn(CategoryService.prototype, 'getCategoryById').mockResolvedValue({
+        success: true,
+        data: { id: existing.categoryId, userId: authUser.id, active: true },
+      } as any);
+      jest.spyOn(SubcategoryService.prototype, 'updateSubcategory').mockResolvedValue({
+        success: false,
+        error: Resource.UNAUTHORIZED_OPERATION,
+      });
+      const req = createAuthRequest({ params: { id: '13' }, body: { name: 'Updated' } });
+      const res = createMockResponse();
+      const next = createNext();
+
+      await SubcategoryController.updateSubcategory(req, res, next);
+
+      expect(res.status).toHaveBeenCalledWith(HTTPStatus.FORBIDDEN);
+      expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ errorCode: Resource.UNAUTHORIZED_OPERATION }));
+    });
+
     it('returns 500 and logs when service throws', async () => {
       const existing = makeSubcategory({ id: 12 });
       jest.spyOn(SubcategoryService.prototype, 'getSubcategoryById').mockResolvedValue({ success: true, data: existing });
+      jest.spyOn(CategoryService.prototype, 'getCategoryById').mockResolvedValue({
+        success: true,
+        data: { id: existing.categoryId, userId: authUser.id, active: true },
+      } as any);
       jest.spyOn(SubcategoryService.prototype, 'updateSubcategory').mockRejectedValue(new Error('boom'));
       const req = createAuthRequest({ params: { id: '12' }, body: { name: 'Updated' } });
       const res = createMockResponse();
@@ -671,9 +743,14 @@ describe('SubcategoryController', () => {
     });
 
     it('returns 400 when service signals failure', async () => {
-      jest.spyOn(SubcategoryService.prototype, 'getSubcategoryById').mockResolvedValue({ success: true, data: makeSubcategory({ id: 20 }) });
+      const snapshot = makeSubcategory({ id: 20, categoryId: 20 });
+      jest.spyOn(SubcategoryService.prototype, 'getSubcategoryById').mockResolvedValue({ success: true, data: snapshot });
+      jest.spyOn(CategoryService.prototype, 'getCategoryById').mockResolvedValue({
+        success: true,
+        data: { id: snapshot.categoryId, userId: 20, active: true },
+      } as any);
       jest.spyOn(SubcategoryService.prototype, 'deleteSubcategory').mockResolvedValue({ success: false, error: Resource.SUBCATEGORY_NOT_FOUND });
-      const req = createMockRequest({ params: { id: '20' } });
+      const req = createMockRequest({ user: { id: 20 }, params: { id: '20' } });
       const res = createMockResponse();
       const next = createNext();
 
@@ -695,6 +772,10 @@ describe('SubcategoryController', () => {
         active: snapshot.active,
       };
       jest.spyOn(SubcategoryService.prototype, 'getSubcategoryById').mockResolvedValue({ success: true, data: snapshot });
+      jest.spyOn(CategoryService.prototype, 'getCategoryById').mockResolvedValue({
+        success: true,
+        data: { id: snapshot.categoryId, userId: authUser.id, active: true },
+      } as any);
       jest.spyOn(SubcategoryService.prototype, 'deleteSubcategory').mockResolvedValue({ success: true, data: { id: 21 } });
       const req = createAuthRequest({ params: { id: '21' } });
       const res = createMockResponse();
@@ -715,7 +796,12 @@ describe('SubcategoryController', () => {
     });
 
     it('returns 500 and logs when service throws', async () => {
-      jest.spyOn(SubcategoryService.prototype, 'getSubcategoryById').mockResolvedValue({ success: true, data: makeSubcategory({ id: 22 }) });
+      const snapshot = makeSubcategory({ id: 22 });
+      jest.spyOn(SubcategoryService.prototype, 'getSubcategoryById').mockResolvedValue({ success: true, data: snapshot });
+      jest.spyOn(CategoryService.prototype, 'getCategoryById').mockResolvedValue({
+        success: true,
+        data: { id: snapshot.categoryId, userId: authUser.id, active: true },
+      } as any);
       jest.spyOn(SubcategoryService.prototype, 'deleteSubcategory').mockRejectedValue(new Error('boom'));
       const req = createAuthRequest({ params: { id: '22' } });
       const res = createMockResponse();

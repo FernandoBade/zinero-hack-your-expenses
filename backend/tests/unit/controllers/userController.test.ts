@@ -83,6 +83,35 @@ describe('UserController', () => {
             expect(next).not.toHaveBeenCalled();
         });
 
+        it('returns 400 when forbidden privilege fields are supplied', async () => {
+            const createUserSpy = jest.spyOn(UserService.prototype, 'createUser');
+            const req = createMockRequest({
+                body: {
+                    ...makeCreateUserInput(),
+                    profile: Profile.MASTER,
+                    active: false,
+                },
+            });
+            const res = createMockResponse();
+            const next = createNext();
+
+            await UserController.createUser(req, res, next);
+
+            expect(createUserSpy).not.toHaveBeenCalled();
+            expect(res.status).toHaveBeenCalledWith(HTTPStatus.BAD_REQUEST);
+            expect(res.json).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    success: false,
+                    errorCode: Resource.VALIDATION_ERROR,
+                    error: expect.arrayContaining([
+                        expect.objectContaining({ field: 'profile', errorCode: Resource.VALIDATION_ERROR }),
+                        expect.objectContaining({ field: 'active', errorCode: Resource.VALIDATION_ERROR }),
+                    ]),
+                })
+            );
+            expect(logSpy).not.toHaveBeenCalled();
+        });
+
         it('maps service error to HTTP 400', async () => {
             const payload = makeCreateUserInput();
             const createUserSpy = jest.spyOn(UserService.prototype, 'createUser').mockResolvedValue({ success: false, error: Resource.EMAIL_IN_USE });
@@ -165,7 +194,7 @@ describe('UserController', () => {
             jest.spyOn(UserService.prototype, 'getUsers').mockResolvedValue({ success: true, data: users });
             jest.spyOn(UserService.prototype, 'countUsers').mockResolvedValue({ success: true, data: users.length });
 
-            const req = createMockRequest({ query: { page: '1', pageSize: '1', sort: 'firstName', order: 'asc' } });
+            const req = createMockRequest({ user: { id: 1, profile: Profile.MASTER }, query: { page: '1', pageSize: '1', sort: 'firstName', order: 'asc' } });
             const res = createMockResponse();
             const next = createNext();
 
@@ -197,7 +226,7 @@ describe('UserController', () => {
             const getUsersSpy = jest.spyOn(UserService.prototype, 'getUsers').mockResolvedValue({ success: false, error: Resource.INTERNAL_SERVER_ERROR });
             const countUsersSpy = jest.spyOn(UserService.prototype, 'countUsers').mockResolvedValue({ success: true, data: 0 });
 
-            const req = createMockRequest({ query: {} });
+            const req = createMockRequest({ user: { id: 1, profile: Profile.MASTER }, query: {} });
             const res = createMockResponse();
             const next = createNext();
 
@@ -219,7 +248,7 @@ describe('UserController', () => {
             const getUsersSpy = jest.spyOn(UserService.prototype, 'getUsers').mockResolvedValue({ success: true, data: [] });
             const countUsersSpy = jest.spyOn(UserService.prototype, 'countUsers').mockResolvedValue({ success: false, error: Resource.INTERNAL_SERVER_ERROR });
 
-            const req = createMockRequest({ query: {} });
+            const req = createMockRequest({ user: { id: 1, profile: Profile.MASTER }, query: {} });
             const res = createMockResponse();
             const next = createNext();
 
@@ -241,7 +270,7 @@ describe('UserController', () => {
             jest.spyOn(UserService.prototype, 'getUsers').mockRejectedValue(new Error('query failed'));
             jest.spyOn(UserService.prototype, 'countUsers').mockResolvedValue({ success: true, data: 0 });
 
-            const req = createMockRequest({ query: {}, user: { id: 3 } });
+            const req = createMockRequest({ query: {}, user: { id: 3, profile: Profile.MASTER } });
             const res = createMockResponse();
             const next = createNext();
 
@@ -410,7 +439,7 @@ describe('UserController', () => {
     describe('getUsersByEmail', () => {
         it('returns 400 when search term is too short', async () => {
             const getUsersByEmailSpy = jest.spyOn(UserService.prototype, 'getUsersByEmail');
-            const req = createMockRequest({ query: { email: 'ab' } });
+            const req = createMockRequest({ user: { id: 1, profile: Profile.MASTER }, query: { email: 'ab' } });
             const res = createMockResponse();
             const next = createNext();
 
@@ -432,7 +461,7 @@ describe('UserController', () => {
             jest.spyOn(UserService.prototype, 'getUsersByEmail').mockResolvedValue({ success: true, data: users });
             jest.spyOn(UserService.prototype, 'countUsersByEmail').mockResolvedValue({ success: true, data: 1 });
 
-            const req = createMockRequest({ query: { email: 'test', page: '1', pageSize: '10' } });
+            const req = createMockRequest({ user: { id: 1, profile: Profile.MASTER }, query: { email: 'test', page: '1', pageSize: '10' } });
             const res = createMockResponse();
             const next = createNext();
 
@@ -468,7 +497,7 @@ describe('UserController', () => {
                 data: 0,
             });
 
-            const req = createMockRequest({ query: { email: 'valid-email' } });
+            const req = createMockRequest({ user: { id: 1, profile: Profile.MASTER }, query: { email: 'valid-email' } });
             const res = createMockResponse();
             const next = createNext();
 
@@ -487,7 +516,7 @@ describe('UserController', () => {
             const getUsersByEmailSpy = jest.spyOn(UserService.prototype, 'getUsersByEmail').mockResolvedValue({ success: true, data: [] });
             const countUsersByEmailSpy = jest.spyOn(UserService.prototype, 'countUsersByEmail').mockResolvedValue({ success: false, error: Resource.INTERNAL_SERVER_ERROR });
 
-            const req = createMockRequest({ query: { email: 'abc' } });
+            const req = createMockRequest({ user: { id: 1, profile: Profile.MASTER }, query: { email: 'abc' } });
             const res = createMockResponse();
             const next = createNext();
 
@@ -509,7 +538,7 @@ describe('UserController', () => {
             jest.spyOn(UserService.prototype, 'getUsersByEmail').mockRejectedValue(new Error('query failed'));
             jest.spyOn(UserService.prototype, 'countUsersByEmail').mockResolvedValue({ success: true, data: 0 });
 
-            const req = createMockRequest({ query: { email: 'valid-email' }, user: { id: 8 } });
+            const req = createMockRequest({ query: { email: 'valid-email' }, user: { id: 8, profile: Profile.MASTER } });
             const res = createMockResponse();
             const next = createNext();
 
@@ -548,7 +577,7 @@ describe('UserController', () => {
 
         it('returns 400 when user does not exist', async () => {
             jest.spyOn(UserService.prototype, 'findOne').mockResolvedValue({ success: false, error: Resource.USER_NOT_FOUND });
-            const req = createMockRequest({ params: { id: '5' }, body: { firstName: 'John' } });
+            const req = createMockRequest({ params: { id: '5' }, body: { firstName: 'John' }, user: { id: 5 } });
             const res = createMockResponse();
             const next = createNext();
 
@@ -562,7 +591,7 @@ describe('UserController', () => {
         it('returns 400 when validation fails', async () => {
             jest.spyOn(UserService.prototype, 'findOne').mockResolvedValue({ success: true, data: makeUser({ id: 3 }) });
             const updateUserSpy = jest.spyOn(UserService.prototype, 'updateUser');
-            const req = createMockRequest({ params: { id: '3' }, body: { firstName: 'A' } });
+            const req = createMockRequest({ params: { id: '3' }, body: { firstName: 'A' }, user: { id: 3 } });
             const res = createMockResponse();
             const next = createNext();
 
@@ -579,6 +608,32 @@ describe('UserController', () => {
             expect(logSpy).not.toHaveBeenCalled();
         });
 
+        it('returns 400 when forbidden privilege fields are supplied', async () => {
+            jest.spyOn(UserService.prototype, 'findOne').mockResolvedValue({ success: true, data: makeUser({ id: 3 }) });
+            const updateUserSpy = jest.spyOn(UserService.prototype, 'updateUser');
+            const req = createMockRequest({
+                params: { id: '3' },
+                body: { profile: Profile.MASTER, active: false },
+                user: { id: 3 },
+            });
+            const res = createMockResponse();
+            const next = createNext();
+
+            await UserController.updateUser(req, res, next);
+
+            expect(updateUserSpy).not.toHaveBeenCalled();
+            expect(res.status).toHaveBeenCalledWith(HTTPStatus.BAD_REQUEST);
+            expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
+                success: false,
+                errorCode: Resource.VALIDATION_ERROR,
+                error: expect.arrayContaining([
+                    expect.objectContaining({ field: 'profile', errorCode: Resource.VALIDATION_ERROR }),
+                    expect.objectContaining({ field: 'active', errorCode: Resource.VALIDATION_ERROR }),
+                ]),
+            }));
+            expect(logSpy).not.toHaveBeenCalled();
+        });
+
         it('returns 200 when update succeeds', async () => {
             const existing = makeUser({ id: 3 });
             const sanitized = makeSanitizedUser({ id: 3, firstName: 'Jane' });
@@ -586,7 +641,7 @@ describe('UserController', () => {
             jest.spyOn(UserService.prototype, 'findOne').mockResolvedValue({ success: true, data: existing });
             jest.spyOn(UserService.prototype, 'updateUser').mockResolvedValue({ success: true, data: sanitized });
 
-            const req = createMockRequest({ params: { id: '3' }, body: { firstName: 'Jane', email: 'jane@example.com' } });
+            const req = createMockRequest({ params: { id: '3' }, body: { firstName: 'Jane', email: 'jane@example.com' }, user: { id: 3 } });
             const res = createMockResponse();
             const next = createNext();
 
@@ -614,7 +669,7 @@ describe('UserController', () => {
                 success: false,
                 error: Resource.INTERNAL_SERVER_ERROR,
             });
-            const req = createMockRequest({ params: { id: '3' }, body: { firstName: 'Jane', email: 'jane@example.com' } });
+            const req = createMockRequest({ params: { id: '3' }, body: { firstName: 'Jane', email: 'jane@example.com' }, user: { id: 3 } });
             const res = createMockResponse();
             const next = createNext();
 
@@ -672,7 +727,7 @@ describe('UserController', () => {
         it('returns 400 when service signals failure', async () => {
             jest.spyOn(UserService.prototype, 'getUserById').mockResolvedValue({ success: true, data: makeSanitizedUser({ id: 10 }) });
             jest.spyOn(UserService.prototype, 'deleteUser').mockResolvedValue({ success: false, error: Resource.USER_NOT_FOUND });
-            const req = createMockRequest({ params: { id: '10' } });
+            const req = createMockRequest({ params: { id: '10' }, user: { id: 10 } });
             const res = createMockResponse();
             const next = createNext();
 
@@ -690,7 +745,7 @@ describe('UserController', () => {
             void updatedAt;
             jest.spyOn(UserService.prototype, 'getUserById').mockResolvedValue({ success: true, data: snapshot });
             jest.spyOn(UserService.prototype, 'deleteUser').mockResolvedValue({ success: true, data: { id: 1 } });
-            const req = createMockRequest({ params: { id: '1' } });
+            const req = createMockRequest({ params: { id: '1' }, user: { id: 1 } });
             const res = createMockResponse();
             const next = createNext();
 
@@ -911,3 +966,131 @@ describe('UserController', () => {
     });
 });
 
+
+// ─── Authorization regression tests ────────────────────────────────────────
+
+describe('UserController — authorization enforcement', () => {
+    let logSpy: jest.SpyInstance;
+
+    beforeEach(() => {
+        jest.clearAllMocks();
+        logSpy = jest.spyOn(commons, 'createLog').mockResolvedValue();
+    });
+
+    afterEach(() => {
+        jest.restoreAllMocks();
+    });
+
+    describe('getUsers — MASTER only', () => {
+        it('returns 403 for a non-MASTER authenticated user', async () => {
+            const getSpy = jest.spyOn(UserService.prototype, 'getUsers');
+            const req = createMockRequest({ user: { id: 1, profile: undefined } });
+            const res = createMockResponse();
+            const next = createNext();
+
+            await UserController.getUsers(req, res, next);
+
+            expect(getSpy).not.toHaveBeenCalled();
+            expect(res.status).toHaveBeenCalledWith(HTTPStatus.FORBIDDEN);
+            expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ errorCode: Resource.UNAUTHORIZED_OPERATION }));
+        });
+
+        it('allows a MASTER user to list all users', async () => {
+            jest.spyOn(UserService.prototype, 'getUsers').mockResolvedValue({ success: true, data: [] });
+            jest.spyOn(UserService.prototype, 'countUsers').mockResolvedValue({ success: true, data: 0 });
+            const req = createMockRequest({ user: { id: 1, profile: Profile.MASTER }, query: {} });
+            const res = createMockResponse();
+            const next = createNext();
+
+            await UserController.getUsers(req, res, next);
+
+            expect(res.status).toHaveBeenCalledWith(HTTPStatus.OK);
+        });
+    });
+
+    describe('getUsersByEmail — MASTER only', () => {
+        it('returns 403 for a non-MASTER authenticated user', async () => {
+            const getSpy = jest.spyOn(UserService.prototype, 'getUsersByEmail');
+            const req = createMockRequest({ user: { id: 1, profile: undefined }, query: { email: 'test@example.com' } });
+            const res = createMockResponse();
+            const next = createNext();
+
+            await UserController.getUsersByEmail(req, res, next);
+
+            expect(getSpy).not.toHaveBeenCalled();
+            expect(res.status).toHaveBeenCalledWith(HTTPStatus.FORBIDDEN);
+            expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ errorCode: Resource.UNAUTHORIZED_OPERATION }));
+        });
+    });
+
+    describe('updateUser — ownership enforcement', () => {
+        it('returns 403 when updating another user\'s profile', async () => {
+            const updateSpy = jest.spyOn(UserService.prototype, 'updateUser');
+            const req = createMockRequest({ user: { id: 1 }, params: { id: '2' }, body: { firstName: 'Hacked' } });
+            const res = createMockResponse();
+            const next = createNext();
+
+            await UserController.updateUser(req, res, next);
+
+            expect(updateSpy).not.toHaveBeenCalled();
+            expect(res.status).toHaveBeenCalledWith(HTTPStatus.FORBIDDEN);
+            expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ errorCode: Resource.UNAUTHORIZED_OPERATION }));
+        });
+
+        it('allows a user to update their own profile', async () => {
+            const existing = makeUser({ id: 5 });
+            const updated = makeSanitizedUser({ id: 5, firstName: 'Updated' });
+            jest.spyOn(UserService.prototype, 'findOne').mockResolvedValue({ success: true, data: existing });
+            jest.spyOn(UserService.prototype, 'updateUser').mockResolvedValue({ success: true, data: updated });
+            const req = createMockRequest({ user: { id: 5 }, params: { id: '5' }, body: { firstName: 'Updated' } });
+            const res = createMockResponse();
+            const next = createNext();
+
+            await UserController.updateUser(req, res, next);
+
+            expect(res.status).toHaveBeenCalledWith(HTTPStatus.OK);
+        });
+
+        it('allows a MASTER user to update any profile', async () => {
+            const existing = makeUser({ id: 10 });
+            const updated = makeSanitizedUser({ id: 10, firstName: 'Updated' });
+            jest.spyOn(UserService.prototype, 'findOne').mockResolvedValue({ success: true, data: existing });
+            jest.spyOn(UserService.prototype, 'updateUser').mockResolvedValue({ success: true, data: updated });
+            const req = createMockRequest({ user: { id: 1, profile: Profile.MASTER }, params: { id: '10' }, body: { firstName: 'Updated' } });
+            const res = createMockResponse();
+            const next = createNext();
+
+            await UserController.updateUser(req, res, next);
+
+            expect(res.status).toHaveBeenCalledWith(HTTPStatus.OK);
+        });
+    });
+
+    describe('deleteUser — ownership enforcement', () => {
+        it('returns 403 when deleting another user\'s account', async () => {
+            const deleteSpy = jest.spyOn(UserService.prototype, 'deleteUser');
+            const req = createMockRequest({ user: { id: 1 }, params: { id: '2' } });
+            const res = createMockResponse();
+            const next = createNext();
+
+            await UserController.deleteUser(req, res, next);
+
+            expect(deleteSpy).not.toHaveBeenCalled();
+            expect(res.status).toHaveBeenCalledWith(HTTPStatus.FORBIDDEN);
+            expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ errorCode: Resource.UNAUTHORIZED_OPERATION }));
+        });
+
+        it('allows a user to delete their own account', async () => {
+            const snapshot = makeUser({ id: 5 });
+            jest.spyOn(UserService.prototype, 'getUserById').mockResolvedValue({ success: true, data: snapshot });
+            jest.spyOn(UserService.prototype, 'deleteUser').mockResolvedValue({ success: true, data: { id: 5 } });
+            const req = createMockRequest({ user: { id: 5 }, params: { id: '5' } });
+            const res = createMockResponse();
+            const next = createNext();
+
+            await UserController.deleteUser(req, res, next);
+
+            expect(res.status).toHaveBeenCalledWith(HTTPStatus.OK);
+        });
+    });
+});

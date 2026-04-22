@@ -1,15 +1,18 @@
 // #region Imports
 import { Request, Response, NextFunction } from 'express';
 import { TransactionService } from '../service/transactionService';
+import { AccountService } from '../service/accountService';
 import { validateCreateTransaction, validateUpdateTransaction } from '../utils/validation/validateRequest';
 import { buildLogDelta, createLog, answerAPI, formatError, sanitizeLogDetail } from '../utils/commons';
 import { HTTPStatus } from '../../../shared/enums/http-status.enums';
 import { LogCategory, LogOperation, LogType } from '../../../shared/enums/log.enums';
 import { FilterOperator } from '../../../shared/enums/operator.enums';
+import { Profile } from '../../../shared/enums/user.enums';
 import { TransactionSource, TransactionType } from '../../../shared/enums/transaction.enums';
 import { ErrorCode } from '../../../shared/errors/error-codes';
 import { Locale } from '../../../shared/i18n/types/locale';
 import { parsePagination, buildMeta } from '../utils/pagination';
+import { canAccessOwnedResource, canAccessRequestedUser, resolveTransactionOwnerUserId } from '../utils/auth/authorization';
 // #endregion Imports
 
 /**
@@ -51,6 +54,11 @@ class TransactionController {
      * @returns HTTP 201 with new transaction data or appropriate error.
      */
     static async createTransaction(req: Request, res: Response, next: NextFunction) {
+        const requesterId = req.user?.id;
+        if (!requesterId) {
+            return answerAPI(req, res, HTTPStatus.UNAUTHORIZED, undefined, ErrorCode.EXPIRED_OR_INVALID_TOKEN);
+        }
+
         const transactionService = new TransactionService();
 
         try {
@@ -67,10 +75,13 @@ class TransactionController {
                 );
             }
 
-            const created = await transactionService.createTransaction(parseResult.data);
+            const created = await transactionService.createTransaction(parseResult.data, requesterId);
 
             if (!created.success) {
-                return answerAPI(req, res, HTTPStatus.BAD_REQUEST, undefined, created.error);
+                const status = created.error === ErrorCode.UNAUTHORIZED_OPERATION
+                    ? HTTPStatus.FORBIDDEN
+                    : HTTPStatus.BAD_REQUEST;
+                return answerAPI(req, res, status, undefined, created.error);
             }
 
             await createLog(
@@ -78,7 +89,7 @@ class TransactionController {
                 LogOperation.CREATE,
                 LogCategory.TRANSACTION,
                 created.data,
-                req.user?.id
+                requesterId
             );
             return answerAPI(req, res, HTTPStatus.CREATED, created.data!);
         } catch (error) {
@@ -88,7 +99,7 @@ class TransactionController {
     }
 
     /** @summary Retrieves all transactions from the database.
-     * Validates the ID before querying.
+     * Restricted to MASTER profile users only.
      *
      * @param req - Express request object.
      * @param res - Express response returning the transaction or an error.
@@ -96,6 +107,10 @@ class TransactionController {
      * @returns HTTP 200 with transaction data or appropriate error. May be empty.
      */
     static async getTransactions(req: Request, res: Response, next: NextFunction) {
+        if (req.user?.profile !== Profile.MASTER) {
+            return answerAPI(req, res, HTTPStatus.FORBIDDEN, undefined, ErrorCode.UNAUTHORIZED_OPERATION);
+        }
+
         const transactionService = new TransactionService();
 
         try {
@@ -171,7 +186,7 @@ class TransactionController {
     }
 
     /** @summary Retrieves a specific transaction by its ID.
-     * Validates the ID before querying.
+     * Validates the ID and enforces ownership before returning data.
      *
      * @param req - Express request containing transaction ID in the URL.
      * @param res - Express response returning the transaction or an error.
@@ -193,6 +208,20 @@ class TransactionController {
                 return answerAPI(req, res, HTTPStatus.BAD_REQUEST, undefined, transaction.error);
             }
 
+            const ownerResult = await resolveTransactionOwnerUserId(
+                transaction.data.transactionSource,
+                transaction.data.accountId,
+                transaction.data.creditCardId
+            );
+
+            if (!ownerResult.success) {
+                return answerAPI(req, res, HTTPStatus.BAD_REQUEST, undefined, ownerResult.error);
+            }
+
+            if (!canAccessOwnedResource(req.user?.id, ownerResult.userId, req.user?.profile)) {
+                return answerAPI(req, res, HTTPStatus.FORBIDDEN, undefined, ErrorCode.UNAUTHORIZED_OPERATION);
+            }
+
             return answerAPI(req, res, HTTPStatus.OK, transaction.data);
         } catch (error) {
             await createLog(LogType.ERROR, LogOperation.CREATE, LogCategory.TRANSACTION, formatError(error), req.user?.id, next);
@@ -201,7 +230,7 @@ class TransactionController {
     }
 
     /** @summary Retrieves all transactions for a specific account.
-     * Validates the account ID before querying.
+     * Validates the account ID and enforces ownership before querying.
      *
      * @param req - Express request with account ID in the URL.
      * @param res - Express response returning the list of transactions.
@@ -212,6 +241,16 @@ class TransactionController {
         const accountId = Number(req.params.accountId);
         if (isNaN(accountId) || accountId <= 0) {
             return answerAPI(req, res, HTTPStatus.BAD_REQUEST, undefined, ErrorCode.INVALID_ACCOUNT_ID);
+        }
+
+        const accountService = new AccountService();
+        const account = await accountService.getAccountById(accountId);
+        if (!account.success) {
+            return answerAPI(req, res, HTTPStatus.BAD_REQUEST, undefined, account.error);
+        }
+
+        if (!canAccessOwnedResource(req.user?.id, account.data.userId, req.user?.profile)) {
+            return answerAPI(req, res, HTTPStatus.FORBIDDEN, undefined, ErrorCode.UNAUTHORIZED_OPERATION);
         }
 
         const transactionService = new TransactionService();
@@ -242,7 +281,7 @@ class TransactionController {
     }
 
     /** @summary Retrieves all transactions for a given user, grouped by account.
-     * Validates the user ID before processing.
+     * Validates the user ID and enforces ownership before processing.
      *
      * @param req - Express request with user ID in the URL.
      * @param res - Express response returning the user's transactions.
@@ -253,6 +292,10 @@ class TransactionController {
         const userId = Number(req.params.userId);
         if (isNaN(userId) || userId <= 0) {
             return answerAPI(req, res, HTTPStatus.BAD_REQUEST, undefined, ErrorCode.INVALID_USER_ID);
+        }
+
+        if (!canAccessRequestedUser(req.user, userId)) {
+            return answerAPI(req, res, HTTPStatus.FORBIDDEN, undefined, ErrorCode.UNAUTHORIZED_OPERATION);
         }
 
         const transactionService = new TransactionService();
@@ -283,7 +326,7 @@ class TransactionController {
     }
 
     /** @summary Updates an existing transaction by ID using validated input.
-     * Ensures transaction exists before updating and logs the operation.
+     * Enforces ownership before updating and logs the operation.
      *
      * @param req - Express request with transaction ID and updated data.
      * @param res - Express response returning the updated transaction.
@@ -304,6 +347,20 @@ class TransactionController {
                 return answerAPI(req, res, HTTPStatus.BAD_REQUEST, undefined, existing.error);
             }
 
+            const ownerResult = await resolveTransactionOwnerUserId(
+                existing.data.transactionSource,
+                existing.data.accountId,
+                existing.data.creditCardId
+            );
+
+            if (!ownerResult.success) {
+                return answerAPI(req, res, HTTPStatus.BAD_REQUEST, undefined, ownerResult.error);
+            }
+
+            if (!canAccessOwnedResource(req.user?.id, ownerResult.userId, req.user?.profile)) {
+                return answerAPI(req, res, HTTPStatus.FORBIDDEN, undefined, ErrorCode.UNAUTHORIZED_OPERATION);
+            }
+
             const parseResult = validateUpdateTransaction(req.body, req.language as Locale);
 
             if (!parseResult.success) {
@@ -314,7 +371,10 @@ class TransactionController {
                 ...parseResult.data,
             });
             if (!updated.success) {
-                return answerAPI(req, res, HTTPStatus.BAD_REQUEST, undefined, updated.error);
+                const status = updated.error === ErrorCode.UNAUTHORIZED_OPERATION
+                    ? HTTPStatus.FORBIDDEN
+                    : HTTPStatus.BAD_REQUEST;
+                return answerAPI(req, res, status, undefined, updated.error);
             }
 
             const delta = buildLogDelta(existing.data, updated.data);
@@ -327,7 +387,7 @@ class TransactionController {
     }
 
     /** @summary Deletes a transaction by its unique ID.
-     * Validates the ID and logs the result upon successful deletion.
+     * Enforces ownership before deletion and logs the result.
      *
      * @param req - Express request with the ID of the transaction to delete.
      * @param res - Express response confirming deletion.
@@ -345,7 +405,26 @@ class TransactionController {
 
         try {
             const snapshotResult = await transactionService.getTransactionById(id);
-            const snapshot = snapshotResult.success ? sanitizeLogDetail(snapshotResult.data) : undefined;
+
+            if (!snapshotResult.success) {
+                return answerAPI(req, res, HTTPStatus.BAD_REQUEST, undefined, snapshotResult.error);
+            }
+
+            const ownerResult = await resolveTransactionOwnerUserId(
+                snapshotResult.data.transactionSource,
+                snapshotResult.data.accountId,
+                snapshotResult.data.creditCardId
+            );
+
+            if (!ownerResult.success) {
+                return answerAPI(req, res, HTTPStatus.BAD_REQUEST, undefined, ownerResult.error);
+            }
+
+            if (!canAccessOwnedResource(req.user?.id, ownerResult.userId, req.user?.profile)) {
+                return answerAPI(req, res, HTTPStatus.FORBIDDEN, undefined, ErrorCode.UNAUTHORIZED_OPERATION);
+            }
+
+            const snapshot = sanitizeLogDetail(snapshotResult.data);
             const result = await transactionService.deleteTransaction(id);
 
             if (!result.success) {
@@ -368,5 +447,3 @@ class TransactionController {
 }
 
 export default TransactionController;
-
-

@@ -5,7 +5,7 @@ import { AccountService } from './accountService';
 import { ErrorCode } from '../../../shared/errors/error-codes';
 import { SelectCreditCard, InsertCreditCard } from '../db/schema';
 import { QueryOptions } from '../utils/pagination';
-import type { CreditCardEntity, CreateCreditCardInput, UpdateCreditCardInput } from '../../../shared/domains/creditCard/creditCard.types';
+import type { CreditCardEntity, CreateOwnedCreditCardInput, UpdateCreditCardInput } from '../../../shared/domains/creditCard/creditCard.types';
 
 export type CreditCardRow = CreditCardEntity;
 
@@ -37,7 +37,7 @@ export class CreditCardService {
      * @param data - Credit card creation data.
      * @returns The created credit card record.
      */
-    async createCreditCard(data: CreateCreditCardInput): Promise<{ success: true; data: CreditCardEntity } | { success: false; error: ErrorCode }> {
+    async createCreditCard(data: CreateOwnedCreditCardInput): Promise<{ success: true; data: CreditCardEntity } | { success: false; error: ErrorCode }> {
         const userService = new UserService();
         const user = await userService.getUserById(data.userId);
 
@@ -50,6 +50,10 @@ export class CreditCardService {
             const account = await accountService.getAccountById(data.accountId);
             if (!account.success || !account.data) {
                 return { success: false, error: ErrorCode.ACCOUNT_NOT_FOUND };
+            }
+
+            if (account.data.userId !== data.userId) {
+                return { success: false, error: ErrorCode.UNAUTHORIZED_OPERATION };
             }
 
             const existing = await this.creditCardRepository.findMany({
@@ -173,15 +177,15 @@ export class CreditCardService {
      * @returns Updated credit card record.
      */
     async updateCreditCard(id: number, data: UpdateCreditCardInput): Promise<{ success: true; data: CreditCardEntity } | { success: false; error: ErrorCode }> {
-        const { balance, ...safeData } = data;
-
-        if (data.userId !== undefined) {
-            const userService = new UserService();
-            const user = await userService.getUserById(data.userId);
-            if (!user.success || !user.data) {
-                return { success: false, error: ErrorCode.USER_NOT_FOUND };
-            }
+        const current = await this.creditCardRepository.findById(id);
+        if (!current) {
+            return { success: false, error: ErrorCode.CREDIT_CARD_NOT_FOUND };
         }
+
+        const safeData = { ...data } as UpdateCreditCardInput & { userId?: number };
+        delete safeData.userId;
+        const balance = safeData.balance;
+        delete safeData.balance;
 
         if (safeData.accountId !== undefined) {
             if (safeData.accountId === null) {
@@ -191,6 +195,10 @@ export class CreditCardService {
                 const account = await accountService.getAccountById(safeData.accountId);
                 if (!account.success || !account.data) {
                     return { success: false, error: ErrorCode.ACCOUNT_NOT_FOUND };
+                }
+
+                if (account.data.userId !== current.userId) {
+                    return { success: false, error: ErrorCode.UNAUTHORIZED_OPERATION };
                 }
 
                 const existing = await this.creditCardRepository.findMany({

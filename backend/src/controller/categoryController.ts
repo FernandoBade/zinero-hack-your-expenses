@@ -4,25 +4,37 @@ import { validateCreateCategory, validateUpdateCategory } from '../utils/validat
 import { buildLogDelta, createLog, answerAPI, formatError, sanitizeLogDetail } from '../utils/commons';
 import { HTTPStatus } from '../../../shared/enums/http-status.enums';
 import { LogCategory, LogOperation, LogType } from '../../../shared/enums/log.enums';
+import { Profile } from '../../../shared/enums/user.enums';
 import { ErrorCode } from '../../../shared/errors/error-codes';
 import { Locale } from '../../../shared/i18n/types/locale';
 import { parsePagination, buildMeta } from '../utils/pagination';
+import { getForbiddenFieldErrors } from '../utils/validation/forbiddenFields';
+import { canAccessOwnedResource } from '../utils/auth/authorization';
 
 /** @summary Orchestrates HTTP request flows for category resource endpoints. */
 class CategoryController {
     /** @summary Creates a new category using validated input from the request body.
+     * The userId is always taken from the authenticated session.
      * Logs the result and returns the created category on success.
-     *
-     * @param req - Express request containing category data.
-     * @param res - Express response returning the created category.
-     * @param next - Express next function for error handling.
-     * @returns HTTP 201 with category data or appropriate error.
      */
     static async createCategory(req: Request, res: Response, next: NextFunction) {
+        const requesterId = req.user?.id;
+        if (!requesterId) {
+            return answerAPI(req, res, HTTPStatus.UNAUTHORIZED, undefined, ErrorCode.EXPIRED_OR_INVALID_TOKEN);
+        }
+
         const categoryService = new CategoryService();
 
         try {
-            const parseResult = validateCreateCategory(req.body, req.language as Locale);
+            const forbiddenFieldErrors = getForbiddenFieldErrors(req.body, ['userId']);
+            if (forbiddenFieldErrors.length > 0) {
+                return answerAPI(req, res, HTTPStatus.BAD_REQUEST, forbiddenFieldErrors, ErrorCode.VALIDATION_ERROR);
+            }
+
+            const parseResult = validateCreateCategory(
+                { ...req.body, userId: requesterId },
+                req.language as Locale
+            );
 
             if (!parseResult.success) {
                 return answerAPI(req, res, HTTPStatus.BAD_REQUEST, parseResult.errors, ErrorCode.VALIDATION_ERROR);
@@ -37,19 +49,17 @@ class CategoryController {
             await createLog(LogType.SUCCESS, LogOperation.CREATE, LogCategory.CATEGORY, created.data, created.data!.userId);
             return answerAPI(req, res, HTTPStatus.CREATED, created.data!);
         } catch (error) {
-            await createLog(LogType.ERROR, LogOperation.CREATE, LogCategory.CATEGORY, formatError(error), req.user?.id, next);
+            await createLog(LogType.ERROR, LogOperation.CREATE, LogCategory.CATEGORY, formatError(error), requesterId, next);
             return answerAPI(req, res, HTTPStatus.INTERNAL_SERVER_ERROR, undefined, ErrorCode.INTERNAL_SERVER_ERROR);
         }
     }
 
-    /** @summary Retrieves all categories from the database.
-     *
-     * @param req - Express request object.
-     * @param res - Express response returning the list of categories.
-     * @param next - Express next function for error handling.
-     * @returns HTTP 200 with category list or appropriate error.
-     */
+    /** @summary Retrieves all categories from the database. Restricted to MASTER profile users only. */
     static async getCategories(req: Request, res: Response, next: NextFunction) {
+        if (req.user?.profile !== Profile.MASTER) {
+            return answerAPI(req, res, HTTPStatus.FORBIDDEN, undefined, ErrorCode.UNAUTHORIZED_OPERATION);
+        }
+
         const categoryService = new CategoryService();
 
         try {
@@ -77,13 +87,7 @@ class CategoryController {
         }
     }
 
-    /** @summary Retrieves a category by its unique ID.
-     *
-     * @param req - Express request with category ID in the URL.
-     * @param res - Express response returning the category or error.
-     * @param next - Express next function for error handling.
-     * @returns HTTP 200 with category data or appropriate error.
-     */
+    /** @summary Retrieves a category by its unique ID. Enforces ownership. */
     static async getCategoryById(req: Request, res: Response, next: NextFunction) {
         const id = Number(req.params.id);
         if (isNaN(id) || id <= 0) {
@@ -99,6 +103,10 @@ class CategoryController {
                 return answerAPI(req, res, HTTPStatus.BAD_REQUEST, undefined, category.error);
             }
 
+            if (!canAccessOwnedResource(req.user?.id, category.data.userId, req.user?.profile)) {
+                return answerAPI(req, res, HTTPStatus.FORBIDDEN, undefined, ErrorCode.UNAUTHORIZED_OPERATION);
+            }
+
             return answerAPI(req, res, HTTPStatus.OK, category.data);
         } catch (error) {
             await createLog(LogType.ERROR, LogOperation.CREATE, LogCategory.CATEGORY, formatError(error), req.user?.id, next);
@@ -106,18 +114,15 @@ class CategoryController {
         }
     }
 
-    /** @summary Retrieves all categories for a specific user.
-     * Validates the user ID before querying.
-     *
-     * @param req - Express request containing user ID.
-     * @param res - Express response with user's categories.
-     * @param next - Express next function for error handling.
-     * @returns HTTP 200 with categories list or appropriate error. May be empty.
-     */
+    /** @summary Retrieves all categories for a specific user. Enforces ownership. */
     static async getCategoriesByUser(req: Request, res: Response, next: NextFunction) {
         const userId = Number(req.params.userId);
         if (isNaN(userId) || userId <= 0) {
             return answerAPI(req, res, HTTPStatus.BAD_REQUEST, undefined, ErrorCode.INVALID_USER_ID);
+        }
+
+        if (!canAccessOwnedResource(req.user?.id, userId, req.user?.profile)) {
+            return answerAPI(req, res, HTTPStatus.FORBIDDEN, undefined, ErrorCode.UNAUTHORIZED_OPERATION);
         }
 
         const categoryService = new CategoryService();
@@ -147,14 +152,7 @@ class CategoryController {
         }
     }
 
-    /** @summary Updates an existing category by ID.
-     * Validates the input and ensures the category exists.
-     *
-     * @param req - Express request with category ID and update data.
-     * @param res - Express response with updated category or error.
-     * @param next - Express next function for error handling.
-     * @returns HTTP 200 with updated category or appropriate error.
-     */
+    /** @summary Updates an existing category by ID. Enforces ownership. */
     static async updateCategory(req: Request, res: Response, next: NextFunction) {
         const id = Number(req.params.id);
         if (isNaN(id) || id <= 0) {
@@ -167,6 +165,10 @@ class CategoryController {
             const existing = await categoryService.getCategoryById(id);
             if (!existing.success) {
                 return answerAPI(req, res, HTTPStatus.BAD_REQUEST, undefined, existing.error);
+            }
+
+            if (!canAccessOwnedResource(req.user?.id, existing.data.userId, req.user?.profile)) {
+                return answerAPI(req, res, HTTPStatus.FORBIDDEN, undefined, ErrorCode.UNAUTHORIZED_OPERATION);
             }
 
             const parseResult = validateUpdateCategory(req.body, req.language as Locale);
@@ -188,14 +190,7 @@ class CategoryController {
         }
     }
 
-    /** @summary Deletes a category by ID.
-     * Validates the ID and logs the result on success.
-     *
-     * @param req - Express request with the ID of the category to delete.
-     * @param res - Express response confirming deletion or error.
-     * @param next - Express next function for error handling.
-     * @returns HTTP 200 with deleted ID or appropriate error.
-     */
+    /** @summary Deletes a category by ID. Enforces ownership. */
     static async deleteCategory(req: Request, res: Response, next: NextFunction) {
         const id = Number(req.params.id);
         if (isNaN(id) || id <= 0) {
@@ -206,7 +201,16 @@ class CategoryController {
 
         try {
             const snapshotResult = await categoryService.getCategoryById(id);
-            const snapshot = snapshotResult.success ? sanitizeLogDetail(snapshotResult.data) : undefined;
+
+            if (!snapshotResult.success) {
+                return answerAPI(req, res, HTTPStatus.BAD_REQUEST, undefined, snapshotResult.error);
+            }
+
+            if (!canAccessOwnedResource(req.user?.id, snapshotResult.data.userId, req.user?.profile)) {
+                return answerAPI(req, res, HTTPStatus.FORBIDDEN, undefined, ErrorCode.UNAUTHORIZED_OPERATION);
+            }
+
+            const snapshot = sanitizeLogDetail(snapshotResult.data);
             const result = await categoryService.deleteCategory(id);
 
             if (!result.success) {
@@ -229,4 +233,3 @@ class CategoryController {
 }
 
 export default CategoryController;
-

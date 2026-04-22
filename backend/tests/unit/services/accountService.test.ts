@@ -237,46 +237,35 @@ describe('AccountService', () => {
     });
 
     describe('updateAccount', () => {
-        it('returns user not found when new user is invalid', async () => {
-            const getUserSpy = jest.spyOn(UserService.prototype, 'getUserById').mockResolvedValue({
-                success: false,
-                error: Resource.USER_NOT_FOUND,
-            });
-            const updateSpy = jest.spyOn(AccountRepository.prototype, 'update');
+        it('ignores userId reassignment attempts', async () => {
+            const updated = makeDbAccount({ id: 7, userId: 1, name: 'Renamed' });
+            const updateSpy = jest.spyOn(AccountRepository.prototype, 'update').mockResolvedValue(updated);
 
             const service = new AccountService();
-            const result = await service.updateAccount(7, { userId: 99 });
+            const result = await service.updateAccount(7, { userId: 99, name: 'Renamed' } as any);
 
-            expect(getUserSpy).toHaveBeenCalledWith(99);
-            expect(updateSpy).not.toHaveBeenCalled();
-            expect(result).toEqual({ success: false, error: Resource.USER_NOT_FOUND });
-            expect(result.success).toBe(false);
-            if (!result.success) {
-                expect(result.error).toBe(Resource.USER_NOT_FOUND);
-            }
+            expect(updateSpy).toHaveBeenCalledWith(7, expect.objectContaining({ name: 'Renamed' }));
+            expect(updateSpy).not.toHaveBeenCalledWith(7, expect.objectContaining({ userId: 99 }));
+            expect(result).toEqual({ success: true, data: makeAccount({ id: 7, userId: 1, name: 'Renamed' }) });
         });
 
         it('updates account when validation succeeds', async () => {
-            const sanitized = makeSanitizedUser({ id: 8 });
-            jest.spyOn(UserService.prototype, 'getUserById').mockResolvedValue({ success: true, data: sanitized });
             const updated = makeDbAccount({ id: 8, userId: 8, name: 'Updated' });
             const expected = makeAccount({ id: 8, userId: 8, name: 'Updated' });
             const updateSpy = jest.spyOn(AccountRepository.prototype, 'update').mockResolvedValue(updated);
 
             const service = new AccountService();
-            const result = await service.updateAccount(8, { userId: 8, name: 'Updated' });
+            const result = await service.updateAccount(8, { name: 'Updated' });
 
-            expect(updateSpy).toHaveBeenCalledWith(8, expect.objectContaining({ userId: 8, name: 'Updated' }));
+            expect(updateSpy).toHaveBeenCalledWith(8, expect.objectContaining({ name: 'Updated' }));
             expect(result).toEqual({ success: true, data: expected });
         });
 
         it('returns internal server error when repository update throws', async () => {
-            const sanitized = makeSanitizedUser({ id: 9 });
-            jest.spyOn(UserService.prototype, 'getUserById').mockResolvedValue({ success: true, data: sanitized });
             jest.spyOn(AccountRepository.prototype, 'update').mockRejectedValue(new Error(Resource.INTERNAL_SERVER_ERROR));
 
             const service = new AccountService();
-            const result = await service.updateAccount(9, { userId: 9 });
+            const result = await service.updateAccount(9, { name: 'Updated' });
 
             expect(result).toEqual({ success: false, error: Resource.INTERNAL_SERVER_ERROR });
             expect(result.success).toBe(false);

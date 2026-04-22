@@ -4,7 +4,7 @@ import { UserService } from './userService';
 import { ErrorCode } from '../../../shared/errors/error-codes';
 import { SelectAccount, InsertAccount } from '../db/schema';
 import { QueryOptions } from '../utils/pagination';
-import type { AccountEntity, CreateAccountInput, UpdateAccountInput } from '../../../shared/domains/account/account.types';
+import type { AccountEntity, CreateOwnedAccountInput, UpdateAccountInput } from '../../../shared/domains/account/account.types';
 
 /**
  * Service for account business logic.
@@ -36,7 +36,7 @@ export class AccountService {
      * @param data - Account creation data.
      * @returns The created account record.
      */
-    async createAccount(data: CreateAccountInput): Promise<{ success: true; data: AccountEntity } | { success: false; error: ErrorCode }> {
+    async createAccount(data: CreateOwnedAccountInput): Promise<{ success: true; data: AccountEntity } | { success: false; error: ErrorCode }> {
         const userService = new UserService();
         const user = await userService.getUserById(data.userId);
 
@@ -149,7 +149,7 @@ export class AccountService {
 
     /**
      * Updates an account by ID.
-     * Validates the user if the userId is being changed.
+     * Ignores any attempted ownership reassignment in the incoming payload.
      *
      * @summary Updates account data.
      * @param id - ID of the account.
@@ -157,17 +157,11 @@ export class AccountService {
      * @returns Updated account record.
      */
     async updateAccount(id: number, data: UpdateAccountInput): Promise<{ success: true; data: AccountEntity } | { success: false; error: ErrorCode }> {
-        if (data.userId !== undefined) {
-            const userService = new UserService();
-            const user = await userService.getUserById(data.userId);
-
-            if (!user.success || !user.data) {
-                return { success: false, error: ErrorCode.USER_NOT_FOUND };
-            }
-        }
+        const safeData = { ...data } as UpdateAccountInput & { userId?: number };
+        delete safeData.userId;
 
         try {
-            const updated = await this.accountRepository.update(id, data as Partial<InsertAccount>);
+            const updated = await this.accountRepository.update(id, safeData as Partial<InsertAccount>);
             return { success: true, data: this.toAccountEntity(updated) };
         } catch {
             return { success: false, error: ErrorCode.INTERNAL_SERVER_ERROR };

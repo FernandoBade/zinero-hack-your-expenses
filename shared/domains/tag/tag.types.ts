@@ -21,14 +21,17 @@ export interface TagEntity {
 /** @summary Input payload for tag creation. */
 export interface CreateTagInput {
     name: TagName;
-    userId: UserId;
     active?: boolean;
+}
+
+/** @summary Backend-only tag creation payload with derived ownership. */
+export interface CreateOwnedTagInput extends CreateTagInput {
+    userId: UserId;
 }
 
 /** @summary Input payload for tag updates. */
 export interface UpdateTagInput {
     name?: TagName;
-    userId?: UserId;
     active?: boolean;
 }
 

@@ -164,18 +164,19 @@ describe('TagService', () => {
     });
 
     describe('updateTag', () => {
-        it('returns user not found when new user is invalid', async () => {
-            jest.spyOn(UserService.prototype, 'getUserById').mockResolvedValue({
-                success: false,
-                error: Resource.USER_NOT_FOUND,
-            });
-            const updateSpy = jest.spyOn(TagRepository.prototype, 'update');
+        it('ignores userId reassignment attempts', async () => {
+            jest.spyOn(TagRepository.prototype, 'findById').mockResolvedValue(makeDbTag({ id: 7, userId: 3, name: 'Bills' }));
+            jest.spyOn(TagRepository.prototype, 'findMany').mockResolvedValue([]);
+            const updateSpy = jest.spyOn(TagRepository.prototype, 'update').mockResolvedValue(
+                makeDbTag({ id: 7, userId: 3, name: 'Updated' })
+            );
 
             const service = new TagService();
-            const result = await service.updateTag(7, { userId: 99 });
+            const result = await service.updateTag(7, { userId: 99, name: 'Updated' } as any);
 
-            expect(updateSpy).not.toHaveBeenCalled();
-            expect(result).toEqual({ success: false, error: Resource.USER_NOT_FOUND });
+            expect(updateSpy).toHaveBeenCalledWith(7, expect.objectContaining({ name: 'Updated' }));
+            expect(updateSpy).not.toHaveBeenCalledWith(7, expect.objectContaining({ userId: 99 }));
+            expect(result).toEqual({ success: true, data: makeTag({ id: 7, userId: 3, name: 'Updated' }) });
         });
 
         it('returns tag not found when current tag is missing', async () => {

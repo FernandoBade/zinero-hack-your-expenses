@@ -10,9 +10,9 @@ import { TagRepository } from '../repositories/tagRepository';
 import { TransactionRepository } from '../repositories/transactionRepository';
 import { getSignedTransactionDelta, invertMonetaryDelta, isZeroMonetaryDelta } from '../utils/monetary.utils';
 import { QueryOptions } from '../utils/pagination';
+import { resolveTransactionOwnerUserId } from '../utils/auth/authorization';
 import { AccountService } from './accountService';
 import { CategoryService } from './categoryService';
-import { CreditCardService } from './creditCardService';
 import { SubcategoryService } from './subcategoryService';
 import type { AccountTransactions, CreateTransactionInput, TransactionWithTags, UpdateTransactionInput } from '../../../shared/domains/transaction/transaction.types';
 import type { MonetaryString } from '../../../shared/types/format.types';
@@ -42,35 +42,28 @@ export class TransactionService {
      * @param data - Transaction creation data.
      * @returns The created transaction record.
      */
-    async createTransaction(data: CreateTransactionInput): Promise<{ success: true; data: TransactionWithTags } | { success: false; error: ErrorCode }> {
-        let ownerUserId: number;
-        if (data.transactionSource === TransactionSource.ACCOUNT) {
-            if (!data.accountId) {
-                return { success: false, error: ErrorCode.ACCOUNT_NOT_FOUND };
-            }
+    async createTransaction(
+        data: CreateTransactionInput,
+        actorUserId?: number
+    ): Promise<{ success: true; data: TransactionWithTags } | { success: false; error: ErrorCode }> {
+        const ownerResult = await resolveTransactionOwnerUserId(
+            data.transactionSource,
+            data.accountId,
+            data.creditCardId
+        );
+        if (!ownerResult.success) {
+            return ownerResult;
+        }
 
-            const account = await new AccountService().getAccountById(data.accountId);
-            if (!account.success || !account.data) {
-                return { success: false, error: ErrorCode.ACCOUNT_NOT_FOUND };
-            }
-
-            ownerUserId = account.data.userId;
-        } else {
-            if (!data.creditCardId) {
-                return { success: false, error: ErrorCode.CREDIT_CARD_NOT_FOUND };
-            }
-
-            const creditCard = await new CreditCardService().getCreditCardById(data.creditCardId);
-            if (!creditCard.success || !creditCard.data) {
-                return { success: false, error: ErrorCode.CREDIT_CARD_NOT_FOUND };
-            }
-
-            ownerUserId = creditCard.data.userId;
+        const ownerUserId = ownerResult.userId;
+        if (actorUserId !== undefined && actorUserId !== ownerUserId) {
+            return { success: false, error: ErrorCode.UNAUTHORIZED_OPERATION };
         }
 
         const classificationError = await this.validateTransactionClassification(
             data.categoryId,
-            data.subcategoryId
+            data.subcategoryId,
+            ownerUserId
         );
         if (classificationError) {
             return { success: false, error: classificationError };
@@ -79,9 +72,9 @@ export class TransactionService {
         try {
             const tagIds = this.normalizeTagIds(data.tags);
             if (tagIds) {
-                const isValid = await this.validateTagsByUser(ownerUserId, tagIds);
-                if (!isValid) {
-                    return { success: false, error: ErrorCode.TAG_NOT_FOUND };
+                const tagError = await this.validateTagsByUser(ownerUserId, tagIds);
+                if (tagError) {
+                    return { success: false, error: tagError };
                 }
             }
 
@@ -373,22 +366,44 @@ export class TransactionService {
      */
     private async validateTransactionClassification(
         categoryId: number | null | undefined,
-        subcategoryId: number | null | undefined
+        subcategoryId: number | null | undefined,
+        ownerUserId: number
     ): Promise<ErrorCode | null> {
         if (!categoryId && !subcategoryId) {
             return ErrorCode.CATEGORY_OR_SUBCATEGORY_REQUIRED;
         }
+
+        let resolvedCategoryId: number | null = null;
 
         if (categoryId) {
             const category = await new CategoryService().getCategoryById(categoryId);
             if (!category.success || !category.data?.active) {
                 return ErrorCode.CATEGORY_NOT_FOUND_OR_INACTIVE;
             }
+
+            if (category.data.userId !== ownerUserId) {
+                return ErrorCode.UNAUTHORIZED_OPERATION;
+            }
+
+            resolvedCategoryId = category.data.id;
         }
 
         if (subcategoryId) {
             const subcategory = await new SubcategoryService().getSubcategoryById(subcategoryId);
             if (!subcategory.success || !subcategory.data?.active) {
+                return ErrorCode.SUBCATEGORY_NOT_FOUND_OR_INACTIVE;
+            }
+
+            const parentCategory = await new CategoryService().getCategoryById(subcategory.data.categoryId);
+            if (!parentCategory.success || !parentCategory.data?.active) {
+                return ErrorCode.SUBCATEGORY_NOT_FOUND_OR_INACTIVE;
+            }
+
+            if (parentCategory.data.userId !== ownerUserId) {
+                return ErrorCode.UNAUTHORIZED_OPERATION;
+            }
+
+            if (resolvedCategoryId !== null && parentCategory.data.id !== resolvedCategoryId) {
                 return ErrorCode.SUBCATEGORY_NOT_FOUND_OR_INACTIVE;
             }
         }
@@ -403,16 +418,23 @@ export class TransactionService {
         userId: number,
         tagIds: number[],
         connection: typeof db = db
-    ): Promise<boolean> {
-        if (tagIds.length === 0) return true;
+    ): Promise<ErrorCode | null> {
+        if (tagIds.length === 0) return null;
 
         const existing = await this.tagRepository.findMany({
             id: { operator: FilterOperator.IN, value: tagIds },
-            userId: { operator: FilterOperator.EQ, value: userId },
             active: { operator: FilterOperator.EQ, value: true },
         }, undefined, connection);
 
-        return existing.length === tagIds.length;
+        if (existing.length !== tagIds.length) {
+            return ErrorCode.TAG_NOT_FOUND;
+        }
+
+        if (existing.some((tag) => tag.userId !== userId)) {
+            return ErrorCode.UNAUTHORIZED_OPERATION;
+        }
+
+        return null;
     }
 
         /**
@@ -478,55 +500,76 @@ export class TransactionService {
         const updateData: UpdateTransactionInput = value !== undefined
             ? { ...restUpdateData, value: String(value) }
             : { ...restUpdateData };
+        const currentOwnerResult = await resolveTransactionOwnerUserId(
+            current.transactionSource,
+            current.accountId,
+            current.creditCardId
+        );
+        if (!currentOwnerResult.success) {
+            return { error: currentOwnerResult.error };
+        }
+
         const effectiveSource = updateData.transactionSource !== undefined ? updateData.transactionSource : current.transactionSource;
 
         if (effectiveSource === TransactionSource.ACCOUNT) {
             const effectiveAccountId = updateData.accountId !== undefined ? updateData.accountId : current.accountId;
-            if (!effectiveAccountId) {
-                return { error: ErrorCode.ACCOUNT_NOT_FOUND };
+            const ownerResult = await resolveTransactionOwnerUserId(
+                TransactionSource.ACCOUNT,
+                effectiveAccountId,
+                undefined
+            );
+            if (!ownerResult.success) {
+                return { error: ownerResult.error };
             }
 
-            const account = await new AccountService().getAccountById(effectiveAccountId);
-            if (!account.success || !account.data) {
-                return { error: ErrorCode.ACCOUNT_NOT_FOUND };
+            if (ownerResult.userId !== currentOwnerResult.userId) {
+                return { error: ErrorCode.UNAUTHORIZED_OPERATION };
             }
 
-            if (updateData.creditCardId !== undefined) {
-                updateData.creditCardId = null;
-            }
+            updateData.creditCardId = null;
 
             const effectiveCategoryId = updateData.categoryId !== undefined ? updateData.categoryId : current.categoryId;
             const effectiveSubcategoryId = updateData.subcategoryId !== undefined ? updateData.subcategoryId : current.subcategoryId;
-            const classificationError = await this.validateTransactionClassification(effectiveCategoryId, effectiveSubcategoryId);
+            const classificationError = await this.validateTransactionClassification(
+                effectiveCategoryId,
+                effectiveSubcategoryId,
+                ownerResult.userId
+            );
             if (classificationError) {
                 return { error: classificationError };
             }
 
-            return { updateData, ownerUserId: account.data.userId };
+            return { updateData, ownerUserId: ownerResult.userId };
         }
 
         const effectiveCreditCardId = updateData.creditCardId !== undefined ? updateData.creditCardId : current.creditCardId;
-        if (!effectiveCreditCardId) {
-            return { error: ErrorCode.CREDIT_CARD_NOT_FOUND };
+        const ownerResult = await resolveTransactionOwnerUserId(
+            TransactionSource.CREDIT_CARD,
+            undefined,
+            effectiveCreditCardId
+        );
+        if (!ownerResult.success) {
+            return { error: ownerResult.error };
         }
 
-        const creditCard = await new CreditCardService().getCreditCardById(effectiveCreditCardId);
-        if (!creditCard.success || !creditCard.data) {
-            return { error: ErrorCode.CREDIT_CARD_NOT_FOUND };
+        if (ownerResult.userId !== currentOwnerResult.userId) {
+            return { error: ErrorCode.UNAUTHORIZED_OPERATION };
         }
 
-        if (updateData.accountId !== undefined) {
-            updateData.accountId = null;
-        }
+        updateData.accountId = null;
 
         const effectiveCategoryId = updateData.categoryId !== undefined ? updateData.categoryId : current.categoryId;
         const effectiveSubcategoryId = updateData.subcategoryId !== undefined ? updateData.subcategoryId : current.subcategoryId;
-        const classificationError = await this.validateTransactionClassification(effectiveCategoryId, effectiveSubcategoryId);
+        const classificationError = await this.validateTransactionClassification(
+            effectiveCategoryId,
+            effectiveSubcategoryId,
+            ownerResult.userId
+        );
         if (classificationError) {
             return { error: classificationError };
         }
 
-        return { updateData, ownerUserId: creditCard.data.userId };
+        return { updateData, ownerUserId: ownerResult.userId };
     }
 
         /**
@@ -550,9 +593,9 @@ export class TransactionService {
         const { updateData, ownerUserId } = normalizedUpdate;
         const tagIds = this.normalizeTagIds(data.tags);
         if (tagIds) {
-            const isValid = await this.validateTagsByUser(ownerUserId, tagIds, connection);
-            if (!isValid) {
-                return { success: false, error: ErrorCode.TAG_NOT_FOUND };
+            const tagError = await this.validateTagsByUser(ownerUserId, tagIds, connection);
+            if (tagError) {
+                return { success: false, error: tagError };
             }
         }
 

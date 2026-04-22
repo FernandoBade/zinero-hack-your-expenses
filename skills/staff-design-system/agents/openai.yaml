@@ -1,0 +1,4 @@
+interface:
+  display_name: "Staff Design System"
+  short_description: "Design system governance for Zinero"
+  default_prompt: "Use $staff-design-system to review shared UI components or design-system changes in this repository."

@@ -143,6 +143,30 @@ describe('UserService', () => {
             }
         });
 
+        it('strips forbidden privilege fields before persistence', async () => {
+            const payload = {
+                ...makeCreateUserInput(),
+                profile: 'master' as any,
+                active: false as any,
+            };
+            jest.spyOn(UserRepository.prototype, 'findMany').mockResolvedValue([]);
+            hashMock.mockResolvedValue('hashed-password');
+            const created = makeDbUser({ id: 22, password: 'hashed-password' });
+            const createSpy = jest.spyOn(UserRepository.prototype, 'create').mockResolvedValue(created);
+            jest.spyOn(TokenService.prototype, 'createEmailVerificationToken').mockResolvedValue({
+                success: true,
+                data: { token: 'verify-token', expiresAt: new Date('2099-01-01T00:00:00Z') },
+            });
+            sendEmailVerificationMock.mockResolvedValue();
+
+            const service = new UserService();
+            await service.createUser(payload as any);
+
+            const createArg = createSpy.mock.calls[0][0] as Record<string, unknown>;
+            expect(createArg).not.toHaveProperty('profile');
+            expect(createArg).not.toHaveProperty('active');
+        });
+
         it('returns internal server error when verification token creation fails', async () => {
             const payload = makeCreateUserInput({ email: '  Jane.Doe@Example.com ' });
             jest.spyOn(UserRepository.prototype, 'findMany').mockResolvedValue([]);
@@ -538,6 +562,20 @@ describe('UserService', () => {
             if (result.success) {
                 expect(result.data).not.toHaveProperty('password');
             }
+        });
+
+        it('strips forbidden privilege fields before updating', async () => {
+            const current = makeDbUser({ id: 16, password: 'hashed-old' });
+            jest.spyOn(UserRepository.prototype, 'findById').mockResolvedValue(current);
+            const updateSpy = jest.spyOn(UserRepository.prototype, 'update').mockResolvedValue(current);
+
+            const service = new UserService();
+            await service.updateUser(16, { firstName: 'New', profile: 'master' as any, active: false as any } as any);
+
+            const updateArg = updateSpy.mock.calls[0][1] as Record<string, unknown>;
+            expect(updateArg).toEqual(expect.objectContaining({ firstName: 'New' }));
+            expect(updateArg).not.toHaveProperty('profile');
+            expect(updateArg).not.toHaveProperty('active');
         });
 
         it('throws when repository update rejects', async () => {

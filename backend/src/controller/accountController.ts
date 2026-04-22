@@ -4,13 +4,17 @@ import { buildLogDelta, createLog, answerAPI, formatError, sanitizeLogDetail } f
 import { validateCreateAccount, validateUpdateAccount } from '../utils/validation/validateRequest';
 import { HTTPStatus } from '../../../shared/enums/http-status.enums';
 import { LogCategory, LogOperation, LogType } from '../../../shared/enums/log.enums';
+import { Profile } from '../../../shared/enums/user.enums';
 import { ErrorCode } from '../../../shared/errors/error-codes';
 import { parsePagination, buildMeta } from '../utils/pagination';
 import { Locale } from '../../../shared/i18n/types/locale';
+import { getForbiddenFieldErrors } from '../utils/validation/forbiddenFields';
+import { canAccessOwnedResource } from '../utils/auth/authorization';
 
 /** @summary Orchestrates HTTP request flows for account resource endpoints. */
 class AccountController {
     /** @summary Creates a new financial account using validated input.
+     * The userId is always taken from the authenticated session — the client-supplied value is ignored.
      * Logs the result and returns the created account on success.
      *
      * @param req - Express request containing account data.
@@ -19,11 +23,23 @@ class AccountController {
      * @returns HTTP 201 with new account data or appropriate error.
      */
     static async createAccount(req: Request, res: Response, next: NextFunction) {
+        const requesterId = req.user?.id;
+        if (!requesterId) {
+            return answerAPI(req, res, HTTPStatus.UNAUTHORIZED, undefined, ErrorCode.EXPIRED_OR_INVALID_TOKEN);
+        }
+
         const accountService = new AccountService();
 
         try {
+            const forbiddenFieldErrors = getForbiddenFieldErrors(req.body, ['userId']);
+            if (forbiddenFieldErrors.length > 0) {
+                return answerAPI(req, res, HTTPStatus.BAD_REQUEST, forbiddenFieldErrors, ErrorCode.VALIDATION_ERROR);
+            }
 
-            const parseResult = validateCreateAccount(req.body, req.language as Locale);
+            const parseResult = validateCreateAccount(
+                { ...req.body, userId: requesterId },
+                req.language as Locale
+            );
 
             if (!parseResult.success) {
                 return answerAPI(
@@ -44,12 +60,13 @@ class AccountController {
             await createLog(LogType.SUCCESS, LogOperation.CREATE, LogCategory.ACCOUNT, created.data, created.data!.userId);
             return answerAPI(req, res, HTTPStatus.CREATED, created.data!);
         } catch (error) {
-            await createLog(LogType.ERROR, LogOperation.CREATE, LogCategory.ACCOUNT, formatError(error), req.user?.id, next);
+            await createLog(LogType.ERROR, LogOperation.CREATE, LogCategory.ACCOUNT, formatError(error), requesterId, next);
             return answerAPI(req, res, HTTPStatus.INTERNAL_SERVER_ERROR, undefined, ErrorCode.INTERNAL_SERVER_ERROR);
         }
     }
 
     /** @summary Retrieves all financial accounts from the database.
+     * Restricted to MASTER profile users only.
      *
      * @param req - Express request object.
      * @param res - Express response returning the account list or an error.
@@ -57,6 +74,10 @@ class AccountController {
      * @returns HTTP 200 with account list or appropriate error. May be empty.
      */
     static async getAccounts(req: Request, res: Response, next: NextFunction) {
+        if (req.user?.profile !== Profile.MASTER) {
+            return answerAPI(req, res, HTTPStatus.FORBIDDEN, undefined, ErrorCode.UNAUTHORIZED_OPERATION);
+        }
+
         const accountService = new AccountService();
 
         try {
@@ -85,7 +106,7 @@ class AccountController {
     }
 
     /** @summary Retrieves a specific account by its ID.
-     * Validates the ID before querying.
+     * Validates the ID and enforces ownership before returning data.
      *
      * @param req - Express request containing account ID in the URL.
      * @param res - Express response returning the account or an error.
@@ -107,6 +128,10 @@ class AccountController {
                 return answerAPI(req, res, HTTPStatus.BAD_REQUEST, undefined, account.error);
             }
 
+            if (!canAccessOwnedResource(req.user?.id, account.data.userId, req.user?.profile)) {
+                return answerAPI(req, res, HTTPStatus.FORBIDDEN, undefined, ErrorCode.UNAUTHORIZED_OPERATION);
+            }
+
             return answerAPI(req, res, HTTPStatus.OK, account.data);
         } catch (error) {
             await createLog(LogType.ERROR, LogOperation.CREATE, LogCategory.ACCOUNT, formatError(error), req.user?.id, next);
@@ -115,7 +140,7 @@ class AccountController {
     }
 
     /** @summary Retrieves all accounts belonging to a specific user.
-     * Validates the user ID before searching.
+     * Validates the user ID and enforces ownership before searching.
      *
      * @param req - Express request containing user ID in the URL.
      * @param res - Express response returning the user's accounts.
@@ -126,6 +151,10 @@ class AccountController {
         const userId = Number(req.params.userId);
         if (isNaN(userId) || userId <= 0) {
             return answerAPI(req, res, HTTPStatus.BAD_REQUEST, undefined, ErrorCode.INVALID_USER_ID);
+        }
+
+        if (!canAccessOwnedResource(req.user?.id, userId, req.user?.profile)) {
+            return answerAPI(req, res, HTTPStatus.FORBIDDEN, undefined, ErrorCode.UNAUTHORIZED_OPERATION);
         }
 
         const accountService = new AccountService();
@@ -156,7 +185,7 @@ class AccountController {
     }
 
     /** @summary Updates an existing account by ID using validated input.
-     * Ensures account exists before updating and logs the operation.
+     * Enforces ownership before updating and logs the operation.
      *
      * @param req - Express request with account ID and updated data.
      * @param res - Express response returning the updated account.
@@ -175,6 +204,10 @@ class AccountController {
             const existing = await accountService.getAccountById(id);
             if (!existing.success) {
                 return answerAPI(req, res, HTTPStatus.BAD_REQUEST, undefined, existing.error);
+            }
+
+            if (!canAccessOwnedResource(req.user?.id, existing.data.userId, req.user?.profile)) {
+                return answerAPI(req, res, HTTPStatus.FORBIDDEN, undefined, ErrorCode.UNAUTHORIZED_OPERATION);
             }
 
             const parseResult = validateUpdateAccount(req.body, req.language as Locale);
@@ -204,12 +237,12 @@ class AccountController {
     }
 
     /** @summary Deletes an account by its unique ID.
-     * Validates the ID and logs the result upon successful deletion.
+     * Enforces ownership before deletion and logs the result.
      *
      * @param req - Express request with the ID of the account to delete.
      * @param res - Express response confirming deletion.
      * @param next - Express next function for error handling.
-     * @returns HTTP 200 with deleted ID or apropriate error.
+     * @returns HTTP 200 with deleted ID or appropriate error.
      */
     static async deleteAccount(req: Request, res: Response, next: NextFunction) {
         const id = Number(req.params.id);
@@ -222,7 +255,16 @@ class AccountController {
 
         try {
             const snapshotResult = await accountService.getAccountById(id);
-            const snapshot = snapshotResult.success ? sanitizeLogDetail(snapshotResult.data) : undefined;
+
+            if (!snapshotResult.success) {
+                return answerAPI(req, res, HTTPStatus.BAD_REQUEST, undefined, snapshotResult.error);
+            }
+
+            if (!canAccessOwnedResource(req.user?.id, snapshotResult.data.userId, req.user?.profile)) {
+                return answerAPI(req, res, HTTPStatus.FORBIDDEN, undefined, ErrorCode.UNAUTHORIZED_OPERATION);
+            }
+
+            const snapshot = sanitizeLogDetail(snapshotResult.data);
             const result = await accountService.deleteAccount(id);
 
             if (!result.success) {
@@ -245,4 +287,3 @@ class AccountController {
 }
 
 export default AccountController;
-

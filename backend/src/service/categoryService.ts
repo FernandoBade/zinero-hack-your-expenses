@@ -4,7 +4,7 @@ import { UserService } from './userService';
 import { ErrorCode } from '../../../shared/errors/error-codes';
 import { SelectCategory, InsertCategory } from '../db/schema';
 import { QueryOptions } from '../utils/pagination';
-import type { CategoryEntity, CreateCategoryInput, UpdateCategoryInput } from '../../../shared/domains/category/category.types';
+import type { CategoryEntity, CreateOwnedCategoryInput, UpdateCategoryInput } from '../../../shared/domains/category/category.types';
 
 /**
  * Service for category business logic.
@@ -35,7 +35,7 @@ export class CategoryService {
      * @param data - Category creation data.
      * @returns The created category record.
      */
-    async createCategory(data: CreateCategoryInput): Promise<{ success: true; data: CategoryEntity } | { success: false; error: ErrorCode }> {
+    async createCategory(data: CreateOwnedCategoryInput): Promise<{ success: true; data: CategoryEntity } | { success: false; error: ErrorCode }> {
         const userService = new UserService();
         const user = await userService.getUserById(data.userId);
 
@@ -143,7 +143,7 @@ export class CategoryService {
 
     /**
      * Updates a category by ID.
-     * Validates the user if the userId is being changed.
+     * Ignores any attempted ownership reassignment in the incoming payload.
      *
      * @summary Updates category data.
      * @param id - ID of the category.
@@ -151,17 +151,11 @@ export class CategoryService {
      * @returns Updated category record.
      */
     async updateCategory(id: number, data: UpdateCategoryInput): Promise<{ success: true; data: CategoryEntity } | { success: false; error: ErrorCode }> {
-        if (data.userId !== undefined) {
-            const userService = new UserService();
-            const user = await userService.getUserById(data.userId);
-
-            if (!user.success || !user.data) {
-                return { success: false, error: ErrorCode.USER_NOT_FOUND };
-            }
-        }
+        const safeData = { ...data } as UpdateCategoryInput & { userId?: number };
+        delete safeData.userId;
 
         try {
-            const updated = await this.categoryRepository.update(id, data);
+            const updated = await this.categoryRepository.update(id, safeData);
             return { success: true, data: this.toCategoryEntity(updated) };
         } catch {
             return { success: false, error: ErrorCode.INTERNAL_SERVER_ERROR };

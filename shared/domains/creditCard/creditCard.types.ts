@@ -41,9 +41,13 @@ export interface CreateCreditCardInput {
     observation?: CreditCardObservation;
     balance?: CreditCardBalance;
     limit?: CreditCardLimit;
-    userId: UserId;
     accountId?: AccountId;
     active?: boolean;
+}
+
+/** @summary Backend-only credit-card creation payload with derived ownership. */
+export interface CreateOwnedCreditCardInput extends CreateCreditCardInput {
+    userId: UserId;
 }
 
 /** @summary Input payload for credit card updates. */
@@ -53,7 +57,6 @@ export interface UpdateCreditCardInput {
     observation?: CreditCardObservation;
     balance?: CreditCardBalance;
     limit?: CreditCardLimit;
-    userId?: UserId;
     accountId?: AccountId | null;
     active?: boolean;
 }

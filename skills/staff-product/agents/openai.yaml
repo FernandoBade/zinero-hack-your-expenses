@@ -1,0 +1,4 @@
+interface:
+  display_name: "Staff Product"
+  short_description: "Product definition and scope"
+  default_prompt: "Use $staff-product to turn a product idea into an implementation-ready definition for this repository."

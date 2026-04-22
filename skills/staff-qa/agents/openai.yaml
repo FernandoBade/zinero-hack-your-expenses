@@ -1,0 +1,4 @@
+interface:
+  display_name: "Staff QA"
+  short_description: "QA and regression confidence"
+  default_prompt: "Use $staff-qa to assess test coverage, regression risk, or verification strategy in this repository."

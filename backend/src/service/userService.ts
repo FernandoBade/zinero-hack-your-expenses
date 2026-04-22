@@ -85,10 +85,17 @@ export class UserService {
      * @returns Created user record or error if email is already in use.
      */
     async createUser(data: CreateUserInput): Promise<{ success: true; data: SanitizedUser } | { success: false; error: ErrorCode }> {
-        data.email = data.email.trim().toLowerCase();
+        const rawData = { ...data } as CreateUserInput & {
+            profile?: unknown;
+            active?: unknown;
+        };
+        delete rawData.profile;
+        delete rawData.active;
+        const safeData: CreateUserInput = rawData;
+        safeData.email = safeData.email.trim().toLowerCase();
 
         const existingUsers = await this.userRepository.findMany({
-            email: { operator: FilterOperator.EQ, value: data.email }
+            email: { operator: FilterOperator.EQ, value: safeData.email }
         });
 
         if (existingUsers.length > 0) {
@@ -99,10 +106,10 @@ export class UserService {
             return { success: false, error: ErrorCode.EMAIL_IN_USE };
         }
 
-        const hashedPassword = await bcrypt.hash(data.password, USER_SERVICE_CONFIG.passwordHashRounds);
+        const hashedPassword = await bcrypt.hash(safeData.password, USER_SERVICE_CONFIG.passwordHashRounds);
         const insertData: InsertUser = {
-            ...data,
-            birthDate: data.birthDate ? new Date(data.birthDate) : undefined,
+            ...safeData,
+            birthDate: safeData.birthDate ? new Date(safeData.birthDate) : undefined,
             password: hashedPassword,
         };
         const created = await this.userRepository.create(insertData);
@@ -308,16 +315,24 @@ export class UserService {
             return { success: false, error: ErrorCode.NO_RECORDS_FOUND };
         }
 
-        if (data.password && current.password) {
-            const isSamePassword = await bcrypt.compare(data.password, current.password);
+        const rawData = { ...data } as UpdateUserInput & {
+            profile?: unknown;
+            active?: unknown;
+        };
+        delete rawData.profile;
+        delete rawData.active;
+        const safeData: UpdateUserInput = rawData;
+
+        if (safeData.password && current.password) {
+            const isSamePassword = await bcrypt.compare(safeData.password, current.password);
             if (!isSamePassword) {
-                data.password = await bcrypt.hash(data.password, USER_SERVICE_CONFIG.passwordHashRounds);
+                safeData.password = await bcrypt.hash(safeData.password, USER_SERVICE_CONFIG.passwordHashRounds);
             } else {
-                delete data.password;
+                delete safeData.password;
             }
         }
 
-        const { birthDate, ...restUpdate } = data;
+        const { birthDate, ...restUpdate } = safeData;
         const updateData: Partial<InsertUser> = {
             ...restUpdate,
         };

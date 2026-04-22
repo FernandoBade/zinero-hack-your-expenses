@@ -56,9 +56,7 @@ export interface CreateUserInput {
     theme?: Theme;
     language?: Language;
     currency?: Currency;
-    profile?: Profile;
     hideValues?: boolean;
-    active?: boolean;
 }
 
 /** @summary Input payload for user updates. */
@@ -72,9 +70,7 @@ export interface UpdateUserInput {
     theme?: Theme;
     language?: Language;
     currency?: Currency;
-    profile?: Profile;
     hideValues?: boolean;
-    active?: boolean;
 }
 
 /** @summary Input payload for listing users. */

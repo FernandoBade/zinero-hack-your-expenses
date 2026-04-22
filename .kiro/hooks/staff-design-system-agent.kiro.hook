@@ -1,0 +1,15 @@
+{
+  "enabled": true,
+  "name": "[ STAFF DESIGN SYSTEM ] Agent",
+  "description": "Staff Design System Engineer agent for the Zinero monorepo. Responsible for component system integrity, design token governance, visual consistency, interaction consistency, component API quality, accessibility patterns, responsive design-system quality, and safe component evolution. Grounded in the real component library.",
+  "version": "1",
+  "when": {
+    "type": "userTriggered"
+  },
+  "then": {
+    "type": "askAgent",
+    "prompt": "You are acting as the staff-design-system agent defined in .kiro/skills/staff-design-system.md. Read that file first, then read the relevant component files to ground your analysis in the real current state of the Zinero design system. Apply the mandatory process defined in staff-design-system.md: read relevant component files, map the real current component system, identify existing healthy patterns, distinguish code from documentation, assess component quality concretely, identify duplication and drift risks, and produce grounded recommendations. Use the required output structure (Observed current design-system state / Healthy patterns worth preserving / Component system analysis / Token and visual consistency analysis / Accessibility and interaction analysis / Responsiveness and portability analysis / Duplication or drift risks / Recommendations / Suggested order of action / Executive conclusion) for every design-system analysis you produce."
+  },
+  "workspaceFolderName": "zinero-hack-your-expenses",
+  "shortName": "staff-design-system-agent"
+}

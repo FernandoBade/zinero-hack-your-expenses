@@ -4,7 +4,7 @@ import { UserService } from './userService';
 import { ErrorCode } from '../../../shared/errors/error-codes';
 import { SelectTag, InsertTag } from '../db/schema';
 import { QueryOptions } from '../utils/pagination';
-import type { CreateTagInput, TagEntity, UpdateTagInput } from '../../../shared/domains/tag/tag.types';
+import type { CreateOwnedTagInput, TagEntity, UpdateTagInput } from '../../../shared/domains/tag/tag.types';
 
 /**
  * Service for tag business logic.
@@ -35,7 +35,7 @@ export class TagService {
      * @param data - Tag creation data.
      * @returns The created tag record.
      */
-    async createTag(data: CreateTagInput): Promise<{ success: true; data: TagEntity } | { success: false; error: ErrorCode }> {
+    async createTag(data: CreateOwnedTagInput): Promise<{ success: true; data: TagEntity } | { success: false; error: ErrorCode }> {
         const userService = new UserService();
         const user = await userService.getUserById(data.userId);
 
@@ -161,27 +161,20 @@ export class TagService {
      * @returns Updated tag record.
      */
     async updateTag(id: number, data: UpdateTagInput): Promise<{ success: true; data: TagEntity } | { success: false; error: ErrorCode }> {
-        if (data.userId !== undefined) {
-            const userService = new UserService();
-            const user = await userService.getUserById(data.userId);
+        const safeData = { ...data } as UpdateTagInput & { userId?: number };
+        delete safeData.userId;
 
-            if (!user.success || !user.data) {
-                return { success: false, error: ErrorCode.USER_NOT_FOUND };
-            }
-        }
-
-        if (data.userId !== undefined || data.name !== undefined) {
+        if (safeData.name !== undefined) {
             const current = await this.tagRepository.findById(id);
             if (!current) {
                 return { success: false, error: ErrorCode.TAG_NOT_FOUND };
             }
 
-            const effectiveUserId = data.userId ?? current.userId;
-            const effectiveName = data.name ?? current.name;
+            const effectiveName = safeData.name ?? current.name;
 
             if (effectiveName) {
                 const existing = await this.tagRepository.findMany({
-                    userId: { operator: FilterOperator.EQ, value: effectiveUserId },
+                    userId: { operator: FilterOperator.EQ, value: current.userId },
                     name: { operator: FilterOperator.EQ, value: effectiveName }
                 });
                 if (existing.length > 0 && existing[0].id !== id) {
@@ -191,7 +184,7 @@ export class TagService {
         }
 
         try {
-            const updated = await this.tagRepository.update(id, data);
+            const updated = await this.tagRepository.update(id, safeData);
             return { success: true, data: this.toTagEntity(updated) };
         } catch {
             return { success: false, error: ErrorCode.INTERNAL_SERVER_ERROR };

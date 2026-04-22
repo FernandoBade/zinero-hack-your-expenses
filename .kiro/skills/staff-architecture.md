@@ -278,12 +278,23 @@ When reviewing backend changes, always check:
 - Is `answerAPI()` / `sendErrorResponse()` used consistently?
 
 **Authorization (highest-priority risk):**
+
+You own authorization policy for the backend. Your role is to define the
+rule — what the system must enforce and why — not to specify the
+implementation pattern. `staff-backend` owns the implementation strategy and
+the concrete enforcement code. When both agents comment on the same
+authorization gap, your recommendation is the authoritative policy statement;
+`staff-backend`'s recommendation is the authoritative implementation guidance.
+Neither overrides the other — they are complementary and must be read together.
+
 - Does every endpoint that accesses user-owned data compare `req.user.id`
   against the resource owner?
 - Known gap: `updateUser`, `deleteUser`, `getAccounts`, `getTransactions`, and
-  several other endpoints do not enforce ownership. Flag any new endpoint that
-  repeats this pattern.
+  several other endpoints do not enforce ownership. Any new endpoint that
+  repeats this pattern must be flagged as a critical policy violation.
 - Is `verifyToken` applied to every protected route?
+- When flagging an authorization gap, state the policy rule that is violated
+  and route the implementation fix to `staff-backend`.
 
 **Validation:**
 - Is new validation going into `validateRequest.ts` (growing monolith risk) or
@@ -378,7 +389,45 @@ When reviewing frontend changes, always check:
 
 ### 4. Shared layer architecture
 
-When reviewing changes to `shared/`, always check:
+**You are the primary structural owner of `shared/`.**
+
+`shared/` is not an unowned collaborative space. It is a critical cross-layer
+contract surface. Every structural addition or change to `shared/` — new
+domain types, new enums, new `ErrorCode` entries, new `FieldKey` entries, new
+shared utility types, new assets — requires your review and approval before it
+is merged.
+
+Other agents have scoped roles within `shared/`:
+- `staff-ux-writing` owns the content and language governance of
+  `shared/i18n/` — i18n key organization, locale catalog quality, and
+  `error-code-map.ts` content. Structural changes to the i18n file layout or
+  the addition of new locale files still require your review.
+- `staff-design-system` owns the subset of `shared/enums/*` that directly
+  defines shared UI system semantics — `ButtonVariant`, `ButtonSize`,
+  `InputType`, `IconName`, `IconPosition`, and similar UI-facing identifiers.
+  Changes to those specific enums require coordination with
+  `staff-design-system`. All other enums in `shared/enums/*` are under your
+  structural ownership.
+- `staff-backend` and `staff-frontend` are consumers and proposers of
+  `shared/`. They may identify the need for a new shared contract and propose
+  it, but they do not own the layer and do not approve additions unilaterally.
+- `staff-qa` may validate that `shared/` contracts are used consistently and
+  flag risks, but is not an owner or approver of `shared/` changes.
+
+**Review path for additions to `shared/`:**
+1. `staff-backend` or `staff-frontend` identifies the need and proposes the
+   addition as part of a feature or fix.
+2. `staff-architecture` reviews the structural fit: is this genuinely
+   cross-layer? Does it belong in `shared/` or in the proposing layer only?
+   Does it follow the existing contract conventions?
+3. If the addition involves i18n content, `staff-ux-writing` reviews the
+   content quality and key naming.
+4. If the addition involves a UI-facing enum, `staff-design-system` reviews
+   the semantic fit with the shared UI system.
+5. Once reviewed, the addition is approved and the proposing agent implements
+   it.
+
+When reviewing any change to `shared/`, always check:
 
 - Is the new addition a genuine cross-layer contract (type, enum, i18n key,
   error code, field key, asset)?
@@ -414,7 +463,10 @@ any change, assess:
   authenticated caller without explicit admin/master gating?
 - Known gap: `getUsers`, `getUsersByEmail`, `getAccounts`, `getTransactions`,
   and several update/delete endpoints do not enforce ownership. Any new endpoint
-  that repeats this pattern must be flagged as a critical risk.
+  that repeats this pattern must be flagged as a critical policy violation.
+- When flagging an authorization gap here, you are stating the policy rule.
+  Route the implementation fix to `staff-backend`, which owns the enforcement
+  pattern and the concrete controller-level remediation.
 
 **Data exposure:**
 - Are password hashes, tokens, or internal IDs being returned in API responses?
