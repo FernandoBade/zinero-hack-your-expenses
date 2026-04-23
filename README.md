@@ -20,11 +20,6 @@ turning transactions into structured financial understanding.
 - There is no `mobile/` package, no checked-in CI/CD pipeline, and no
   deployment setup in the repository today.
 
-Latest locally verified quality gates on `2026-04-23`:
-
-- `npm run lint`
-- `npm run typecheck`
-- `npm test`
 
 ## Governance
 
@@ -154,11 +149,6 @@ Current supported workflows:
 - `npm run typecheck`
 - `npm run test`
 - `npm run build`
-
-Legacy leftovers still exist in `package.json`:
-
-- `npm run dev:frontend:old`
-- `npm run dev:full:old`
 
 Those commands depend on a missing `frontend_old/` directory and are not part
 of the current supported workflow.

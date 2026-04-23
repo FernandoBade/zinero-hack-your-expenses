@@ -1,6 +1,5 @@
 # Zinero Repository Orientation
 
-Last reviewed from the live repository state on `2026-04-23`.
 
 ## Purpose and precedence
 
