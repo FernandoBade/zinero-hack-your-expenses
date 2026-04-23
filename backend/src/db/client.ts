@@ -1,22 +1,23 @@
 import mysql from 'mysql2/promise';
 import { drizzle } from 'drizzle-orm/mysql2';
-import dotenv from 'dotenv';
 import * as schema from './schema';
+import { getBackendConfig } from '../config/env';
 
-dotenv.config();
+const { database } = getBackendConfig();
 
 /**
  * Creates and exports a MySQL connection pool using environment variables.
  * Manages connection pooling for performance and scalability.
  */
 const pool = mysql.createPool({
-    host: process.env.DB_HOST,
-    user: process.env.DB_USER,
-    password: process.env.DB_PASSWORD,
-    database: process.env.DB_DATABASE,
-    waitForConnections: true,
-    connectionLimit: 10,
-    queueLimit: 0,
+    host: database.host,
+    port: database.port,
+    user: database.user,
+    password: database.password,
+    database: database.database,
+    waitForConnections: database.waitForConnections,
+    connectionLimit: database.connectionLimit,
+    queueLimit: database.queueLimit,
 });
 
 /**

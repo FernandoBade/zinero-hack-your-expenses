@@ -5,6 +5,7 @@ import { EmailProvider } from "../../../../shared/enums/email.enums";
 import { LogCategory, LogEvent, LogOperation, LogType } from "../../../../shared/enums/log.enums";
 import type { Locale } from "../../../../shared/i18n/types/locale";
 import { translateAsync } from "../../../../shared/i18n/translate";
+import { getBackendConfig } from "../../config/env";
 
 type AuthEmailType = TokenType.EMAIL_VERIFICATION | TokenType.PASSWORD_RESET;
 
@@ -25,19 +26,23 @@ type AuthEmailContent = {
     linkLabel: string;
 };
 
-const BASE_URL = (process.env.FRONTEND_BASE_URL ?? "").replace(/\/$/, "");
-const RESEND_API_KEY = process.env.RESEND_API_KEY;
-const RESEND_FROM_EMAIL = process.env.RESEND_FROM_EMAIL;
-const resend = RESEND_API_KEY ? new Resend(RESEND_API_KEY) : null;
+/**
+ * @summary Builds the configured Resend client when email delivery credentials are present.
+ */
+const createResendClient = (): Resend | null => {
+    const { email } = getBackendConfig();
+    return email.resendApiKey ? new Resend(email.resendApiKey) : null;
+};
 
 /**
  * @summary Builds auth links with token query parameter for frontend verification and reset flows.
  */
 const buildAuthLink = (path: string, token: string): string => {
+    const { server } = getBackendConfig();
     const normalizedPath = path.startsWith("/") ? path : `/${path}`;
     const encodedToken = encodeURIComponent(token);
     const link = `${normalizedPath}?token=${encodedToken}`;
-    return BASE_URL ? `${BASE_URL}${link}` : link;
+    return server.frontendBaseUrl ? `${server.frontendBaseUrl}${link}` : link;
 };
 
 /**
@@ -164,7 +169,10 @@ const logConfigError = async (type: AuthEmailType, userId?: number): Promise<voi
  * @summary Sends authentication emails through Resend and captures provider-level failures.
  */
 const defaultSender: AuthEmailSender = async ({ type, to, link, userId, locale }) => {
-    if (!resend || !RESEND_FROM_EMAIL) {
+    const { email } = getBackendConfig();
+    const resend = createResendClient();
+
+    if (!resend || !email.resendFromEmail) {
         await logConfigError(type, userId);
         return;
     }
@@ -175,7 +183,7 @@ const defaultSender: AuthEmailSender = async ({ type, to, link, userId, locale }
 
     try {
         const result = await resend.emails.send({
-            from: RESEND_FROM_EMAIL,
+            from: email.resendFromEmail,
             to,
             subject: content.subject,
             html,

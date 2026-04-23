@@ -928,6 +928,7 @@ describe('UserService', () => {
 
         beforeEach(() => {
             process.env = { ...originalEnv };
+            process.env.AVATAR_PUBLIC_BASE_URL = 'https://zinero.bade.digital/zinero/users';
             process.env.FTP_HOST = 'ftp.example.com';
             process.env.FTP_PORT = '21';
             process.env.FTP_USER = 'ftp-user';

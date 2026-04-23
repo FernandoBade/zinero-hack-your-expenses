@@ -12,9 +12,9 @@ import { TokenService } from './tokenService';
 import { sendEmailVerificationEmail } from '../utils/email/authEmail';
 import { PNG_MIME_TYPES, UploadFileExtension } from '../../../shared/enums/upload.enums';
 import type { CreateUserInput, SanitizedUser, UpdateUserInput, UserEntity } from '../../../shared/domains/user/user.types';
+import { getBackendConfig } from '../config/env';
 
 const USER_SERVICE_CONFIG = {
-    avatarPublicBaseUrl: process.env.AVATAR_PUBLIC_BASE_URL ?? 'https://zinero.bade.digital/zinero/users',
     avatarDirectory: 'avatar',
     avatarFileBase: 'avatar',
     avatarBackupBase: 'avatar_old',
@@ -535,30 +535,32 @@ export class UserService {
             return { success: false, error: ErrorCode.USER_NOT_FOUND };
         }
 
-        const host = process.env.FTP_HOST;
-        const user = process.env.FTP_USER;
-        const password = process.env.FTP_PASSWORD;
-        const uploadPath = process.env.FTP_UPLOAD_PATH;
-        const portValue = Number(process.env.FTP_PORT ?? USER_SERVICE_CONFIG.defaultFtpPort);
-        const port = Number.isFinite(portValue) ? portValue : USER_SERVICE_CONFIG.defaultFtpPort;
+        const { avatarStorage } = getBackendConfig();
+        const port = avatarStorage.ftpPort ?? USER_SERVICE_CONFIG.defaultFtpPort;
 
-        if (!host || !user || !password || !uploadPath) {
+        if (
+            !avatarStorage.publicBaseUrl
+            || !avatarStorage.ftpHost
+            || !avatarStorage.ftpUser
+            || !avatarStorage.ftpPassword
+            || !avatarStorage.ftpUploadPath
+        ) {
             return { success: false, error: ErrorCode.INTERNAL_SERVER_ERROR };
         }
 
         const extension = resolveAvatarExtension(file.mimetype);
         const fileName = `${USER_SERVICE_CONFIG.avatarFileBase}.${extension}`;
-        const normalizedPath = uploadPath.replace(/\/$/, '');
+        const normalizedPath = avatarStorage.ftpUploadPath.replace(/\/$/, '');
         const userAvatarPath = `${normalizedPath}/${userId}/${USER_SERVICE_CONFIG.avatarDirectory}`;
-        const publicUrl = `${USER_SERVICE_CONFIG.avatarPublicBaseUrl}/${userId}/${USER_SERVICE_CONFIG.avatarDirectory}/${fileName}`;
+        const publicUrl = `${avatarStorage.publicBaseUrl}/${userId}/${USER_SERVICE_CONFIG.avatarDirectory}/${fileName}`;
         const ftpClient = new FtpClient();
 
         try {
             await ftpClient.access({
-                host,
+                host: avatarStorage.ftpHost,
                 port,
-                user,
-                password,
+                user: avatarStorage.ftpUser,
+                password: avatarStorage.ftpPassword,
             });
             await ftpClient.ensureDir(userAvatarPath);
             const files = await ftpClient.list();

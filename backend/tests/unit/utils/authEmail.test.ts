@@ -7,7 +7,7 @@ const setEnv = (overrides: Record<string, string | undefined>) => {
     Object.keys(overrides).forEach((key) => {
         const value = overrides[key];
         if (value === undefined) {
-            delete process.env[key];
+            process.env[key] = '';
         } else {
             process.env[key] = value;
         }

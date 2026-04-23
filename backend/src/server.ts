@@ -1,6 +1,4 @@
 // #region Imports
-import dotenv from 'dotenv';
-dotenv.config();
 import express, { Request, Response, NextFunction } from "express";
 import cookieParser from 'cookie-parser';
 
@@ -17,19 +15,17 @@ import feedbackRoutes from './routes/feedbackRoutes';
 import { createLog, sendErrorResponse, requestTimer } from './utils/commons';
 import { HTTPStatus } from '../../shared/enums/http-status.enums';
 import { LogCategory, LogOperation, LogType } from '../../shared/enums/log.enums';
-import { ServerEnvKey, ServerHeaderValue, ServerHttpMethod, ServerRequestHeader, ServerResponseHeader, ServerRoutePath, ServerToken } from '../../shared/enums/server.enums';
+import { ServerHeaderValue, ServerHttpMethod, ServerRequestHeader, ServerResponseHeader, ServerRoutePath, ServerToken } from '../../shared/enums/server.enums';
 import { ErrorCode } from '../../shared/errors/error-codes';
 import { resolveRequestLanguage } from './utils/language';
+import { validateBackendStartupConfig } from './config/env';
 
 // #endregion Imports
 
+const backendConfig = validateBackendStartupConfig();
 const app = express();
-const port = process.env[ServerEnvKey.PORT] || 5050;
-
-const envOrigins = (process.env[ServerEnvKey.CORS_ORIGINS] ?? ServerToken.EMPTY)
-    .split(ServerToken.CSV_SEPARATOR)
-    .map((origin) => origin.trim())
-    .filter(Boolean);
+const port = backendConfig.server.port;
+const envOrigins = backendConfig.server.corsOrigins;
 
 // Middleware to handle CORS
 app.use((req: Request, res: Response, next: NextFunction) => {

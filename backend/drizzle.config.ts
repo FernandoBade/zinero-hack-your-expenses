@@ -1,7 +1,7 @@
 import type { Config } from 'drizzle-kit';
-import * as dotenv from 'dotenv';
+import { getBackendConfig } from './src/config/env';
 
-dotenv.config();
+const { database } = getBackendConfig();
 
 /**
  * Drizzle Kit configuration for database migrations and schema management.
@@ -12,11 +12,11 @@ export default {
     out: './drizzle',
     dialect: 'mysql',
     dbCredentials: {
-        host: process.env.DB_HOST || 'localhost',
-        user: process.env.DB_USER || 'root',
-        password: process.env.DB_PASSWORD || '',
-        database: process.env.DB_DATABASE || 'zinero',
-        port: Number(process.env.DB_PORT) || 3306,
+        host: database.host,
+        user: database.user,
+        password: database.password,
+        database: database.database,
+        port: database.port,
     },
 } satisfies Config;
 

@@ -1,4 +1,7 @@
 import { PERSISTED_TOKEN_MAX_AGE_MS } from './tokenConfig';
+import { getBackendConfig } from '../../config/env';
+
+const { runtime } = getBackendConfig();
 
 /**
  * Base configuration for cookies used in authentication.
@@ -6,7 +9,7 @@ import { PERSISTED_TOKEN_MAX_AGE_MS } from './tokenConfig';
  */
 const CookieOptions = {
     httpOnly: true, // Prevents JavaScript access to the cookie (protects from XSS)
-    secure: process.env.NODE_ENV === 'production', // Only sends cookie over HTTPS in production
+    secure: runtime.nodeEnv === 'production', // Only sends cookie over HTTPS in production
     sameSite: 'strict' as const // Prevents cookie from being sent in cross-site requests
 };
 

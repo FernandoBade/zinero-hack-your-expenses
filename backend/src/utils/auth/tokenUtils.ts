@@ -1,17 +1,9 @@
 import crypto from 'crypto';
-import dotenv from 'dotenv';
 import jwt from 'jsonwebtoken';
 import { createLog } from '../commons';
 import { LogCategory, LogType, LogOperation } from '../../../../shared/enums/log.enums';
 import { PERSISTED_TOKEN_EXPIRES_IN } from './tokenConfig';
-
-dotenv.config();
-
-const ACCESS_SECRET = process.env.JWT_ACCESS_SECRET;
-const REFRESH_SECRET = process.env.JWT_REFRESH_SECRET;
-const TOKEN_ISSUER = process.env.JWT_ISSUER;
-const TOKEN_AUDIENCE = process.env.JWT_AUDIENCE;
-const JWT_ALGORITHM: jwt.Algorithm = 'HS256';
+import { getBackendConfig } from '../../config/env';
 
 /**
  * Ensures that required JWT secrets are defined.
@@ -20,11 +12,27 @@ const JWT_ALGORITHM: jwt.Algorithm = 'HS256';
  * @summary Validates required JWT secrets.
  */
 function ensureSecrets() {
-    if (!ACCESS_SECRET || !REFRESH_SECRET) {
+    const {
+        auth: {
+            jwt: {
+                accessSecret,
+                refreshSecret,
+            },
+        },
+    } = getBackendConfig();
+
+    if (accessSecret && refreshSecret) {
+        return {
+            accessSecret,
+            refreshSecret,
+        };
+    }
+
+    if (!accessSecret || !refreshSecret) {
         const message = `[TokenUtils] JWT secret(s) missing:
 
-        - JWT_ACCESS_SECRET: ${ACCESS_SECRET ? 'DEFINED' : 'MISSING'}
-        - JWT_REFRESH_SECRET: ${REFRESH_SECRET ? 'DEFINED' : 'MISSING'}
+        - JWT_ACCESS_SECRET: ${accessSecret ? 'DEFINED' : 'MISSING'}
+        - JWT_REFRESH_SECRET: ${refreshSecret ? 'DEFINED' : 'MISSING'}
 
         These secrets are required to sign and verify JWT tokens.
 
@@ -36,6 +44,11 @@ function ensureSecrets() {
         createLog(LogType.DEBUG, LogOperation.CREATE, LogCategory.AUTH, message);
         throw new Error('TokenUtilsInvariantViolation: jwt secrets missing');
     }
+
+    return {
+        accessSecret,
+        refreshSecret,
+    };
 }
 
 /**
@@ -44,14 +57,23 @@ function ensureSecrets() {
  * @summary Builds token-signing options with algorithm and optional issuer/audience constraints.
  */
 function buildSignOptions(expiresIn: jwt.SignOptions['expiresIn']): jwt.SignOptions {
-    const options: jwt.SignOptions = { expiresIn, algorithm: JWT_ALGORITHM };
+    const {
+        auth: {
+            jwt: {
+                issuer,
+                audience,
+                algorithm,
+            },
+        },
+    } = getBackendConfig();
+    const options: jwt.SignOptions = { expiresIn, algorithm };
 
-    if (TOKEN_ISSUER) {
-        options.issuer = TOKEN_ISSUER;
+    if (issuer) {
+        options.issuer = issuer;
     }
 
-    if (TOKEN_AUDIENCE) {
-        options.audience = TOKEN_AUDIENCE;
+    if (audience) {
+        options.audience = audience;
     }
 
     return options;
@@ -63,14 +85,23 @@ function buildSignOptions(expiresIn: jwt.SignOptions['expiresIn']): jwt.SignOpti
  * @summary Builds token-verification options enforcing configured issuer/audience values.
  */
 function buildVerifyOptions(): jwt.VerifyOptions {
-    const options: jwt.VerifyOptions = { algorithms: [JWT_ALGORITHM] };
+    const {
+        auth: {
+            jwt: {
+                issuer,
+                audience,
+                algorithm,
+            },
+        },
+    } = getBackendConfig();
+    const options: jwt.VerifyOptions = { algorithms: [algorithm] };
 
-    if (TOKEN_ISSUER) {
-        options.issuer = TOKEN_ISSUER;
+    if (issuer) {
+        options.issuer = issuer;
     }
 
-    if (TOKEN_AUDIENCE) {
-        options.audience = TOKEN_AUDIENCE;
+    if (audience) {
+        options.audience = audience;
     }
 
     return options;
@@ -84,8 +115,8 @@ export const TokenUtils = {
      */
 
     generateAccessToken(payload: object): string {
-        ensureSecrets();
-        return jwt.sign(payload, ACCESS_SECRET!, buildSignOptions('1h'));
+        const { accessSecret } = ensureSecrets();
+        return jwt.sign(payload, accessSecret, buildSignOptions('1h'));
     },
 
         /**
@@ -95,8 +126,8 @@ export const TokenUtils = {
      */
 
     generateRefreshToken(payload: object): string {
-        ensureSecrets();
-        return jwt.sign(payload, REFRESH_SECRET!, buildSignOptions(PERSISTED_TOKEN_EXPIRES_IN));
+        const { refreshSecret } = ensureSecrets();
+        return jwt.sign(payload, refreshSecret, buildSignOptions(PERSISTED_TOKEN_EXPIRES_IN));
     },
 
         /**
@@ -106,8 +137,8 @@ export const TokenUtils = {
      */
 
     verifyAccessToken(token: string) {
-        ensureSecrets();
-        return jwt.verify(token, ACCESS_SECRET!, buildVerifyOptions());
+        const { accessSecret } = ensureSecrets();
+        return jwt.verify(token, accessSecret, buildVerifyOptions());
     },
 
         /**
@@ -117,8 +148,8 @@ export const TokenUtils = {
      */
 
     verifyRefreshToken(token: string) {
-        ensureSecrets();
-        return jwt.verify(token, REFRESH_SECRET!, buildVerifyOptions());
+        const { refreshSecret } = ensureSecrets();
+        return jwt.verify(token, refreshSecret, buildVerifyOptions());
     },
 
         /**
@@ -128,8 +159,8 @@ export const TokenUtils = {
      */
 
     hashRefreshToken(token: string): string {
-        ensureSecrets();
-        return crypto.createHmac('sha256', REFRESH_SECRET!).update(token).digest('hex');
+        const { refreshSecret } = ensureSecrets();
+        return crypto.createHmac('sha256', refreshSecret).update(token).digest('hex');
     }
 };
 

@@ -7,7 +7,7 @@ const setEnv = (overrides: Record<string, string | undefined>) => {
     Object.keys(overrides).forEach((key) => {
         const value = overrides[key];
         if (value === undefined) {
-            delete process.env[key];
+            process.env[key] = '';
         } else {
             process.env[key] = value;
         }
@@ -63,6 +63,7 @@ describe('feedbackEmail utils', () => {
         const { module, resendSend } = await loadFeedbackEmail({
             RESEND_API_KEY: 'test-key',
             RESEND_FROM_EMAIL: 'no-reply@example.com',
+            FEEDBACK_TO_EMAIL: 'support@example.com',
         });
 
         const result = await module.sendFeedbackEmail({
@@ -85,7 +86,7 @@ describe('feedbackEmail utils', () => {
         const payload = resendSend.mock.calls[0][0] as Record<string, unknown>;
         expect(payload).toEqual(expect.objectContaining({
             from: 'no-reply@example.com',
-            to: 'fer@bade.digital',
+            to: 'support@example.com',
             subject: await translateAsync('email.feedback.subject', Language.EN_US),
         }));
         expect(payload.attachments).toEqual([
@@ -106,6 +107,7 @@ describe('feedbackEmail utils', () => {
         const { module, resendSend, createLog } = await loadFeedbackEmail({
             RESEND_API_KEY: 'test-key',
             RESEND_FROM_EMAIL: 'no-reply@example.com',
+            FEEDBACK_TO_EMAIL: 'support@example.com',
         }, true);
         resendSend.mockRejectedValue(new Error('resend failed token=secret'));
 
@@ -159,6 +161,7 @@ describe('feedbackEmail utils', () => {
         const { module, resendSend, createLog } = await loadFeedbackEmail({
             RESEND_API_KEY: 'test-key',
             RESEND_FROM_EMAIL: 'no-reply@example.com',
+            FEEDBACK_TO_EMAIL: 'support@example.com',
         }, true);
         resendSend.mockResolvedValue({
             error: {
@@ -194,6 +197,7 @@ describe('feedbackEmail utils', () => {
         const { module, resendSend, createLog } = await loadFeedbackEmail({
             RESEND_API_KEY: 'test-key',
             RESEND_FROM_EMAIL: 'no-reply@example.com',
+            FEEDBACK_TO_EMAIL: 'support@example.com',
         }, true);
         resendSend.mockResolvedValue({
             error: {
@@ -228,6 +232,7 @@ describe('feedbackEmail utils', () => {
         const { module, resendSend, createLog } = await loadFeedbackEmail({
             RESEND_API_KEY: 'test-key',
             RESEND_FROM_EMAIL: 'no-reply@example.com',
+            FEEDBACK_TO_EMAIL: 'support@example.com',
         }, true);
         resendSend.mockRejectedValue('timeout token=unsafe');
 
@@ -257,6 +262,7 @@ describe('feedbackEmail utils', () => {
         const { module, resendSend } = await loadFeedbackEmail({
             RESEND_API_KEY: 'test-key',
             RESEND_FROM_EMAIL: 'no-reply@example.com',
+            FEEDBACK_TO_EMAIL: 'support@example.com',
         });
 
         await expect(module.sendFeedbackEmail({
@@ -275,6 +281,7 @@ describe('feedbackEmail utils', () => {
         const { module, resendSend, createLog } = await loadFeedbackEmail({
             RESEND_API_KEY: 'test-key',
             RESEND_FROM_EMAIL: 'no-reply@example.com',
+            FEEDBACK_TO_EMAIL: 'support@example.com',
         }, true);
         resendSend.mockRejectedValue(new Error('provider down'));
         (createLog as jest.Mock).mockRejectedValue(new Error('log failure'));
@@ -285,6 +292,33 @@ describe('feedbackEmail utils', () => {
             title: 'Title',
             message: 'Message',
         })).resolves.toEqual({ success: false });
+    });
+
+    it('returns false and logs configuration errors when feedback recipient is missing', async () => {
+        const { module, createLog } = await loadFeedbackEmail({
+            RESEND_API_KEY: 'test-key',
+            RESEND_FROM_EMAIL: 'no-reply@example.com',
+            FEEDBACK_TO_EMAIL: undefined,
+        }, true);
+
+        await expect(module.sendFeedbackEmail({
+            userId: 61,
+            userEmail: 'user@example.com',
+            title: 'Title',
+            message: 'Message',
+        })).resolves.toEqual({ success: false });
+
+        expect(createLog).toHaveBeenCalledWith(
+            LogType.ERROR,
+            LogOperation.CREATE,
+            LogCategory.LOG,
+            expect.objectContaining({
+                event: 'FEEDBACK_EMAIL_SEND_FAILED',
+                provider: 'resend',
+                error: expect.objectContaining({ message: 'Resend configuration missing' }),
+            }),
+            61
+        );
     });
 });
 

@@ -4,6 +4,7 @@ import { EmailProvider } from "../../../../shared/enums/email.enums";
 import { LogCategory, LogEvent, LogOperation, LogType } from "../../../../shared/enums/log.enums";
 import type { Locale } from "../../../../shared/i18n/types/locale";
 import { translateAsync } from "../../../../shared/i18n/translate";
+import { getBackendConfig } from "../../config/env";
 
 export type FeedbackAttachmentInput = {
     filename: string;
@@ -32,10 +33,13 @@ type FeedbackEmailContent = {
     userEmailLabel: string;
 };
 
-const FEEDBACK_TO_EMAIL = "fer@bade.digital";
-const RESEND_API_KEY = process.env.RESEND_API_KEY;
-const RESEND_FROM_EMAIL = process.env.RESEND_FROM_EMAIL;
-const resend = RESEND_API_KEY ? new Resend(RESEND_API_KEY) : null;
+/**
+ * @summary Builds the configured Resend client when feedback delivery credentials are present.
+ */
+const createResendClient = (): Resend | null => {
+    const { email } = getBackendConfig();
+    return email.resendApiKey ? new Resend(email.resendApiKey) : null;
+};
 
 /**
  * @summary Resolves localized labels and subject text for feedback email templates.
@@ -155,7 +159,10 @@ const logConfigError = async (userId?: number): Promise<void> => {
  * @summary Sends feedback payloads through Resend and returns delivery success status.
  */
 const defaultSender: FeedbackEmailSender = async (payload) => {
-    if (!resend || !RESEND_FROM_EMAIL) {
+    const { email } = getBackendConfig();
+    const resend = createResendClient();
+
+    if (!resend || !email.resendFromEmail) {
         await logConfigError(payload.userId);
         return false;
     }
@@ -166,7 +173,7 @@ const defaultSender: FeedbackEmailSender = async (payload) => {
 
     try {
         const result = await resend.emails.send({
-            from: RESEND_FROM_EMAIL,
+            from: email.resendFromEmail,
             to: payload.to,
             subject: content.subject,
             html,
@@ -204,8 +211,14 @@ export async function sendFeedbackEmail(
     }: Omit<FeedbackEmailPayload, "to">,
     sender: FeedbackEmailSender = defaultSender
 ): Promise<{ success: true } | { success: false }> {
+    const { email } = getBackendConfig();
+    if (!email.feedbackToEmail) {
+        await logConfigError(userId);
+        return { success: false };
+    }
+
     const success = await sender({
-        to: FEEDBACK_TO_EMAIL,
+        to: email.feedbackToEmail,
         userId,
         userEmail,
         title,
