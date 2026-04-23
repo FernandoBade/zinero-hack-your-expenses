@@ -1,217 +1,186 @@
-﻿<div align="center">
+<div align="center">
   <img src="shared/assets/images/ZINERO by Badixy_transparent_vertical.png" alt="Zinero" width="320" />
 </div>
 
-# 💸Zinero - Hack your expenses!
+# Zinero
 
-Zinero is a TypeScript-based personal finance platform focused on turning raw transactions into structured financial understanding.
+Zinero is a TypeScript monorepo for a personal finance product focused on
+turning transactions into structured financial understanding.
 
-This repository is a **monorepo** with a backend-first architecture: domain rules are defined in the API, shared contracts live in `shared/`, and the frontend mirrors the same mental model for consistency.
+## Current status
 
----
+- `backend/` is the most mature part of the repository. It currently provides
+  authentication, users, accounts, credit cards, categories, subcategories,
+  tags, transactions, feedback, logging, and MySQL persistence through Drizzle.
+- `frontend/` currently covers authentication, bootstrap, shared UI
+  foundations, state, i18n, a `sandbox` page, and a placeholder `dashboard`.
+  Financial product screens are not implemented yet.
+- `shared/` centralizes cross-layer contracts, enums, field keys, error codes,
+  i18n, and reusable assets.
+- There is no `mobile/` package, no checked-in CI/CD pipeline, and no
+  deployment setup in the repository today.
 
-## Why Zinero Exists
+Latest locally verified quality gates on `2026-04-23`:
 
-Zinero started with a question that gave me a mild sense of panic during the pandemic: how much had I spent on snacks and Coca-Cola that year?
+- `npm run lint`
+- `npm run typecheck`
+- `npm test`
 
-I wanted just one number. Something simple. But getting that answer turned into a side project on its own. I went through spreadsheets, ChatGPT, free apps, paid apps, exported bank CSVs, and card invoices, and still nothing felt truly clear. It felt like I was working to understand my own money, and that should not be this frustrating.
+## Governance
 
-At the time, I was just beginning to study programming and did not yet have the technical foundation to build anything better. So that discomfort stayed with me.
+The authoritative governance source for this repository lives in `skills/`.
 
-Years later, with more experience, I came back to that old pain and decided to build this the way I always wanted to use it. I started carefully, designing the architecture, modeling the data properly, and organizing the foundation to scale. So far, this project has taken more than 300 hours across study, testing, code, design, and a lot of learning.
+Use the relevant skill file for execution standards and ownership boundaries:
 
-This is a personal project. I want to use it in my own life. And every time I mention it to friends, someone says, "I would definitely use this" or "I really need something like this." Deep down, I think many people have asked themselves questions like "How much did I spend on iFood this year?" or "How much did that trip to Macaé really cost?"
+- [`skills/staff-architecture/SKILL.md`](skills/staff-architecture/SKILL.md)
+- [`skills/staff-backend/SKILL.md`](skills/staff-backend/SKILL.md)
+- [`skills/staff-frontend/SKILL.md`](skills/staff-frontend/SKILL.md)
+- [`skills/staff-design-system/SKILL.md`](skills/staff-design-system/SKILL.md)
+- [`skills/staff-ux-writing/SKILL.md`](skills/staff-ux-writing/SKILL.md)
+- [`skills/staff-qa/SKILL.md`](skills/staff-qa/SKILL.md)
+- [`skills/staff-product/SKILL.md`](skills/staff-product/SKILL.md)
 
-The goal is for Zinero to truly come to life in 2026, and I am very close to launching the beta version. I also want to include AI in a thoughtful way, to help identify patterns, anticipate behavior, and generate the kind of insights that make you think, "Now this makes sense."
+[`agents.md`](agents.md) and this `README.md` are secondary orientation
+documents. When documentation and code differ, the code is the source of truth.
+When documentation and the governance model differ, follow the relevant skill
+file.
 
-    ✨ Sometimes what stands between a dream and reality is not earning more, but organizing better.
+## Repository structure
 
-In the end, everything started with a simple question and a small frustration. It became something I am building with care, curiosity, and, honestly, a lot of excitement.
+```text
+.
+|-- backend/
+|-- frontend/
+|-- shared/
+|-- skills/
+|-- agents.md
+|-- README.md
+`-- package.json
+```
 
----
+Notes:
 
-### **Overview** 🧭
+- The root workspaces are `backend` and `frontend`.
+- `shared/` is a common folder used by both applications, not a separate npm
+  workspace.
+- `skills/` contains the current governance model for architecture, backend,
+  frontend, design system, UX writing, QA, and product definition.
 
-Most personal finance tools are reactive. They track numbers, but rarely provide structural clarity or a reliable foundation for intelligent decision-making.
+## Architecture snapshot
 
-Zinero addresses this with:
+```text
+frontend (Preact + Vite)
+  -> api/http/httpClient.ts
+  -> backend REST API (Express)
+  -> controllers -> services -> repositories -> MySQL/Drizzle
+  <- standardized ErrorCode-based responses
 
-- Strong domain modeling
-- Clean architectural boundaries
-- Shared typed contracts across backend and frontend
-- Long-term scalability over short-term feature shortcuts
+shared/
+  -> domain contracts, enums, fields, i18n, assets
+```
 
----
+Backend conventions today:
 
-### **Monorepo Structure** 📦
+- Ownership-sensitive endpoints use owner-or-`MASTER` checks through
+  `canAccessOwnedResource()` and `canAccessRequestedUser()`.
+- `updateUser` is treated as an identity-sensitive flow: self-service email and
+  password changes require `currentPassword`; email changes clear verification
+  state and revoke refresh sessions.
+- `backend/src/utils/validation/validateRequest.ts` is a compatibility facade.
+  Domain validators live in `backend/src/utils/validation/domains/`.
 
-| Workspace | Purpose |
-|---|---|
-| `backend/` | Node.js + TypeScript API, source of truth for business/domain rules |
-| `frontend/` | Preact + Vite app that consumes backend APIs and shared contracts |
-| `shared/` | Shared contracts: enums, domain types, i18n keys, and reusable assets |
-| `mobile/` | Soon we will be talking about this ;) |
+Frontend conventions today:
 
-Root workspaces are managed via npm workspaces in [`package.json`](package.json).
+- Pages use controllers and services instead of calling the API directly.
+- All HTTP traffic goes through `frontend/src/api/http/httpClient.ts`.
+- The delivered product surface is still auth-first; the financial domain has
+  not been surfaced in the frontend yet.
 
----
+## Getting started
 
-### **Architecture Snapshot** 🧱
+### Prerequisites
 
-#### Backend (`backend/src`)
-
-- `routes/` - HTTP route definitions
-- `controller/` - request/response orchestration
-- `service/` - business use cases
-- `repositories/` - persistence and data access
-- `db/` - schema, client, and migrations
-- `utils/` - cross-cutting utilities
-
-#### Frontend (`frontend/src`)
-
-- `pages/` - screen composition and page-level controllers
-- `services/` - frontend use cases
-- `api/` - HTTP client layer
-- `routes/` - routing and navigation control
-- `platform/` - native-ready abstractions (storage/network/back-button)
-- `components/` - reusable UI components
-- `state/` - global stores
-
-#### Shared (`shared/`)
-
-- `domains/`, `types/`, `enums/`, `i18n/`, `assets/`
-
-This keeps contracts aligned across layers and reduces integration drift. ✅
-
----
-
-### **Tech Stack** ⚙️
-
-#### Backend
-
-- Node.js
-- TypeScript
-- Express
-- MySQL
-- Drizzle ORM
-- Jest
-- ESLint
-
-#### Frontend
-
-- Preact
-- Vite
-- TypeScript
-- Wouter (history-based router)
-- TailwindCSS + DaisyUI
-- Vitest
-
----
-
-### **Getting Started** 🚀
-
-#### 1. Prerequisites
-
-- Node.js (LTS recommended)
+- Node.js LTS
 - npm
-- MySQL instance available
+- MySQL
 
-#### 2. Install dependencies (root)
+### Install dependencies
 
 ```bash
 npm install
 ```
 
-#### 3. Configure environment files
+### Configure environment variables
 
-Backend uses `backend/.env`.
+Backend runtime configuration lives in `backend/.env`.
 
-Required keys used by the backend runtime include:
+Common backend keys:
 
-- `PORT`, `CORS_ORIGINS`
+- `PORT`, `NODE_ENV`, `CORS_ORIGINS`
 - `DB_HOST`, `DB_USER`, `DB_PASSWORD`, `DB_DATABASE`
 - `JWT_ACCESS_SECRET`, `JWT_REFRESH_SECRET`
-- `JWT_ISSUER`, `JWT_AUDIENCE` (optional but supported)
+- `JWT_ISSUER`, `JWT_AUDIENCE`
 - `FRONTEND_BASE_URL`
 - `RESEND_API_KEY`, `RESEND_FROM_EMAIL`
 - `FTP_HOST`, `FTP_PORT`, `FTP_USER`, `FTP_PASSWORD`, `FTP_UPLOAD_PATH`
 - `AVATAR_PUBLIC_BASE_URL`
-- `NODE_ENV`
 
-Frontend uses `frontend/.env.development` and `frontend/.env.production`.
+Frontend runtime configuration lives in `frontend/.env.development` and
+`frontend/.env.production`.
 
-Required key:
+Required frontend key:
 
 - `VITE_API_BASE_URL`
 
-#### 4. Run full development stack from root
+### Run the current local stack
 
 ```bash
 npm run dev
 ```
 
-This runs backend migrations and starts API + frontend together.
+This runs backend migrations, starts the API, and starts the current frontend.
 
----
+## Supported root commands
 
-### **Root Scripts** 🧪
+Current supported workflows:
 
-- `npm run dev:full` - full local stack (migrate + backend + frontend)
-- `npm run dev:backend` - API only
-- `npm run dev:frontend` - current frontend only
-- `npm run dev:frontend:old` - legacy frontend only
-- `npm run db:migrate` - run backend migrations
-- `npm run db:sync` - generate + migrate backend schema
-- `npm run seed` / `seed:10` / `seed:100` / `seed:1000` - seed database
-- `npm run lint` - lint all workspaces
-- `npm run test` - run all workspace tests
-- `npm run test:coverage` - run coverage in all workspaces
-- `npm run build` - lint + build all workspaces
+- `npm run dev`
+- `npm run dev:backend`
+- `npm run dev:frontend`
+- `npm run db:migrate`
+- `npm run db:sync`
+- `npm run seed`
+- `npm run lint`
+- `npm run typecheck`
+- `npm run test`
+- `npm run build`
 
----
+Legacy leftovers still exist in `package.json`:
 
-### **Roadmap** 🎯
+- `npm run dev:frontend:old`
+- `npm run dev:full:old`
 
-- Beta release in 2026
-- Advanced analytics layer
-- AI-assisted pattern recognition and insights
-- Budget forecasting models
-- Expanded API surface (REST and/or GraphQL)
-- Authentication hardening and user management evolution
-- Multi-tenant support
-- Observability and monitoring improvements
-- Build the mobile version
+Those commands depend on a missing `frontend_old/` directory and are not part
+of the current supported workflow.
 
----
+## Current direction
 
-### **License** 📃
+Current reality:
 
-This project is licensed under the Zinero Non-Commercial License.
+- The backend is stable enough to serve as the foundation for future financial
+  frontend work.
+- The frontend is still in an auth/bootstrap/design-system stage.
+- Operational hardening and CI/CD are still future work, not current repository
+  capabilities.
 
-#### Summary
+Near-term direction:
 
-You may:
+- Expand the financial frontend on top of the current backend surface.
+- Keep documentation aligned with code and the governance skills.
+- Continue improving operational maturity without over-engineering the
+  monorepo.
 
-- Use the project for personal and educational purposes
-- Study and modify the code for non-commercial use
+## License
 
-You may NOT:
-
-- Sell the project or any derivative work
-- Offer it as a paid service (SaaS or otherwise)
-- Monetize modified versions
-- Use the code in commercial or revenue-generating systems
-
-Commercial use of any kind is strictly prohibited.
-
-For full terms, see the `LICENCE` file in the root of this repository.
-
----
-
-### Final Note
-
-Zinero is more than a financial tracker.
-
-It is an architectural foundation built with product thinking, technical depth, and long-term scalability in mind.
-
-Hack your expenses. 💸
+This project is licensed under the Zinero Non-Commercial License. See
+[`LICENCE`](LICENCE).
