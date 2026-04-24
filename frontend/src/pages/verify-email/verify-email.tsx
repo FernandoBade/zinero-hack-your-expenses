@@ -151,6 +151,10 @@ export function VerifyEmailPage(): JSX.Element {
     };
 
     const handleResendVerification = async (): Promise<void> => {
+        if (isResending || cooldown > 0) {
+            return;
+        }
+
         setIsResending(true);
         setResendError(null);
         setResendSuccess(null);
@@ -175,6 +179,7 @@ export function VerifyEmailPage(): JSX.Element {
     };
 
     const showResendSection = verifyStatus === "idle" || verifyStatus === "invalid" || verifyStatus === "error";
+    const showGuidanceTips = showResendSection;
 
     return (
         <AuthShell size="compact" title={VERIFY_TITLE_KEY} subtitle={VERIFY_SUBTITLE_KEY}>
@@ -211,11 +216,13 @@ export function VerifyEmailPage(): JSX.Element {
                     />
                 ) : null}
 
-                <div class="space-y-2">
-                    <p class="text-body text-base-100">{t(VERIFY_TIP_INBOX_KEY)}</p>
-                    <p class="text-body text-base-100">{t(VERIFY_TIP_SPAM_KEY)}</p>
-                    <p class="text-body text-base-100">{t(VERIFY_TIP_RESEND_KEY)}</p>
-                </div>
+                {showGuidanceTips ? (
+                    <div class="space-y-2">
+                        <p class="text-body text-base-100">{t(VERIFY_TIP_INBOX_KEY)}</p>
+                        <p class="text-body text-base-100">{t(VERIFY_TIP_SPAM_KEY)}</p>
+                        <p class="text-body text-base-100">{t(VERIFY_TIP_RESEND_KEY)}</p>
+                    </div>
+                ) : null}
 
                 {showResendSection ? (
                     <Form onSubmit={handleResendVerification} disabled={isResending}>
@@ -248,7 +255,13 @@ export function VerifyEmailPage(): JSX.Element {
                                 <Alert variant={AlertVariant.SUCCESS} style={AlertStyle.SOFT} title={VERIFY_RESEND_SUCCESS_TITLE_KEY} message={resendSuccess} />
                             ) : null}
 
-                            <Button type="submit" variant={ButtonVariant.PRIMARY} fullWidth loading={isResending}>
+                            <Button
+                                type="submit"
+                                variant={ButtonVariant.PRIMARY}
+                                fullWidth
+                                loading={isResending}
+                                disabled={cooldown > 0}
+                            >
                                 {t(
                                     isResending
                                         ? VERIFY_RESEND_SENDING_KEY

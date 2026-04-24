@@ -110,9 +110,50 @@ describe('authEmail utils', () => {
         }));
 
         const html = payload.html as string;
+        const text = payload.text as string;
+        expect(html).toContain(await translateAsync('app.name', Language.PT_BR));
+        expect(html).toContain(await translateAsync('email.auth.password_reset.heading', Language.PT_BR));
         expect(html).toContain(await translateAsync('email.auth.password_reset.body', Language.PT_BR));
+        expect(html).toContain(await translateAsync('email.auth.password_reset.cta', Language.PT_BR));
+        expect(html).toContain(await translateAsync('email.auth.link.label', Language.PT_BR));
         expect(html).toContain(await translateAsync('email.auth.password_reset.warning', Language.PT_BR));
+        expect(html).toContain('display:inline-block');
         expect(html).toContain('https://app.example.com/reset-password?token=reset-token');
+        expect(text).toContain(await translateAsync('email.auth.password_reset.heading', Language.PT_BR));
+        expect(text).toContain(`${await translateAsync('email.auth.password_reset.cta', Language.PT_BR)}: https://app.example.com/reset-password?token=reset-token`);
+        expect(text).toContain(await translateAsync('email.auth.password_reset.warning', Language.PT_BR));
+    });
+
+    it('sends verification email via resend with branded English content', async () => {
+        const { module, resendSend } = await loadAuthEmail({
+            WEB_PUBLIC_BASE_URL: 'https://app.example.com',
+            RESEND_API_KEY: 'test-key',
+            RESEND_FROM_EMAIL: 'no-reply@example.com',
+        });
+
+        await module.sendEmailVerificationEmail('user@example.com', 'verify-token', 8, Language.EN_US);
+
+        expect(resendSend).toHaveBeenCalledTimes(1);
+        const payload = resendSend.mock.calls[0][0] as Record<string, unknown>;
+        expect(payload).toEqual(expect.objectContaining({
+            from: 'no-reply@example.com',
+            to: 'user@example.com',
+            subject: await translateAsync('email.auth.verification.subject', Language.EN_US),
+        }));
+
+        const html = payload.html as string;
+        const text = payload.text as string;
+        expect(html).toContain(await translateAsync('app.name', Language.EN_US));
+        expect(html).toContain(await translateAsync('email.auth.verification.preheader', Language.EN_US));
+        expect(html).toContain(await translateAsync('email.auth.verification.heading', Language.EN_US));
+        expect(html).toContain('You&#39;re almost in. Confirm this email address to activate your Zinero account.');
+        expect(html).toContain(await translateAsync('email.auth.verification.cta', Language.EN_US));
+        expect(html).toContain(await translateAsync('email.auth.link.label', Language.EN_US));
+        expect(html).toContain(await translateAsync('email.auth.verification.warning', Language.EN_US));
+        expect(html).toContain('https://app.example.com/verify-email?token=verify-token');
+        expect(text).toContain(await translateAsync('email.auth.verification.body', Language.EN_US));
+        expect(text).toContain(`${await translateAsync('email.auth.verification.cta', Language.EN_US)}: https://app.example.com/verify-email?token=verify-token`);
+        expect(text).toContain(await translateAsync('email.auth.verification.warning', Language.EN_US));
     });
 
     it('logs resend failures and rejects when the provider throws', async () => {

@@ -130,6 +130,10 @@ export function SignupPage(): JSX.Element {
     };
 
     const handleResendVerification = async (): Promise<void> => {
+        if (isResending || cooldown > 0) {
+            return;
+        }
+
         const targetEmail = (pendingVerificationEmail ?? email).trim();
         setIsResending(true);
         setResendError(null);
@@ -139,7 +143,7 @@ export function SignupPage(): JSX.Element {
 
         setIsResending(false);
         if (result.success) {
-            setResendSuccess(result.messageKey ?? "error.email_verification_requested");
+            setResendSuccess(result.messageKey ?? "auth.verify_email.resend.success.message");
             setCooldown(DEFAULT_VERIFICATION_COOLDOWN_SECONDS);
             return;
         }
@@ -186,7 +190,13 @@ export function SignupPage(): JSX.Element {
                             <Alert variant={AlertVariant.SUCCESS} style={AlertStyle.SOFT} title={RESEND_SUCCESS_TITLE_KEY} message={resendSuccess} />
                         ) : null}
                         <div class="mx-auto w-full max-w-sm">
-                            <Button type="button" fullWidth loading={isResending} onClick={handleResendVerification}>
+                            <Button
+                                type="button"
+                                fullWidth
+                                loading={isResending}
+                                disabled={cooldown > 0}
+                                onClick={handleResendVerification}
+                            >
                                 {t(
                                     isResending
                                         ? RESEND_SENDING_KEY

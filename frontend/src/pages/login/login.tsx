@@ -1,7 +1,6 @@
 import type { JSX } from "preact";
 import { useEffect, useMemo, useState } from "preact/hooks";
 import { FingerprintIcon } from "@phosphor-icons/react/ssr";
-import googleLogoButton from "@shared/assets/images/google-logo-button.png";
 import { ErrorCode } from "@shared/errors/error-codes";
 import { FieldKey, type FieldKey as FieldKeyType } from "@shared/fields/field-keys";
 import { AlertVariant, AlertStyle, ButtonVariant } from "@shared/enums/ui.enums";
@@ -24,11 +23,8 @@ const LOGIN_EMAIL_PLACEHOLDER_KEY = "auth.login.email.placeholder";
 const LOGIN_PASSWORD_PLACEHOLDER_KEY = "auth.login.password.placeholder";
 const LOGIN_BUTTON_KEY = "auth.login.submit";
 const LOGIN_FORGOT_PASSWORD_KEY = "auth.login.forgot_password.action";
-const LOGIN_DIVIDER_OR_KEY = "auth.login.divider.or";
-const LOGIN_WITH_GOOGLE_KEY = "auth.login.google.continue";
 const SIGNUP_HINT_KEY = "auth.login.signup_prompt.text";
 const SIGNUP_ACTION_KEY = "auth.login.signup_prompt.action";
-const LOGIN_GOOGLE_COMMING_SOON_KEY = "app.coming_soon";
 const LOGIN_NOT_VERIFIED_TITLE_KEY = "auth.login.not_verified.title";
 const LOGIN_NOT_VERIFIED_MESSAGE_KEY = "auth.login.not_verified.message";
 const LOGIN_NOT_VERIFIED_MESSAGE_WITH_EMAIL_KEY = "auth.login.not_verified.message_with_email";
@@ -133,7 +129,7 @@ export function LoginPage(): JSX.Element {
 
         setIsResending(false);
         if (result.success) {
-            setResendSuccess(result.messageKey ?? "error.email_verification_requested");
+            setResendSuccess(result.messageKey ?? "auth.verify_email.resend.success.message");
             setCooldown(DEFAULT_VERIFICATION_COOLDOWN_SECONDS);
             return;
         }
@@ -257,40 +253,18 @@ export function LoginPage(): JSX.Element {
                         </div>
                     </div>
 
-                    <div class="space-y-4">
-                        <div class="[&>button]:w-full">
-                            <Button type="submit" variant={ButtonVariant.PRIMARY} loading={isSubmitting}>
-                                <span class="inline-flex items-center gap-2">
-                                    {!isSubmitting ? <FingerprintIcon size={24} weight="duotone" /> : null}
-                                    <span class="text-button-lg font-semibold">{t(LOGIN_BUTTON_KEY)}</span>
-                                </span>
-                            </Button>
-                        </div>
-
-                        <div class="flex items-center gap-4 pb-4">
-                            <span class="h-px flex-1 bg-base-100/40" />
-                            <span class="text-body text-base-100">{t(LOGIN_DIVIDER_OR_KEY)}</span>
-                            <span class="h-px flex-1 bg-base-100/40" />
-                        </div>
-
-                        <div
-                            class="[&>button]:w-full [&>button]:!border-base-100/80 [&>button]:!text-base-100"
-                            title={t(LOGIN_GOOGLE_COMMING_SOON_KEY)}
-                        >
-                            <Button type="button" variant={ButtonVariant.OUTLINE} disabled>
-                                <span class="inline-flex cursor-not-allowed items-center gap-3">
-                                    <img src={googleLogoButton} alt="" class="h-6 w-6 cursor-not-allowed" aria-hidden="true" />
-                                    <span class="cursor-not-allowed text-button-lg font-semibold line-through text-stone-500">{t(LOGIN_WITH_GOOGLE_KEY)}</span>
-                                </span>
-                            </Button>
-                        </div>
-
-                        <div class="pt-1 text-center">
-                            <span class="text-sm text-base-100">{t(SIGNUP_HINT_KEY)}</span>
-                            <Button type="button" variant={ButtonVariant.LINK} label={SIGNUP_ACTION_KEY} onClick={controller.onNavigateToSignup} />
-                        </div>
-                    </div>
+                    <Button type="submit" variant={ButtonVariant.PRIMARY} fullWidth loading={isSubmitting}>
+                        <span class="inline-flex items-center gap-2">
+                            {!isSubmitting ? <FingerprintIcon size={24} weight="duotone" /> : null}
+                            <span class="text-button-lg font-semibold">{t(LOGIN_BUTTON_KEY)}</span>
+                        </span>
+                    </Button>
                 </Form>
+
+                <div class="text-center">
+                    <span class="text-sm text-base-100">{t(SIGNUP_HINT_KEY)}</span>
+                    <Button type="button" variant={ButtonVariant.LINK} label={SIGNUP_ACTION_KEY} onClick={controller.onNavigateToSignup} />
+                </div>
             </div>
         </AuthShell>
     );

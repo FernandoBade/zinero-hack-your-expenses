@@ -172,7 +172,7 @@ describe("auth.service", () => {
         expect(result).toEqual({
             success: true,
             data: { sent: true },
-            messageKey: "error.email_verification_requested",
+            messageKey: "auth.verify_email.resend.success.message",
         });
     });
 
@@ -202,7 +202,7 @@ describe("auth.service", () => {
         expect(result).toEqual({
             success: true,
             data: { sent: true },
-            messageKey: "error.password_reset_requested",
+            messageKey: "auth.forgot_password.success.message",
         });
     });
 
@@ -217,7 +217,7 @@ describe("auth.service", () => {
         expect(result).toEqual({
             success: true,
             data: { reset: true },
-            messageKey: "error.password_reset_success",
+            messageKey: "auth.reset_password.success.message",
         });
     });
 

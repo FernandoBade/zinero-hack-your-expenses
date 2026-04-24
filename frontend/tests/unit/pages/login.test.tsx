@@ -80,6 +80,13 @@ describe("LoginPage", () => {
         expect(container.textContent).toContain("error.field_required_generic");
     });
 
+    it("does not render unfinished Google sign-in controls", () => {
+        render(<LoginPage />, container);
+
+        expect(container.textContent).not.toContain("auth.login.google.continue");
+        expect(container.textContent).not.toContain("auth.login.divider.or");
+    });
+
     it("supports resend recovery when login fails with an unverified account", async () => {
         onSubmitMock.mockResolvedValue({
             success: false,
@@ -89,7 +96,7 @@ describe("LoginPage", () => {
         });
         onResendVerificationMock.mockResolvedValue({
             success: true,
-            messageKey: "error.email_verification_requested",
+            messageKey: "auth.verify_email.resend.success.message",
             data: { sent: true },
         });
 
@@ -110,6 +117,6 @@ describe("LoginPage", () => {
 
         expect(onResendVerificationMock).toHaveBeenCalledWith("user@example.com");
         expect(container.textContent).toContain("auth.verify_email.resend.success.title");
-        expect(container.textContent).toContain("error.email_verification_requested");
+        expect(container.textContent).toContain("auth.verify_email.resend.success.message");
     });
 });

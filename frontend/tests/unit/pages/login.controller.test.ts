@@ -90,7 +90,7 @@ describe("login.controller", () => {
     it("delegates resend verification when the email is valid", async () => {
         resendVerificationEmailMock.mockResolvedValue({
             success: true,
-            messageKey: "error.email_verification_requested",
+            messageKey: "auth.verify_email.resend.success.message",
             data: { sent: true },
         });
 
@@ -100,7 +100,7 @@ describe("login.controller", () => {
         expect(resendVerificationEmailMock).toHaveBeenCalledWith("user@example.com");
         expect(result).toEqual({
             success: true,
-            messageKey: "error.email_verification_requested",
+            messageKey: "auth.verify_email.resend.success.message",
             data: { sent: true },
         });
     });

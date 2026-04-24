@@ -149,7 +149,7 @@ export async function resendVerificationEmail(email: string): Promise<AuthAction
         return {
             success: true,
             data: response.data,
-            messageKey: "error.email_verification_requested",
+            messageKey: "auth.verify_email.resend.success.message",
         };
     }
 
@@ -185,7 +185,7 @@ export async function requestPasswordReset(email: string): Promise<AuthActionRes
         return {
             success: true,
             data: response.data,
-            messageKey: "error.password_reset_requested",
+            messageKey: "auth.forgot_password.success.message",
         };
     }
 
@@ -202,7 +202,7 @@ export async function resetPassword(token: string, password: string): Promise<Au
         return {
             success: true,
             data: response.data,
-            messageKey: "error.password_reset_success",
+            messageKey: "auth.reset_password.success.message",
         };
     }
 

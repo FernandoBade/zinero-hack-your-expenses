@@ -152,9 +152,11 @@ export function ResetPasswordPage(): JSX.Element {
                             {t(RESET_PASSWORD_REQUEST_NEW_LINK_KEY)}
                         </Button>
                     ) : null}
-                    <Button type="button" variant={ButtonVariant.LINK} fullWidth onClick={controller.onNavigateToLogin}>
-                        {t(RESET_PASSWORD_BACK_KEY)}
-                    </Button>
+                    {!successMessage ? (
+                        <Button type="button" variant={ButtonVariant.LINK} fullWidth onClick={controller.onNavigateToLogin}>
+                            {t(RESET_PASSWORD_BACK_KEY)}
+                        </Button>
+                    ) : null}
                 </div>
             </div>
         </AuthShell>

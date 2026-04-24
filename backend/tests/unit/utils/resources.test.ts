@@ -30,7 +30,7 @@ describe('shared i18n translate', () => {
 
     it('translates error codes through the error-code map', async () => {
         await preloadLocaleCatalog(Language.EN_US);
-        expect(translateError(ErrorCode.INVALID_CREDENTIALS, Language.EN_US)).toBe('Invalid credentials');
+        expect(translateError(ErrorCode.INVALID_CREDENTIALS, Language.EN_US)).toBe('Email or password does not match our records.');
     });
 
     it('translates field labels through the typed field map', async () => {

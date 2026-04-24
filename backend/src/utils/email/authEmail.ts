@@ -20,11 +20,28 @@ type AuthEmailPayload = {
 export type AuthEmailSender = (payload: AuthEmailPayload) => Promise<void>;
 
 type AuthEmailContent = {
+    brandName: string;
     subject: string;
+    preheader: string;
+    heading: string;
     body: string;
-    warning?: string;
+    ctaLabel: string;
     linkLabel: string;
+    warning: string;
 };
+
+const HTML_ESCAPE_MAP: Readonly<Record<string, string>> = {
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    "\"": "&quot;",
+    "'": "&#39;",
+};
+
+/**
+ * @summary Escapes dynamic email content before interpolating it into HTML templates.
+ */
+const escapeHtml = (value: string): string => value.replace(/[&<>"']/g, (character) => HTML_ESCAPE_MAP[character] ?? character);
 
 /**
  * @summary Builds the configured Resend client when email delivery credentials are present.
@@ -49,19 +66,31 @@ const buildAuthLink = (path: string, token: string): string => {
  * @summary Resolves localized subject/body content for auth email templates by token type.
  */
 const buildAuthEmailContent = async (type: AuthEmailType, locale?: Locale): Promise<AuthEmailContent> => {
+    const brandName = await translateAsync("app.name", locale);
+    const linkLabel = await translateAsync("email.auth.link.label", locale);
+
     if (type === TokenType.EMAIL_VERIFICATION) {
         return {
+            brandName,
             subject: await translateAsync("email.auth.verification.subject", locale),
+            preheader: await translateAsync("email.auth.verification.preheader", locale),
+            heading: await translateAsync("email.auth.verification.heading", locale),
             body: await translateAsync("email.auth.verification.body", locale),
-            linkLabel: await translateAsync("email.auth.link.label", locale),
+            ctaLabel: await translateAsync("email.auth.verification.cta", locale),
+            linkLabel,
+            warning: await translateAsync("email.auth.verification.warning", locale),
         };
     }
 
     return {
+        brandName,
         subject: await translateAsync("email.auth.password_reset.subject", locale),
+        preheader: await translateAsync("email.auth.password_reset.preheader", locale),
+        heading: await translateAsync("email.auth.password_reset.heading", locale),
         body: await translateAsync("email.auth.password_reset.body", locale),
+        ctaLabel: await translateAsync("email.auth.password_reset.cta", locale),
         warning: await translateAsync("email.auth.password_reset.warning", locale),
-        linkLabel: await translateAsync("email.auth.link.label", locale),
+        linkLabel,
     };
 };
 
@@ -69,24 +98,45 @@ const buildAuthEmailContent = async (type: AuthEmailType, locale?: Locale): Prom
  * @summary Builds the HTML template used for authentication-related transactional emails.
  */
 const buildAuthEmailHtml = (content: AuthEmailContent, link: string): string => {
-    const warningBlock = content.warning
-        ? `<p style="margin:0 0 12px;line-height:1.5;color:#555;">${content.warning}</p>`
-        : "";
+    const brandName = escapeHtml(content.brandName);
+    const subject = escapeHtml(content.subject);
+    const preheader = escapeHtml(content.preheader);
+    const heading = escapeHtml(content.heading);
+    const body = escapeHtml(content.body);
+    const ctaLabel = escapeHtml(content.ctaLabel);
+    const linkLabel = escapeHtml(content.linkLabel);
+    const warning = escapeHtml(content.warning);
+    const escapedLink = escapeHtml(link);
 
     return `
 <!DOCTYPE html>
 <html>
-  <body style="margin:0;padding:0;background-color:#f5f5f5;">
-    <div style="max-width:600px;margin:0 auto;padding:24px;font-family:Arial,sans-serif;color:#111;">
-      <div style="background:#ffffff;border-radius:8px;padding:24px;">
-        <h1 style="font-size:20px;margin:0 0 12px;">${content.subject}</h1>
-        <p style="margin:0 0 16px;line-height:1.5;">${content.body}</p>
-        <p style="margin:0 0 8px;line-height:1.5;color:#555;">${content.linkLabel}</p>
-        <p style="margin:0 0 16px;word-break:break-word;">
-          <a href="${link}" style="color:#111;">${link}</a>
-        </p>
-        ${warningBlock}
+  <head>
+    <title>${subject}</title>
+  </head>
+  <body style="margin:0;padding:0;background-color:#f4f1ec;">
+    <span style="display:none!important;visibility:hidden;opacity:0;color:transparent;height:0;width:0;overflow:hidden;">${preheader}</span>
+    <div style="max-width:600px;margin:0 auto;padding:28px 16px;font-family:Arial,Helvetica,sans-serif;color:#171717;">
+      <div style="background:#ffffff;border:1px solid #e5e0d8;border-radius:12px;overflow:hidden;">
+        <div style="padding:24px 28px 0;">
+          <p style="margin:0;color:#256f5b;font-size:22px;font-weight:800;letter-spacing:.2px;">${brandName}</p>
+        </div>
+        <div style="padding:24px 28px 28px;">
+          <h1 style="font-size:24px;line-height:1.25;margin:0 0 12px;color:#171717;">${heading}</h1>
+          <p style="margin:0 0 24px;line-height:1.6;font-size:15px;color:#3f3f46;">${body}</p>
+          <p style="margin:0 0 24px;">
+            <a href="${escapedLink}" style="display:inline-block;background:#256f5b;color:#ffffff;text-decoration:none;border-radius:8px;padding:12px 18px;font-size:15px;font-weight:700;">${ctaLabel}</a>
+          </p>
+          <p style="margin:0 0 8px;line-height:1.5;font-size:13px;color:#71717a;">${linkLabel}</p>
+          <p style="margin:0 0 20px;word-break:break-word;line-height:1.5;font-size:13px;">
+            <a href="${escapedLink}" style="color:#256f5b;">${escapedLink}</a>
+          </p>
+          <p style="margin:0;line-height:1.5;font-size:13px;color:#71717a;">${warning}</p>
+        </div>
       </div>
+      <p style="margin:16px 0 0;text-align:center;font-size:12px;line-height:1.5;color:#71717a;">
+        ${brandName}
+        </p>
     </div>
   </body>
 </html>`.trim();
@@ -96,19 +146,20 @@ const buildAuthEmailHtml = (content: AuthEmailContent, link: string): string => 
  * @summary Builds a plain-text fallback version of authentication email content.
  */
 const buildAuthEmailText = (content: AuthEmailContent, link: string): string => {
-    const lines = [
-        content.subject,
+    return [
+        content.brandName,
+        "",
+        content.heading,
         "",
         content.body,
         "",
-        `${content.linkLabel} ${link}`,
-    ];
-
-    if (content.warning) {
-        lines.push("", content.warning);
-    }
-
-    return lines.join("\n");
+        `${content.ctaLabel}: ${link}`,
+        "",
+        content.linkLabel,
+        link,
+        "",
+        content.warning,
+    ].join("\n");
 };
 
 /**
