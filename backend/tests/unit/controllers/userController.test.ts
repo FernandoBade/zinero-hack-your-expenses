@@ -154,8 +154,32 @@ describe('UserController', () => {
                     error: expect.objectContaining({
                         email: 'user@example.com',
                         canResend: true,
-                        verificationSent: true,
                     }),
+                })
+            );
+            expect(logSpy).not.toHaveBeenCalled();
+            expect(next).not.toHaveBeenCalled();
+        });
+
+        it('returns 503 when signup email delivery fails', async () => {
+            const payload = makeCreateUserInput();
+            const createUserSpy = jest.spyOn(UserService.prototype, 'createUser').mockResolvedValue({
+                success: false,
+                error: Resource.EMAIL_DELIVERY_FAILED,
+            });
+
+            const req = createMockRequest({ body: payload });
+            const res = createMockResponse();
+            const next = createNext();
+
+            await UserController.createUser(req, res, next);
+
+            expect(createUserSpy).toHaveBeenCalledTimes(1);
+            expect(res.status).toHaveBeenCalledWith(HTTPStatus.SERVICE_UNAVAILABLE);
+            expect(res.json).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    success: false,
+                    errorCode: Resource.EMAIL_DELIVERY_FAILED,
                 })
             );
             expect(logSpy).not.toHaveBeenCalled();
@@ -737,6 +761,32 @@ describe('UserController', () => {
             expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
                 success: false,
                 errorCode: Resource.INVALID_CREDENTIALS,
+            }));
+            expect(logSpy).not.toHaveBeenCalled();
+        });
+
+        it('returns 503 when email-change delivery follow-up fails', async () => {
+            const existing = makeUser({ id: 3 });
+            const updateUserSpy = jest.spyOn(UserService.prototype, 'updateUser').mockResolvedValue({
+                success: false,
+                error: Resource.EMAIL_DELIVERY_FAILED,
+            });
+            jest.spyOn(UserService.prototype, 'findOne').mockResolvedValue({ success: true, data: existing });
+            const req = createMockRequest({
+                params: { id: '3' },
+                body: { email: 'jane@example.com', currentPassword: 'secret123' },
+                user: { id: 3 },
+            });
+            const res = createMockResponse();
+            const next = createNext();
+
+            await UserController.updateUser(req, res, next);
+
+            expect(updateUserSpy).toHaveBeenCalledTimes(1);
+            expect(res.status).toHaveBeenCalledWith(HTTPStatus.SERVICE_UNAVAILABLE);
+            expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
+                success: false,
+                errorCode: Resource.EMAIL_DELIVERY_FAILED,
             }));
             expect(logSpy).not.toHaveBeenCalled();
         });

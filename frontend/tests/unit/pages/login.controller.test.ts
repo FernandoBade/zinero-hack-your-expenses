@@ -1,8 +1,10 @@
-﻿import { AppRoutePath } from "@shared/enums/routes.enums";
+import { AppRoutePath } from "@shared/enums/routes.enums";
+import { ErrorCode } from "@shared/errors/error-codes";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const navigateMock = vi.fn();
 const loginMock = vi.fn();
+const resendVerificationEmailMock = vi.fn();
 
 vi.mock("@/routes/navigation", () => ({
     navigate: (...args: unknown[]) => navigateMock(...args),
@@ -10,6 +12,7 @@ vi.mock("@/routes/navigation", () => ({
 
 vi.mock("@/services/auth/auth.service", () => ({
     login: (...args: unknown[]) => loginMock(...args),
+    resendVerificationEmail: (...args: unknown[]) => resendVerificationEmailMock(...args),
 }));
 
 import { createLoginController } from "@/pages/login/login.controller";
@@ -23,48 +26,87 @@ describe("login.controller", () => {
         loginMock.mockResolvedValue({
             success: true,
         });
-        const setError = vi.fn();
-        const controller = createLoginController({ setError });
 
-        await controller.onSubmit("user@example.com", "secret");
+        const controller = createLoginController();
+        const result = await controller.onSubmit("user@example.com", "secret");
 
         expect(loginMock).toHaveBeenCalledWith("user@example.com", "secret");
-        expect(setError).toHaveBeenCalledWith(null);
+        expect(result).toEqual({ success: true });
         expect(navigateMock).toHaveBeenCalledWith(AppRoutePath.DASHBOARD);
     });
 
-    it("uses returned semantic key when login fails", async () => {
+    it("returns validation feedback when credentials are missing", async () => {
+        const controller = createLoginController();
+        const result = await controller.onSubmit("", "");
+
+        expect(loginMock).not.toHaveBeenCalled();
+        expect(result).toMatchObject({
+            success: false,
+            messageKey: "auth.login.errors.missing_credentials",
+            errorCode: ErrorCode.VALIDATION_ERROR,
+            fieldErrors: {
+                email: "error.field_required_generic",
+                password: "error.field_required_generic",
+            },
+        });
+        expect(navigateMock).not.toHaveBeenCalled();
+    });
+
+    it("preserves unverified-account metadata from the auth service", async () => {
         loginMock.mockResolvedValue({
             success: false,
             messageKey: "error.email_not_verified",
+            errorCode: ErrorCode.EMAIL_NOT_VERIFIED,
+            data: { email: "user@example.com", canResend: true },
         });
-        const setError = vi.fn();
-        const controller = createLoginController({ setError });
 
-        await controller.onSubmit("user@example.com", "wrong");
+        const controller = createLoginController();
+        const result = await controller.onSubmit("user@example.com", "wrong");
 
-        expect(setError).toHaveBeenCalledWith(null);
-        expect(setError).toHaveBeenCalledWith("error.email_not_verified");
+        expect(result).toMatchObject({
+            success: false,
+            messageKey: "error.email_not_verified",
+            errorCode: ErrorCode.EMAIL_NOT_VERIFIED,
+            data: { email: "user@example.com", canResend: true },
+        });
         expect(navigateMock).not.toHaveBeenCalled();
     });
 
-    it("falls back to invalid credentials when semantic key is missing", async () => {
-        loginMock.mockResolvedValue({
+    it("validates resend target email before calling the API", async () => {
+        const controller = createLoginController();
+        const result = await controller.onResendVerification("invalid-email");
+
+        expect(resendVerificationEmailMock).not.toHaveBeenCalled();
+        expect(result).toMatchObject({
             success: false,
-            messageKey: undefined,
+            messageKey: "error.email_invalid",
+            errorCode: ErrorCode.EMAIL_INVALID,
+            fieldErrors: {
+                email: "error.email_invalid",
+            },
         });
-        const setError = vi.fn();
-        const controller = createLoginController({ setError });
+    });
 
-        await controller.onSubmit("user@example.com", "wrong");
+    it("delegates resend verification when the email is valid", async () => {
+        resendVerificationEmailMock.mockResolvedValue({
+            success: true,
+            messageKey: "error.email_verification_requested",
+            data: { sent: true },
+        });
 
-        expect(setError).toHaveBeenCalledWith(null);
-        expect(setError).toHaveBeenCalledWith("error.invalid_credentials");
-        expect(navigateMock).not.toHaveBeenCalled();
+        const controller = createLoginController();
+        const result = await controller.onResendVerification(" user@example.com ");
+
+        expect(resendVerificationEmailMock).toHaveBeenCalledWith("user@example.com");
+        expect(result).toEqual({
+            success: true,
+            messageKey: "error.email_verification_requested",
+            data: { sent: true },
+        });
     });
 
     it("navigates to signup", () => {
-        const controller = createLoginController({ setError: vi.fn() });
+        const controller = createLoginController();
 
         controller.onNavigateToSignup();
 
@@ -72,7 +114,7 @@ describe("login.controller", () => {
     });
 
     it("navigates to forgot-password", () => {
-        const controller = createLoginController({ setError: vi.fn() });
+        const controller = createLoginController();
 
         controller.onNavigateToForgotPassword();
 

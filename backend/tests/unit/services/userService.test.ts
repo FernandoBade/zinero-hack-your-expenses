@@ -189,6 +189,32 @@ describe('UserService', () => {
             expect(result).toEqual({ success: false, error: Resource.INTERNAL_SERVER_ERROR });
         });
 
+        it('returns delivery failure and rolls back the new user when signup email delivery fails', async () => {
+            const payload = makeCreateUserInput({ email: '  Jane.Doe@Example.com ' });
+            jest.spyOn(UserRepository.prototype, 'findMany').mockResolvedValue([]);
+            hashMock.mockResolvedValue('hashed-password');
+            const created = makeDbUser({ id: 4, email: 'jane.doe@example.com', password: 'hashed-password' });
+            jest.spyOn(UserRepository.prototype, 'create').mockResolvedValue(created);
+            const deleteSpy = jest.spyOn(UserRepository.prototype, 'delete').mockResolvedValue();
+            jest.spyOn(TokenService.prototype, 'createEmailVerificationToken').mockResolvedValue({
+                success: true,
+                data: { token: 'verify-token', expiresAt: new Date('2099-01-01T00:00:00Z') },
+            });
+            sendEmailVerificationMock.mockRejectedValueOnce(new Error('smtp unavailable'));
+
+            const service = new UserService();
+            const result = await service.createUser(payload);
+
+            expect(deleteSpy).toHaveBeenCalledWith(created.id);
+            expect(sendEmailVerificationMock).toHaveBeenCalledWith(
+                created.email,
+                'verify-token',
+                created.id,
+                created.language
+            );
+            expect(result).toEqual({ success: false, error: Resource.EMAIL_DELIVERY_FAILED });
+        });
+
         it('throws when repository create rejects', async () => {
             const payload = makeCreateUserInput();
             jest.spyOn(UserRepository.prototype, 'findMany').mockResolvedValue([]);
@@ -742,7 +768,7 @@ describe('UserService', () => {
             }));
             expect(deleteTokensSpy).toHaveBeenNthCalledWith(1, 9, TokenType.EMAIL_VERIFICATION);
             expect(deleteTokensSpy).toHaveBeenNthCalledWith(2, 9, TokenType.EMAIL_VERIFICATION);
-            expect(result).toEqual({ success: false, error: Resource.INTERNAL_SERVER_ERROR });
+            expect(result).toEqual({ success: false, error: Resource.EMAIL_DELIVERY_FAILED });
         });
 
         it('allows trusted reset-password updates without current password proof', async () => {

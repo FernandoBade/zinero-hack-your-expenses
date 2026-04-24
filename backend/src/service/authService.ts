@@ -325,7 +325,8 @@ export class AuthService {
                 userResult.data.language
             );
         } catch {
-            // Ignore email failures to keep the response generic.
+            await this.tokenService.deleteByUserIdAndType(userResult.data.id, TokenType.EMAIL_VERIFICATION);
+            return { success: false, error: ErrorCode.EMAIL_DELIVERY_FAILED };
         }
 
         return { success: true, data: { sent: true } };
@@ -344,6 +345,8 @@ export class AuthService {
             return { success: true, data: { sent: true } };
         }
 
+        await this.tokenService.deleteByUserIdAndType(userResult.data.id, TokenType.PASSWORD_RESET);
+
         const tokenResult = await this.tokenService.createPasswordResetToken(userResult.data.id);
         if (!tokenResult.success || !tokenResult.data) {
             return { success: false, error: ErrorCode.INTERNAL_SERVER_ERROR };
@@ -357,7 +360,8 @@ export class AuthService {
                 userResult.data.language
             );
         } catch {
-            // Ignore email failures to keep the response generic.
+            await this.tokenService.deleteByUserIdAndType(userResult.data.id, TokenType.PASSWORD_RESET);
+            return { success: false, error: ErrorCode.EMAIL_DELIVERY_FAILED };
         }
         return { success: true, data: { sent: true } };
     }
@@ -385,6 +389,7 @@ export class AuthService {
             return { success: false, error: updateResult.error };
         }
 
+        await this.tokenService.deleteByUserIdAndType(tokenResult.data.userId, TokenType.PASSWORD_RESET);
         await this.tokenService.deleteByUserIdAndType(tokenResult.data.userId, TokenType.REFRESH);
         return { success: true, data: { reset: true } };
     }

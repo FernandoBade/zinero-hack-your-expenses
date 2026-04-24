@@ -1,5 +1,6 @@
 import type { IRoute } from 'express-serve-static-core';
 import { verifyToken } from '../../../src/utils/auth/verifyToken';
+import { rateLimitSignup } from '../../../src/utils/auth/rateLimiter';
 import router from '../../../src/routes/userRoutes';
 
 jest.mock('../../../src/utils/auth/verifyToken', () => ({
@@ -89,10 +90,11 @@ describe('userRoutes', () => {
 
       expect(route.path).toBe('/');
       expect(route.methods.post).toBe(true);
-      expect(handlers).toHaveLength(1);
+      expect(handlers).toHaveLength(2);
       expect(handlers).not.toContain(verifyToken);
-      expect(handlers[0]).toEqual(expect.any(Function));
-      expect(handlers[0].toString()).toContain('createUser');
+      expect(handlers[0]).toBe(rateLimitSignup);
+      expect(handlers[1]).toEqual(expect.any(Function));
+      expect(handlers[1].toString()).toContain('createUser');
     });
 
     it('registers /upload/avatar with verifyToken and uploadAvatar', () => {

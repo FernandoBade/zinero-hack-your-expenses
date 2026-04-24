@@ -11,7 +11,7 @@ type BackendConfig = {
     server: {
         port: number;
         corsOrigins: string[];
-        frontendBaseUrl: string;
+        webPublicBaseUrl: string;
     };
     database: {
         host: string;
@@ -47,7 +47,7 @@ type BackendConfig = {
     };
 };
 
-const DEFAULT_SERVER_PORT = 5050;
+const DEFAULT_SERVER_PORT = 3000;
 const DEFAULT_DB_PORT = 3306;
 const DEFAULT_FTP_PORT = 21;
 
@@ -128,7 +128,7 @@ export function getBackendConfig(): BackendConfig {
         server: {
             port: readPositiveInteger("PORT", DEFAULT_SERVER_PORT),
             corsOrigins: readCsv("CORS_ORIGINS"),
-            frontendBaseUrl: normalizeBaseUrl(readOptionalString("FRONTEND_BASE_URL")) ?? "",
+            webPublicBaseUrl: normalizeBaseUrl(readOptionalString("WEB_PUBLIC_BASE_URL")) ?? "",
         },
         database: {
             host: readString("DB_HOST"),
@@ -175,8 +175,8 @@ export function validateBackendStartupConfig(): BackendConfig {
     if (!config.server.corsOrigins.length) {
         missing.push("CORS_ORIGINS");
     }
-    if (!config.server.frontendBaseUrl) {
-        missing.push("FRONTEND_BASE_URL");
+    if (!config.server.webPublicBaseUrl) {
+        missing.push("WEB_PUBLIC_BASE_URL");
     }
 
     if (!config.database.host) {

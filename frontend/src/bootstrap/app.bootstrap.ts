@@ -12,6 +12,7 @@ let localeSubscriptionInitialized = false;
  * @summary Initializes public locale state before mount and lets authenticated sessions reconcile with backend preferences afterward.
  */
 async function runBootstrap(): Promise<void> {
+    initializeAuthService();
     await initializeUserPreferencesStore();
     await preloadLocaleCatalog(getLocale());
 
@@ -26,7 +27,6 @@ async function runBootstrap(): Promise<void> {
     }
 
     initializeThemeStore();
-    initializeAuthService();
 
     if (typeof document !== "undefined") {
         document.title = t("app.name");

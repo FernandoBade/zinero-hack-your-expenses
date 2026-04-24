@@ -166,12 +166,17 @@ export class UserService {
                 return { success: false, error: ErrorCode.INTERNAL_SERVER_ERROR };
             }
 
-            await sendEmailVerificationEmail(
-                created.email,
-                tokenResult.data.token,
-                created.id,
-                created.language
-            );
+            try {
+                await sendEmailVerificationEmail(
+                    created.email,
+                    tokenResult.data.token,
+                    created.id,
+                    created.language
+                );
+            } catch {
+                await rollbackUser();
+                return { success: false, error: ErrorCode.EMAIL_DELIVERY_FAILED };
+            }
         } catch {
             await rollbackUser();
             return { success: false, error: ErrorCode.INTERNAL_SERVER_ERROR };
@@ -441,12 +446,27 @@ export class UserService {
                     throw new Error('EmailVerificationTokenCreationFailed');
                 }
 
-                await sendEmailVerificationEmail(
-                    updated.email,
-                    tokenResult.data.token,
-                    updated.id,
-                    updated.language
-                );
+                try {
+                    await sendEmailVerificationEmail(
+                        updated.email,
+                        tokenResult.data.token,
+                        updated.id,
+                        updated.language
+                    );
+                } catch {
+                    try {
+                        await this.userRepository.update(id, restoreData);
+                    } catch {
+                        // Ignore rollback failures to preserve the original update error.
+                    }
+                    try {
+                        await this.tokenService.deleteByUserIdAndType(id, TokenType.EMAIL_VERIFICATION);
+                    } catch {
+                        // Ignore cleanup failures after rollback.
+                    }
+                    return { success: false, error: ErrorCode.EMAIL_DELIVERY_FAILED };
+                }
+
                 await this.tokenService.deleteByUserIdAndType(id, TokenType.REFRESH);
             } catch {
                 try {

@@ -81,6 +81,21 @@ describe("auth.service", () => {
         expect(setUnauthenticatedMock).toHaveBeenCalledTimes(1);
     });
 
+    it("maps delivery failures to the dedicated auth email message key", async () => {
+        requestPasswordResetApiMock.mockResolvedValue({
+            success: false,
+            errorCode: ErrorCode.EMAIL_DELIVERY_FAILED,
+        });
+
+        const result = await requestPasswordReset("user@example.com");
+
+        expect(result).toMatchObject({
+            success: false,
+            messageKey: "error.email_delivery_failed",
+            errorCode: ErrorCode.EMAIL_DELIVERY_FAILED,
+        });
+    });
+
     it("returns unexpected error key for an unmapped errorCode", async () => {
         loginApiMock.mockResolvedValue({
             success: false,

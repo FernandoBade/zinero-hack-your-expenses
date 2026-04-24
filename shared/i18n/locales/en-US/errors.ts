@@ -6,6 +6,7 @@ export const enUSErrorCatalog = {
   "error.credit_card_not_found": "Credit card not found",
   "error.data_already_exists": "Data already exists",
   "error.email_already_verified": "Email already verified.",
+  "error.email_delivery_failed": "We couldn't send the email right now. Please try again in a moment.",
   "error.email_in_use": "Email is already in use",
   "error.email_invalid": "Invalid email address.",
   "error.email_not_verified": "Your account exists, but your email is not verified.",

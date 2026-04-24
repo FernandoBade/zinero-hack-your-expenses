@@ -4,7 +4,6 @@ import { useEffect, useMemo, useState } from "preact/hooks";
 import { Alert } from "@/components/alert/alert";
 import { AuthShell } from "@/components/auth-shell/auth-shell";
 import { Button } from "@/components/button/button";
-import { Checkbox } from "@/components/checkbox/checkbox";
 import { Form } from "@/components/form/form";
 import { FormGrid } from "@/components/form-grid/form-grid";
 import { Input } from "@/components/input/input";
@@ -33,7 +32,6 @@ const PHONE_LABEL_KEY = "field.phone.label";
 const PASSWORD_LABEL_KEY = "field.password.label";
 const PASSWORD_PLACEHOLDER_KEY = "auth.login.password.placeholder";
 const CONFIRM_PASSWORD_LABEL_KEY = "field.confirm_password.label";
-const SIGNUP_TERMS_LABEL_KEY = "auth.signup.terms.label";
 const SIGNUP_SUBMIT_KEY = "auth.signup.actions.submit";
 const SIGNUP_SUBMITTING_KEY = "auth.signup.actions.submitting";
 const SIGNUP_LOGIN_TEXT_KEY = "auth.signup.login_prompt.text";
@@ -72,7 +70,6 @@ export function SignupPage(): JSX.Element {
     const [phoneError, setPhoneError] = useState<I18nKey | null>(null);
     const [password, setPassword] = useState<string>("");
     const [confirmPassword, setConfirmPassword] = useState<string>("");
-    const [acceptedTerms, setAcceptedTerms] = useState<boolean>(false);
     const [fieldErrors, setFieldErrors] = useState<Partial<Record<FieldKeyType, I18nKey>>>({});
     const [formError, setFormError] = useState<I18nKey | null>(null);
     const [pendingVerificationEmail, setPendingVerificationEmail] = useState<string | null>(null);
@@ -115,7 +112,6 @@ export function SignupPage(): JSX.Element {
             phoneError,
             password,
             confirmPassword,
-            acceptedTerms,
         });
 
         setIsSubmitting(false);
@@ -308,20 +304,6 @@ export function SignupPage(): JSX.Element {
                                 }}
                             />
                         </FormGrid>
-
-                        <Checkbox
-                            id="signup-terms"
-                            name="termsAccepted"
-                            label={SIGNUP_TERMS_LABEL_KEY}
-                            checked={acceptedTerms}
-                            error={fieldErrors[FieldKey.TERMS_ACCEPTED]}
-                            labelClassName="font-medium text-base-100"
-                            onChange={(checked) => {
-                                setAcceptedTerms(checked);
-                                clearFieldError(FieldKey.TERMS_ACCEPTED);
-                            }}
-                        />
-
                         <div class="pt-4 mx-auto w-full max-w-sm">
                             <Button type="submit" variant={ButtonVariant.PRIMARY} fullWidth loading={isSubmitting}>
                                 <span class="inline-flex items-center gap-2">

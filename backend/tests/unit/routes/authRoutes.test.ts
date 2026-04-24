@@ -2,7 +2,14 @@ import type { IRoute } from 'express-serve-static-core';
 import { verifyToken } from '../../../src/utils/auth/verifyToken';
 import { AuthController } from '../../../src/controller/authController';
 import router from '../../../src/routes/authRoutes';
-import { rateLimitLogin, rateLimitRefresh } from '../../../src/utils/auth/rateLimiter';
+import {
+  rateLimitForgotPassword,
+  rateLimitLogin,
+  rateLimitRefresh,
+  rateLimitResendVerification,
+  rateLimitResetPassword,
+  rateLimitVerifyEmail,
+} from '../../../src/utils/auth/rateLimiter';
 
 jest.mock('../../../src/utils/auth/verifyToken', () => ({
   verifyToken: jest.fn(),
@@ -15,6 +22,7 @@ jest.mock('../../../src/controller/authController', () => ({
     refresh: jest.fn(),
     logout: jest.fn(),
     verifyEmail: jest.fn(),
+    resendVerificationEmail: jest.fn(),
     forgotPassword: jest.fn(),
     resetPassword: jest.fn(),
   },
@@ -23,6 +31,7 @@ jest.mock('../../../src/controller/authController', () => ({
     refresh: jest.fn(),
     logout: jest.fn(),
     verifyEmail: jest.fn(),
+    resendVerificationEmail: jest.fn(),
     forgotPassword: jest.fn(),
     resetPassword: jest.fn(),
   },
@@ -101,11 +110,25 @@ describe('authRoutes', () => {
 
       expect(route.path).toBe('/verify-email');
       expect(route.methods.post).toBe(true);
-      expect(handlers).toHaveLength(1);
+      expect(handlers).toHaveLength(2);
       expect(handlers).not.toContain(verifyToken);
-      expect(handlers[0]).toEqual(expect.any(Function));
-      expect(handlers[0].toString()).toContain('verifyEmail');
+      expect(handlers[0]).toBe(rateLimitVerifyEmail);
+      expect(handlers[1]).toEqual(expect.any(Function));
+      expect(handlers[1].toString()).toContain('verifyEmail');
       expect(AuthController.verifyEmail).toBeDefined();
+    });
+
+    it('registers /resend-verification with resendVerificationEmail', () => {
+      const route = getRoute('/resend-verification', 'post');
+      const handlers = getHandlers('/resend-verification', 'post');
+
+      expect(route.path).toBe('/resend-verification');
+      expect(route.methods.post).toBe(true);
+      expect(handlers).toHaveLength(2);
+      expect(handlers[0]).toBe(rateLimitResendVerification);
+      expect(handlers[1]).toEqual(expect.any(Function));
+      expect(handlers[1].toString()).toContain('resendVerificationEmail');
+      expect(AuthController.resendVerificationEmail).toBeDefined();
     });
 
     it('registers /forgot-password with forgotPassword', () => {
@@ -114,10 +137,11 @@ describe('authRoutes', () => {
 
       expect(route.path).toBe('/forgot-password');
       expect(route.methods.post).toBe(true);
-      expect(handlers).toHaveLength(1);
+      expect(handlers).toHaveLength(2);
       expect(handlers).not.toContain(verifyToken);
-      expect(handlers[0]).toEqual(expect.any(Function));
-      expect(handlers[0].toString()).toContain('forgotPassword');
+      expect(handlers[0]).toBe(rateLimitForgotPassword);
+      expect(handlers[1]).toEqual(expect.any(Function));
+      expect(handlers[1].toString()).toContain('forgotPassword');
       expect(AuthController.forgotPassword).toBeDefined();
     });
 
@@ -127,10 +151,11 @@ describe('authRoutes', () => {
 
       expect(route.path).toBe('/reset-password');
       expect(route.methods.post).toBe(true);
-      expect(handlers).toHaveLength(1);
+      expect(handlers).toHaveLength(2);
       expect(handlers).not.toContain(verifyToken);
-      expect(handlers[0]).toEqual(expect.any(Function));
-      expect(handlers[0].toString()).toContain('resetPassword');
+      expect(handlers[0]).toBe(rateLimitResetPassword);
+      expect(handlers[1]).toEqual(expect.any(Function));
+      expect(handlers[1].toString()).toContain('resetPassword');
       expect(AuthController.resetPassword).toBeDefined();
     });
   });

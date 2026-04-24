@@ -24,6 +24,11 @@ const hasUserCredentialFields = (value: unknown): boolean => {
     );
 };
 
+const resolveEmailDeliveryStatus = (error: ErrorCode): HTTPStatus =>
+    error === ErrorCode.EMAIL_DELIVERY_FAILED
+        ? HTTPStatus.SERVICE_UNAVAILABLE
+        : HTTPStatus.BAD_REQUEST;
+
 class UserController {
     /** @summary Creates a new user using validated input from the request body.
      * Logs the result and returns the created user on success.
@@ -61,10 +66,9 @@ class UserController {
                     return answerAPI(req, res, HTTPStatus.BAD_REQUEST, {
                         email: parseResult.data.email,
                         canResend: true,
-                        verificationSent: true
                     }, ErrorCode.EMAIL_NOT_VERIFIED);
                 }
-                return answerAPI(req, res, HTTPStatus.BAD_REQUEST, undefined, newUser.error);
+                return answerAPI(req, res, resolveEmailDeliveryStatus(newUser.error), undefined, newUser.error);
             }
 
             await createLog(LogType.SUCCESS, LogOperation.CREATE, LogCategory.USER, newUser.data, newUser.data!.id);
@@ -246,7 +250,7 @@ class UserController {
             if (!updatedUser.success) {
                 const status = updatedUser.error === ErrorCode.INVALID_CREDENTIALS
                     ? HTTPStatus.UNAUTHORIZED
-                    : HTTPStatus.BAD_REQUEST;
+                    : resolveEmailDeliveryStatus(updatedUser.error);
                 return answerAPI(req, res, status, undefined, updatedUser.error);
             }
 

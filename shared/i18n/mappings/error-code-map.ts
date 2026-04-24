@@ -9,6 +9,7 @@ export const errorCodeMap: Record<ErrorCodeType, I18nKey> = {
   [ErrorCode.CREDIT_CARD_NOT_FOUND]: "error.credit_card_not_found",
   [ErrorCode.DATA_ALREADY_EXISTS]: "error.data_already_exists",
   [ErrorCode.EMAIL_ALREADY_VERIFIED]: "error.email_already_verified",
+  [ErrorCode.EMAIL_DELIVERY_FAILED]: "error.email_delivery_failed",
   [ErrorCode.EMAIL_IN_USE]: "error.email_in_use",
   [ErrorCode.EMAIL_INVALID]: "error.email_invalid",
   [ErrorCode.EMAIL_NOT_VERIFIED]: "error.email_not_verified",

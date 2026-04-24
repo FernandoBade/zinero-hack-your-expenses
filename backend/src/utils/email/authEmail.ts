@@ -35,14 +35,14 @@ const createResendClient = (): Resend | null => {
 };
 
 /**
- * @summary Builds auth links with token query parameter for frontend verification and reset flows.
+ * @summary Builds auth links with token query parameter for public web verification and reset flows.
  */
 const buildAuthLink = (path: string, token: string): string => {
     const { server } = getBackendConfig();
     const normalizedPath = path.startsWith("/") ? path : `/${path}`;
     const encodedToken = encodeURIComponent(token);
     const link = `${normalizedPath}?token=${encodedToken}`;
-    return server.frontendBaseUrl ? `${server.frontendBaseUrl}${link}` : link;
+    return server.webPublicBaseUrl ? `${server.webPublicBaseUrl}${link}` : link;
 };
 
 /**
@@ -166,7 +166,7 @@ const logConfigError = async (type: AuthEmailType, userId?: number): Promise<voi
 };
 
 /**
- * @summary Sends authentication emails through Resend and captures provider-level failures.
+ * @summary Sends authentication emails through Resend and throws on provider/config failures after logging them.
  */
 const defaultSender: AuthEmailSender = async ({ type, to, link, userId, locale }) => {
     const { email } = getBackendConfig();
@@ -174,7 +174,7 @@ const defaultSender: AuthEmailSender = async ({ type, to, link, userId, locale }
 
     if (!resend || !email.resendFromEmail) {
         await logConfigError(type, userId);
-        return;
+        throw new Error("AUTH_EMAIL_DELIVERY_FAILED");
     }
 
     const content = await buildAuthEmailContent(type, locale);
@@ -192,9 +192,11 @@ const defaultSender: AuthEmailSender = async ({ type, to, link, userId, locale }
 
         if (result?.error) {
             await logEmailError(type, result.error, userId);
+            throw new Error("AUTH_EMAIL_DELIVERY_FAILED");
         }
     } catch (error) {
         await logEmailError(type, error, userId);
+        throw new Error("AUTH_EMAIL_DELIVERY_FAILED");
     }
 };
 

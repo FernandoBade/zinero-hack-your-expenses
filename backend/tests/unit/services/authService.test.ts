@@ -762,6 +762,31 @@ describe('AuthService', () => {
                 jest.useRealTimers();
             }
         });
+
+        it('returns delivery failure and cleans verification tokens when email send fails', async () => {
+            const user = makeSanitizedUser({ id: 22, email: 'user@example.com', emailVerifiedAt: null });
+            jest.spyOn(UserService.prototype, 'findUserByEmailExact').mockResolvedValue({ success: true, data: user });
+            jest.spyOn(TokenService.prototype, 'findLatestByUserIdAndType').mockResolvedValue(null);
+            const deleteSpy = jest.spyOn(TokenService.prototype, 'deleteByUserIdAndType').mockResolvedValue(1);
+            jest.spyOn(TokenService.prototype, 'createEmailVerificationToken').mockResolvedValue({
+                success: true,
+                data: { token: 'verify-token', expiresAt: new Date('2099-01-01T00:00:00Z') },
+            });
+            sendEmailVerificationMock.mockRejectedValueOnce(new Error('email failed'));
+
+            const service = new AuthService();
+            const result = await service.resendEmailVerification(user.email);
+
+            expect(sendEmailVerificationMock).toHaveBeenCalledWith(
+                user.email,
+                'verify-token',
+                user.id,
+                user.language
+            );
+            expect(deleteSpy).toHaveBeenNthCalledWith(1, user.id, TokenType.EMAIL_VERIFICATION);
+            expect(deleteSpy).toHaveBeenNthCalledWith(2, user.id, TokenType.EMAIL_VERIFICATION);
+            expect(result).toEqual({ success: false, error: Resource.EMAIL_DELIVERY_FAILED });
+        });
     });
 
     describe('requestPasswordReset', () => {
@@ -785,7 +810,8 @@ describe('AuthService', () => {
                 success: true,
                 data: user,
             });
-            jest.spyOn(TokenService.prototype, 'createPasswordResetToken').mockResolvedValue({
+            const deleteSpy = jest.spyOn(TokenService.prototype, 'deleteByUserIdAndType').mockResolvedValue(1);
+            const createTokenSpy = jest.spyOn(TokenService.prototype, 'createPasswordResetToken').mockResolvedValue({
                 success: true,
                 data: { token: 'reset-token', expiresAt: new Date('2099-01-01T00:00:00Z') },
             });
@@ -794,6 +820,8 @@ describe('AuthService', () => {
             const service = new AuthService();
             const result = await service.requestPasswordReset(user.email);
 
+            expect(deleteSpy).toHaveBeenCalledWith(user.id, TokenType.PASSWORD_RESET);
+            expect(createTokenSpy).toHaveBeenCalledWith(user.id);
             expect(sendPasswordResetMock).toHaveBeenCalledWith(
                 user.email,
                 'reset-token',
@@ -803,12 +831,13 @@ describe('AuthService', () => {
             expect(result).toEqual({ success: true, data: { sent: true } });
         });
 
-        it('returns success when email sending fails', async () => {
+        it('returns delivery failure when email sending fails for an existing account', async () => {
             const user = makeSanitizedUser({ id: 16, email: 'user@example.com' });
             jest.spyOn(UserService.prototype, 'findUserByEmailExact').mockResolvedValue({
                 success: true,
                 data: user,
             });
+            const deleteSpy = jest.spyOn(TokenService.prototype, 'deleteByUserIdAndType').mockResolvedValue(1);
             jest.spyOn(TokenService.prototype, 'createPasswordResetToken').mockResolvedValue({
                 success: true,
                 data: { token: 'reset-token', expiresAt: new Date('2099-01-01T00:00:00Z') },
@@ -824,12 +853,14 @@ describe('AuthService', () => {
                 user.id,
                 user.language
             );
-            expect(result).toEqual({ success: true, data: { sent: true } });
+            expect(deleteSpy).toHaveBeenNthCalledWith(1, user.id, TokenType.PASSWORD_RESET);
+            expect(deleteSpy).toHaveBeenNthCalledWith(2, user.id, TokenType.PASSWORD_RESET);
+            expect(result).toEqual({ success: false, error: Resource.EMAIL_DELIVERY_FAILED });
         });
     });
 
     describe('resetPassword', () => {
-        it('updates password and revokes refresh tokens on success', async () => {
+        it('updates password and revokes reset plus refresh tokens on success', async () => {
             jest.spyOn(TokenService.prototype, 'verifyPasswordResetToken').mockResolvedValue({
                 success: true,
                 data: { userId: 44 },
@@ -848,7 +879,8 @@ describe('AuthService', () => {
                 { password: 'new-password' },
                 { skipCurrentPasswordCheck: true }
             );
-            expect(revokeSpy).toHaveBeenCalledWith(44, TokenType.REFRESH);
+            expect(revokeSpy).toHaveBeenNthCalledWith(1, 44, TokenType.PASSWORD_RESET);
+            expect(revokeSpy).toHaveBeenNthCalledWith(2, 44, TokenType.REFRESH);
             expect(result).toEqual({ success: true, data: { reset: true } });
         });
 

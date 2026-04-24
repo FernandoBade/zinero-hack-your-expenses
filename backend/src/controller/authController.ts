@@ -8,6 +8,11 @@ import { TokenCookie, ClearCookieOptions } from '../utils/auth/cookieConfig';
 import { recordLoginFailure, recordRefreshFailure, resetLoginRateLimit, resetRefreshRateLimit } from '../utils/auth/rateLimiter';
 import { isString, isValidEmail, hasMinLength } from '../utils/validation/guards';
 
+const resolveEmailDeliveryStatus = (error: ErrorCode): HTTPStatus =>
+    error === ErrorCode.EMAIL_DELIVERY_FAILED
+        ? HTTPStatus.SERVICE_UNAVAILABLE
+        : HTTPStatus.INTERNAL_SERVER_ERROR;
+
 export class AuthController {
         /**
      * @summary Authenticates user credentials and returns a fresh access token with refresh-cookie rotation.
@@ -39,7 +44,6 @@ export class AuthController {
                     return answerAPI(req, res, HTTPStatus.UNAUTHORIZED, {
                         email,
                         canResend: true,
-                        verificationSent: true
                     }, ErrorCode.EMAIL_NOT_VERIFIED);
                 }
                 return answerAPI(req, res, HTTPStatus.UNAUTHORIZED, undefined, ErrorCode.INVALID_CREDENTIALS);
@@ -217,7 +221,7 @@ export class AuthController {
                         cooldownSeconds: result.data?.cooldownSeconds ?? 0
                     }, ErrorCode.EMAIL_VERIFICATION_COOLDOWN);
                 }
-                return answerAPI(req, res, HTTPStatus.INTERNAL_SERVER_ERROR, undefined, result.error);
+                return answerAPI(req, res, resolveEmailDeliveryStatus(result.error), undefined, result.error);
             }
 
             return answerAPI(req, res, HTTPStatus.OK, result.data, ErrorCode.EMAIL_VERIFICATION_REQUESTED);
@@ -248,7 +252,7 @@ export class AuthController {
             const result = await authService.requestPasswordReset(email);
 
             if (!result.success) {
-                return answerAPI(req, res, HTTPStatus.INTERNAL_SERVER_ERROR, undefined, result.error);
+                return answerAPI(req, res, resolveEmailDeliveryStatus(result.error), undefined, result.error);
             }
 
             return answerAPI(req, res, HTTPStatus.OK, result.data, ErrorCode.PASSWORD_RESET_REQUESTED);

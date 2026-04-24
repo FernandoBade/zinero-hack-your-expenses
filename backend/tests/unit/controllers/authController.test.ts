@@ -3,7 +3,7 @@ import { makeUser } from '../../helpers/factories';
 import { AuthService } from '../../../src/service/authService';
 import { HTTPStatus } from '../../../../shared/enums/http-status.enums';
 import { LogCategory, LogOperation, LogType } from '../../../../shared/enums/log.enums';
-import { TokenCookie } from '../../../src/utils/auth/cookieConfig';
+import { ClearCookieOptions, TokenCookie } from '../../../src/utils/auth/cookieConfig';
 import { ErrorCode as Resource } from '../../../../shared/errors/error-codes';
 import * as commons from '../../../src/utils/commons';
 import { createMockRequest, createMockResponse, createNext } from '../../helpers/mockExpress';
@@ -89,7 +89,6 @@ describe('AuthController', () => {
                     error: expect.objectContaining({
                         email: 'user@example.com',
                         canResend: true,
-                        verificationSent: true,
                     }),
                 })
             );
@@ -298,7 +297,7 @@ describe('AuthController', () => {
             await AuthController.logout(req, res, next);
 
             expect(logoutSpy).toHaveBeenCalledWith('good');
-            expect(res.clearCookie).toHaveBeenCalled();
+            expect(res.clearCookie).toHaveBeenCalledWith(TokenCookie.name, ClearCookieOptions);
             expect(res.status).toHaveBeenCalledWith(HTTPStatus.OK);
             expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ success: true }));
             expect(logSpy).toHaveBeenCalledWith(
@@ -466,6 +465,28 @@ describe('AuthController', () => {
             );
             expect(next).not.toHaveBeenCalled();
         });
+
+        it('returns 503 when delivery fails for an existing account', async () => {
+            const resendSpy = jest.spyOn(AuthService.prototype, 'resendEmailVerification').mockResolvedValue({
+                success: false,
+                error: Resource.EMAIL_DELIVERY_FAILED,
+            });
+            const req = createMockRequest({ body: { email: 'user@example.com' } });
+            const res = createMockResponse();
+            const next = createNext();
+
+            await AuthController.resendVerificationEmail(req, res, next);
+
+            expect(resendSpy).toHaveBeenCalledWith('user@example.com');
+            expect(res.status).toHaveBeenCalledWith(HTTPStatus.SERVICE_UNAVAILABLE);
+            expect(res.json).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    success: false,
+                    errorCode: Resource.EMAIL_DELIVERY_FAILED,
+                })
+            );
+            expect(next).not.toHaveBeenCalled();
+        });
     });
 
     describe('forgotPassword', () => {
@@ -503,6 +524,28 @@ describe('AuthController', () => {
                     data: { sent: true },
                 })
             );
+        });
+
+        it('returns 503 when delivery fails for an existing account', async () => {
+            const resetSpy = jest.spyOn(AuthService.prototype, 'requestPasswordReset').mockResolvedValue({
+                success: false,
+                error: Resource.EMAIL_DELIVERY_FAILED,
+            });
+            const req = createMockRequest({ body: { email: 'user@example.com' } });
+            const res = createMockResponse();
+            const next = createNext();
+
+            await AuthController.forgotPassword(req, res, next);
+
+            expect(resetSpy).toHaveBeenCalledWith('user@example.com');
+            expect(res.status).toHaveBeenCalledWith(HTTPStatus.SERVICE_UNAVAILABLE);
+            expect(res.json).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    success: false,
+                    errorCode: Resource.EMAIL_DELIVERY_FAILED,
+                })
+            );
+            expect(next).not.toHaveBeenCalled();
         });
 
         it('returns 500 when service throws', async () => {

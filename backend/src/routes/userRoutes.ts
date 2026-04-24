@@ -4,6 +4,7 @@ import { LogType, LogOperation, LogCategory } from '../../../shared/enums/log.en
 import { FieldKey } from '../../../shared/fields/field-keys';
 import { createLog, formatError } from '../utils/commons';
 import { verifyToken } from '../utils/auth/verifyToken';
+import { rateLimitSignup } from '../utils/auth/rateLimiter';
 import UserController from '../controller/userController';
 import { UploadValidation } from '../utils/upload/upload.constants';
 import { handleMulterUploadError } from '../utils/upload/upload.middleware';
@@ -53,7 +54,7 @@ router.get('/search', verifyToken, async (req: Request, res: Response, next: Nex
  * @route POST /
  * @description Creates a new user with validated input data.
  */
-router.post('/', async (req: Request, res: Response, next: NextFunction) => {
+router.post('/', rateLimitSignup, async (req: Request, res: Response, next: NextFunction) => {
     try {
         await UserController.createUser(req, res, next);
     } catch (error) {

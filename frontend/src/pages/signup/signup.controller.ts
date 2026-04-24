@@ -22,11 +22,10 @@ export interface SignupFormValue {
     readonly phoneError?: I18nKey | null;
     readonly password: string;
     readonly confirmPassword: string;
-    readonly acceptedTerms: boolean;
 }
 
 export interface SignupController {
-    readonly onSubmit: (form: SignupFormValue) => Promise<AuthActionResult<CreateUserOutput, { email?: string; canResend?: boolean; verificationSent?: boolean }>>;
+    readonly onSubmit: (form: SignupFormValue) => Promise<AuthActionResult<CreateUserOutput, { email?: string; canResend?: boolean }>>;
     readonly onResendVerification: (email: string) => Promise<AuthActionResult<unknown, { cooldownSeconds?: number }>>;
     readonly onNavigateToLogin: () => void;
 }
@@ -63,10 +62,6 @@ function buildSignupFieldErrors(form: SignupFormValue): AuthFieldErrors {
         fieldErrors[FieldKey.CONFIRM_PASSWORD] = "auth.signup.errors.password_mismatch";
     }
 
-    if (!form.acceptedTerms) {
-        fieldErrors[FieldKey.TERMS_ACCEPTED] = "auth.signup.errors.accept_terms";
-    }
-
     return fieldErrors;
 }
 
@@ -74,7 +69,7 @@ function buildSignupFieldErrors(form: SignupFormValue): AuthFieldErrors {
  * @summary Builds signup flows with client validation, resend support, and route transitions.
  */
 export function createSignupController(): SignupController {
-    const onSubmit = async (form: SignupFormValue): Promise<AuthActionResult<CreateUserOutput, { email?: string; canResend?: boolean; verificationSent?: boolean }>> => {
+    const onSubmit = async (form: SignupFormValue): Promise<AuthActionResult<CreateUserOutput, { email?: string; canResend?: boolean }>> => {
         const fieldErrors = buildSignupFieldErrors(form);
         if (Object.keys(fieldErrors).length > 0) {
             return {

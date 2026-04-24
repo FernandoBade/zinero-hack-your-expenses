@@ -32,7 +32,7 @@ const setCoreStartupEnv = () => {
     applyEnv({
         PORT: "",
         CORS_ORIGINS: 'https://app.example.com, https://admin.example.com',
-        FRONTEND_BASE_URL: 'https://app.example.com/',
+        WEB_PUBLIC_BASE_URL: 'https://app.example.com/',
         DB_HOST: 'localhost',
         DB_PORT: '3307',
         DB_USER: 'root',
@@ -76,9 +76,9 @@ describe('backend env config', () => {
 
         expect(config.runtime.nodeEnv).toBe('production');
         expect(config.server).toEqual(expect.objectContaining({
-            port: 5050,
+            port: 3000,
             corsOrigins: ['https://app.example.com', 'https://admin.example.com'],
-            frontendBaseUrl: 'https://app.example.com',
+            webPublicBaseUrl: 'https://app.example.com',
         }));
         expect(config.database).toEqual(expect.objectContaining({
             host: 'localhost',
@@ -107,7 +107,7 @@ describe('backend env config', () => {
     it('fails startup validation when required core env vars are missing', async () => {
         applyEnv({
             CORS_ORIGINS: undefined,
-            FRONTEND_BASE_URL: undefined,
+            WEB_PUBLIC_BASE_URL: undefined,
             DB_HOST: undefined,
             DB_USER: undefined,
             DB_DATABASE: undefined,
@@ -121,7 +121,7 @@ describe('backend env config', () => {
         const { validateBackendStartupConfig } = await import('../../../src/config/env');
 
         expect(() => validateBackendStartupConfig()).toThrow(
-            'BackendConfigValidationError: Missing required env vars: CORS_ORIGINS, FRONTEND_BASE_URL, DB_HOST, DB_USER, DB_DATABASE, JWT_ACCESS_SECRET, JWT_REFRESH_SECRET, RESEND_API_KEY, RESEND_FROM_EMAIL, FEEDBACK_TO_EMAIL'
+            'BackendConfigValidationError: Missing required env vars: CORS_ORIGINS, WEB_PUBLIC_BASE_URL, DB_HOST, DB_USER, DB_DATABASE, JWT_ACCESS_SECRET, JWT_REFRESH_SECRET, RESEND_API_KEY, RESEND_FROM_EMAIL, FEEDBACK_TO_EMAIL'
         );
     });
 

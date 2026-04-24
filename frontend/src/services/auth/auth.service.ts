@@ -40,7 +40,6 @@ export type AuthActionResult<T = undefined, F = unknown> = AuthActionSuccess<T> 
 interface VerificationResendFailureData {
     readonly email?: string;
     readonly canResend?: boolean;
-    readonly verificationSent?: boolean;
 }
 
 interface CooldownFailureData {

@@ -66,5 +66,6 @@ export const esESErrorCatalog = {
     "error.value_above_maximum": "El valor está por encima del máximo permitido.",
     "error.value_below_minimum": "El valor está por debajo del mínimo permitido.",
     "error.value_must_be_greater_than_zero": "El valor debe ser mayor que cero.",
+    "error.email_delivery_failed": "No pudimos enviar el correo ahora. Inténtalo otra vez en un momento.",
 } as const satisfies ErrorCatalog;
 

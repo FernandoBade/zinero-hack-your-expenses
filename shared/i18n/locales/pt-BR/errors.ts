@@ -66,5 +66,6 @@ export const ptBRErrorCatalog = {
     "error.value_above_maximum": "O valor está acima do máximo permitido.",
     "error.value_below_minimum": "O valor está abaixo do mínimo permitido.",
     "error.value_must_be_greater_than_zero": "O valor deve ser maior que zero.",
+    "error.email_delivery_failed": "Não conseguimos enviar o e-mail agora. Tente de novo em instantes.",
 } as const satisfies ErrorCatalog;
 

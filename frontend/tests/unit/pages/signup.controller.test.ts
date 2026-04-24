@@ -46,7 +46,6 @@ describe("signup.controller", () => {
             phoneError: null,
             password: "secret123",
             confirmPassword: "secret123",
-            acceptedTerms: true,
         });
 
         expect(signupMock).toHaveBeenCalledWith({

@@ -2,7 +2,14 @@ import { Router, Request, Response, NextFunction } from 'express';
 import { AuthController } from '../controller/authController';
 import { createLog, formatError } from '../utils/commons';
 import { LogType, LogCategory, LogOperation } from '../../../shared/enums/log.enums';
-import { rateLimitLogin, rateLimitRefresh } from '../utils/auth/rateLimiter';
+import {
+    rateLimitForgotPassword,
+    rateLimitLogin,
+    rateLimitRefresh,
+    rateLimitResendVerification,
+    rateLimitResetPassword,
+    rateLimitVerifyEmail
+} from '../utils/auth/rateLimiter';
 
 const router = Router();
 
@@ -57,7 +64,7 @@ router.post('/logout', async (req: Request, res: Response, next: NextFunction) =
  * @route POST /verify-email
  * @description Verifies user email using a token.
  */
-router.post('/verify-email', async (req: Request, res: Response, next: NextFunction) => {
+router.post('/verify-email', rateLimitVerifyEmail, async (req: Request, res: Response, next: NextFunction) => {
     try {
         await AuthController.verifyEmail(req, res, next);
     } catch (error) {
@@ -69,7 +76,7 @@ router.post('/verify-email', async (req: Request, res: Response, next: NextFunct
  * @route POST /resend-verification
  * @description Resends email verification token.
  */
-router.post('/resend-verification', async (req: Request, res: Response, next: NextFunction) => {
+router.post('/resend-verification', rateLimitResendVerification, async (req: Request, res: Response, next: NextFunction) => {
     try {
         await AuthController.resendVerificationEmail(req, res, next);
     } catch (error) {
@@ -81,7 +88,7 @@ router.post('/resend-verification', async (req: Request, res: Response, next: Ne
  * @route POST /forgot-password
  * @description Sends a password reset token to the user email.
  */
-router.post('/forgot-password', async (req: Request, res: Response, next: NextFunction) => {
+router.post('/forgot-password', rateLimitForgotPassword, async (req: Request, res: Response, next: NextFunction) => {
     try {
         await AuthController.forgotPassword(req, res, next);
     } catch (error) {
@@ -93,7 +100,7 @@ router.post('/forgot-password', async (req: Request, res: Response, next: NextFu
  * @route POST /reset-password
  * @description Resets the password using a valid reset token.
  */
-router.post('/reset-password', async (req: Request, res: Response, next: NextFunction) => {
+router.post('/reset-password', rateLimitResetPassword, async (req: Request, res: Response, next: NextFunction) => {
     try {
         await AuthController.resetPassword(req, res, next);
     } catch (error) {
