@@ -34,8 +34,8 @@ Apply this voice to every button, error state, empty state, and onboarding flow.
 
 | Language | Notes |
 |---|---|
-| en-US | Canonical type source — `I18nCatalog` is derived from this locale |
-| pt-BR | Runtime default — must feel native to Brazil, not like a translation |
+| en-US | Runtime default - Canonical type source — `I18nCatalog` is derived from this locale |
+| pt-BR | Must feel native to Brazil, not like a translation |
 | es-ES | Neutral LATAM Spanish — avoid Spain-Spanish formality |
 
 Localization is transcreation: adapt meaning, emotional intent, and cultural fit
@@ -47,8 +47,8 @@ in pt-BR — that sounds criminal in Brazilian culture. Find the equivalent ener
 ```
 shared/i18n/
 ├── locales/
-│   ├── en-US/       ui.ts, errors.ts, email.ts  ← canonical type source
-│   ├── pt-BR/       ui.ts, errors.ts, email.ts  ← runtime default
+│   ├── en-US/       ui.ts, errors.ts, email.ts  ← canonical type source ← runtime default
+│   ├── pt-BR/       ui.ts, errors.ts, email.ts
 │   └── es-ES/       ui.ts, errors.ts, email.ts
 ├── mappings/        error-code-map.ts (ErrorCode → I18nKey)
 ├── types/           locale.ts, catalog.ts, i18n-key.ts

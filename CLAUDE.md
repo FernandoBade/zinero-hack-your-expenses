@@ -56,3 +56,5 @@ npm test               # run all tests
 ## Governance
 
 Code is the source of truth. CLAUDE.md files provide orientation. SKILL.md files provide deep role-specific standards. When documentation conflicts with code, the code wins — then update the documentation.
+
+For any non-trivial task, always read .claude/skills/index.md first.

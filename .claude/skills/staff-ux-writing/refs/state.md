@@ -8,6 +8,5 @@ Last updated: 2026-05-19
 
 | Issue | Location | Status |
 |---|---|---|
-| Canonical type source is `en-US`, but runtime default is `pt-BR` | `shared/i18n/types/locale.ts` | Documented divergence — known and intentional |
 | Mojibake/encoding corruption in some locale files | `shared/i18n/locales/*/ui.ts` | Active quality risk — fix when editing affected files |
 | `ResourceKey` exists as a legacy layer | `resource.keys.ts` | Used by sandbox — do not extend |
