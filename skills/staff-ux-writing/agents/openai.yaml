@@ -1,4 +1,0 @@
-interface:
-  display_name: "Staff UX Writing"
-  short_description: "UX writing and localization"
-  default_prompt: "Use $staff-ux-writing to review or define product copy and localization work in this repository."

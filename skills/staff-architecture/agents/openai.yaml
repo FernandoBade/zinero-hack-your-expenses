@@ -1,4 +1,0 @@
-interface:
-  display_name: "Staff Architecture"
-  short_description: "Architectural integrity for Zinero"
-  default_prompt: "Use $staff-architecture to review a structural or cross-layer decision in this repository."

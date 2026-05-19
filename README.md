@@ -23,17 +23,17 @@ turning transactions into structured financial understanding.
 
 ## Governance
 
-The authoritative governance source for this repository lives in `skills/`.
+The authoritative governance source for this repository lives in `.claude/skills/`.
 
 Use the relevant skill file for execution standards and ownership boundaries:
 
-- [`skills/staff-architecture/SKILL.md`](skills/staff-architecture/SKILL.md)
-- [`skills/staff-backend/SKILL.md`](skills/staff-backend/SKILL.md)
-- [`skills/staff-frontend/SKILL.md`](skills/staff-frontend/SKILL.md)
-- [`skills/staff-design-system/SKILL.md`](skills/staff-design-system/SKILL.md)
-- [`skills/staff-ux-writing/SKILL.md`](skills/staff-ux-writing/SKILL.md)
-- [`skills/staff-qa/SKILL.md`](skills/staff-qa/SKILL.md)
-- [`skills/staff-product/SKILL.md`](skills/staff-product/SKILL.md)
+- [`.claude/skills/staff-architecture/SKILL.md`](.claude/skills/staff-architecture/SKILL.md)
+- [`.claude/skills/staff-backend/SKILL.md`](.claude/skills/staff-backend/SKILL.md)
+- [`.claude/skills/staff-frontend/SKILL.md`](.claude/skills/staff-frontend/SKILL.md)
+- [`.claude/skills/staff-design-system/SKILL.md`](.claude/skills/staff-design-system/SKILL.md)
+- [`.claude/skills/staff-ux-writing/SKILL.md`](.claude/skills/staff-ux-writing/SKILL.md)
+- [`.claude/skills/staff-qa/SKILL.md`](.claude/skills/staff-qa/SKILL.md)
+- [`.claude/skills/staff-product/SKILL.md`](.claude/skills/staff-product/SKILL.md)
 
 [`agents.md`](agents.md) and this `README.md` are secondary orientation
 documents. When documentation and code differ, the code is the source of truth.
@@ -47,7 +47,7 @@ file.
 |-- backend/
 |-- frontend/
 |-- shared/
-|-- skills/
+|-- .claude/
 |-- agents.md
 |-- README.md
 `-- package.json
@@ -58,7 +58,7 @@ Notes:
 - The root workspaces are `backend` and `frontend`.
 - `shared/` is a common folder used by both applications, not a separate npm
   workspace.
-- `skills/` contains the current governance model for architecture, backend,
+- `.claude/skills/` contains the current governance model for architecture, backend,
   frontend, design system, UX writing, QA, and product definition.
 
 ## Architecture snapshot

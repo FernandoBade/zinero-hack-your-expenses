@@ -1,0 +1,66 @@
+name: Incident
+description: Production-level defect or operational failure after deployment
+body:
+  - type: input
+    id: title
+    attributes:
+      label: Title
+      placeholder: Short description of the incident
+    validations:
+      required: true
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Context
+      description: When was the incident detected? What triggered the alert or report?
+    validations:
+      required: false
+
+  - type: input
+    id: error
+    attributes:
+      label: Error
+      placeholder: What failure or error was observed in production?
+    validations:
+      required: true
+
+  - type: textarea
+    id: how-to-reproduce
+    attributes:
+      label: How to Reproduce
+      description: Steps to confirm the incident is occurring.
+    validations:
+      required: true
+
+  - type: input
+    id: expected-behavior
+    attributes:
+      label: Expected Behavior
+      placeholder: What should be happening instead?
+    validations:
+      required: true
+
+  - type: textarea
+    id: workaround
+    attributes:
+      label: Workaround
+      description: Any temporary fix or mitigation already in place.
+    validations:
+      required: false
+
+  - type: textarea
+    id: technical-notes
+    attributes:
+      label: Technical Notes
+      description: Error logs, stack traces, metrics, or suspected root cause.
+    validations:
+      required: false
+
+  - type: textarea
+    id: ai-context
+    attributes:
+      label: AI Context
+      description: "Affected services, relevant logs, last deploy info, or other facts an AI agent needs to investigate this incident."
+    validations:
+      required: false

@@ -1,0 +1,50 @@
+name: Task
+description: Implementation work or technical execution inside a Feature
+body:
+  - type: input
+    id: title
+    attributes:
+      label: Title
+      placeholder: Short, descriptive name for this task
+    validations:
+      required: true
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Context
+      description: What is this task and why does it need to be done?
+    validations:
+      required: false
+
+  - type: textarea
+    id: what-to-do
+    attributes:
+      label: What To Do
+      description: Clear description of the work to be performed.
+    validations:
+      required: true
+
+  - type: textarea
+    id: acceptance-criteria
+    attributes:
+      label: Acceptance Criteria
+      description: Conditions that must be true for this task to be considered done.
+    validations:
+      required: true
+
+  - type: textarea
+    id: technical-notes
+    attributes:
+      label: Technical Notes
+      description: Implementation hints, constraints, or patterns to follow.
+    validations:
+      required: false
+
+  - type: textarea
+    id: ai-context
+    attributes:
+      label: AI Context
+      description: "Relevant files, functions, or patterns the AI should know (e.g. src/auth/session.ts, uses JWT RS256)."
+    validations:
+      required: false

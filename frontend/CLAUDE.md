@@ -92,7 +92,7 @@ Note: `button.test.tsx` is excluded from the default run because `vitest.config.
 ---
 
 For deep implementation standards and review checklists:
-→ load `skills/staff-frontend/SKILL.md`
+→ load `.claude/skills/staff-frontend/SKILL.md`
 
 For component internals, design tokens, and the sandbox:
-→ load `skills/staff-design-system/SKILL.md`
+→ load `.claude/skills/staff-design-system/SKILL.md`

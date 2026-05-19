@@ -1,4 +1,0 @@
-interface:
-  display_name: "Staff Frontend"
-  short_description: "Frontend quality and layering"
-  default_prompt: "Use $staff-frontend to review or guide frontend implementation quality in this repository."

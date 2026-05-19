@@ -1,0 +1,70 @@
+name: Bug
+description: Development defect identified before production deployment
+body:
+  - type: input
+    id: title
+    attributes:
+      label: Title
+      placeholder: Short description of the defect
+    validations:
+      required: true
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Context
+      description: Where and when was this bug found? Any relevant background.
+    validations:
+      required: false
+
+  - type: textarea
+    id: how-to-reproduce
+    attributes:
+      label: How to Reproduce
+      description: Minimal steps to reliably trigger the bug.
+      placeholder: |
+        1.
+        2.
+        3.
+    validations:
+      required: true
+
+  - type: input
+    id: expected-behavior
+    attributes:
+      label: Expected Behavior
+      placeholder: What should happen?
+    validations:
+      required: true
+
+  - type: input
+    id: error
+    attributes:
+      label: Error
+      placeholder: What error or wrong behavior was observed?
+    validations:
+      required: true
+
+  - type: input
+    id: environment
+    attributes:
+      label: Environment
+      placeholder: "e.g. Node 20, Chrome 124, staging"
+    validations:
+      required: false
+
+  - type: textarea
+    id: technical-notes
+    attributes:
+      label: Technical Notes
+      description: Stack traces, logs, related code, or suspected root cause.
+    validations:
+      required: false
+
+  - type: textarea
+    id: ai-context
+    attributes:
+      label: AI Context
+      description: Key facts an AI agent needs to diagnose or fix this bug.
+    validations:
+      required: false

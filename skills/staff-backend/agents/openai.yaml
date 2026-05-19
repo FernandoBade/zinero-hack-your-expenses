@@ -1,4 +1,0 @@
-interface:
-  display_name: "Staff Backend"
-  short_description: "Backend quality and discipline"
-  default_prompt: "Use $staff-backend to review or guide backend implementation quality in this repository."

@@ -79,7 +79,7 @@ All additions to `shared/` require `staff-architecture` structural approval befo
 ---
 
 For ownership governance and structural review rules:
-→ load `skills/staff-architecture/SKILL.md`
+→ load `.claude/skills/staff-architecture/SKILL.md`
 
 For i18n content quality, transcreation, and copy governance:
-→ load `skills/staff-ux-writing/SKILL.md`
+→ load `.claude/skills/staff-ux-writing/SKILL.md`

@@ -91,4 +91,4 @@ Jest, located in `backend/tests/`. Run with `npm test` from the `backend/` works
 ---
 
 For deep implementation standards, review checklists, and known risks:
-→ load `skills/staff-backend/SKILL.md`
+→ load `.claude/skills/staff-backend/SKILL.md`

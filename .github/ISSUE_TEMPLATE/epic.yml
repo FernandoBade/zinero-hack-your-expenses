@@ -1,0 +1,50 @@
+name: Epic
+description: Large initiative or roadmap objective composed of multiple Features and Tasks
+body:
+  - type: input
+    id: title
+    attributes:
+      label: Title
+      placeholder: Short, descriptive name for this epic
+    validations:
+      required: true
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Context
+      description: Why does this epic exist? What problem or opportunity drives it?
+    validations:
+      required: true
+
+  - type: textarea
+    id: goals
+    attributes:
+      label: Goals
+      description: What outcomes define success for this epic?
+    validations:
+      required: true
+
+  - type: textarea
+    id: scope
+    attributes:
+      label: Scope
+      description: What work is included in this epic?
+    validations:
+      required: false
+
+  - type: textarea
+    id: out-of-scope
+    attributes:
+      label: Out of Scope
+      description: What is explicitly excluded from this epic?
+    validations:
+      required: false
+
+  - type: textarea
+    id: ai-context
+    attributes:
+      label: AI Context
+      description: "Key facts an AI agent needs to understand this epic (e.g. relevant architecture, constraints, prior decisions)."
+    validations:
+      required: false

@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(Get-ChildItem -Path \"c:\\\\Github\\\\zinero-hack-your-expenses\" -Recurse -Directory)",
+      "Bash(Select-Object -ExpandProperty FullName)",
+      "Bash(Sort-Object)",
+      "Bash(Get-ChildItem -Path . -Directory)",
+      "Bash(Select-Object Name)",
+      "Bash(Get-ChildItem -Path \"c:\\\\Github\\\\zinero-hack-your-expenses\" -Force)",
+      "Bash(Select-Object Name, Mode)",
+      "Bash(gh label *)",
+      "Bash(gh repo *)",
+      "Bash(mkdir -p \"c:/Github/zinero-hack-your-expenses/.claude/skills/staff-architecture/refs\" \"c:/Github/zinero-hack-your-expenses/.claude/skills/staff-backend/refs\" \"c:/Github/zinero-hack-your-expenses/.claude/skills/staff-frontend/refs\" \"c:/Github/zinero-hack-your-expenses/.claude/skills/staff-design-system/refs\" \"c:/Github/zinero-hack-your-expenses/.claude/skills/staff-ux-writing/refs\" \"c:/Github/zinero-hack-your-expenses/.claude/skills/staff-qa/refs\" \"c:/Github/zinero-hack-your-expenses/.claude/skills/staff-product/refs\")"
+    ],
+    "additionalDirectories": [
+      "c:\\Github\\zinero-hack-your-expenses\\.claude\\skills\\staff-architecture"
+    ]
+  }
+}
