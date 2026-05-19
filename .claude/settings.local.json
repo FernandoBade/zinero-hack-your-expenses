@@ -1,19 +1,52 @@
 {
   "permissions": {
     "allow": [
-      "Bash(Get-ChildItem -Path \"c:\\\\Github\\\\zinero-hack-your-expenses\" -Recurse -Directory)",
-      "Bash(Select-Object -ExpandProperty FullName)",
-      "Bash(Sort-Object)",
-      "Bash(Get-ChildItem -Path . -Directory)",
-      "Bash(Select-Object Name)",
-      "Bash(Get-ChildItem -Path \"c:\\\\Github\\\\zinero-hack-your-expenses\" -Force)",
-      "Bash(Select-Object Name, Mode)",
-      "Bash(gh label *)",
+      "Bash(Get-ChildItem *)",
+      "Bash(Select-Object *)",
+      "Bash(Sort-Object *)",
+
+      "Bash(mkdir *)",
+      "Bash(New-Item *)",
+      "Bash(Copy-Item *)",
+      "Bash(Move-Item *)",
+      "Bash(Remove-Item *)",
+
+      "Bash(git status *)",
+      "Bash(git diff *)",
+      "Bash(git log *)",
+      "Bash(git branch *)",
+      "Bash(git checkout *)",
+      "Bash(git add *)",
+      "Bash(git commit -m *)",
+
+      "Bash(npm install *)",
+      "Bash(npm run *)",
+      "Bash(npm test *)",
+
       "Bash(gh repo *)",
-      "Bash(mkdir -p \"c:/Github/zinero-hack-your-expenses/.claude/skills/staff-architecture/refs\" \"c:/Github/zinero-hack-your-expenses/.claude/skills/staff-backend/refs\" \"c:/Github/zinero-hack-your-expenses/.claude/skills/staff-frontend/refs\" \"c:/Github/zinero-hack-your-expenses/.claude/skills/staff-design-system/refs\" \"c:/Github/zinero-hack-your-expenses/.claude/skills/staff-ux-writing/refs\" \"c:/Github/zinero-hack-your-expenses/.claude/skills/staff-qa/refs\" \"c:/Github/zinero-hack-your-expenses/.claude/skills/staff-product/refs\")"
+      "Bash(gh label *)",
+      "Bash(gh issue *)",
+      "Bash(gh pr *)"
+    ],
+    "deny": [
+      "Bash(Remove-Item -Recurse -Force *)",
+      "Bash(Remove-Item . *)",
+      "Bash(Remove-Item .. *)",
+      "Bash(Remove-Item c:\\\\Github *)",
+      "Bash(rm -rf *)",
+      "Bash(del /s *)",
+
+      "Bash(git push *)",
+      "Bash(git reset --hard *)",
+      "Bash(git clean *)",
+      "Bash(git rebase *)",
+
+      "Bash(Invoke-WebRequest *)",
+      "Bash(iwr *)",
+      "Bash(curl *)"
     ],
     "additionalDirectories": [
-      "c:\\Github\\zinero-hack-your-expenses\\.claude\\skills\\staff-architecture"
+      "c:\\Github"
     ]
   }
 }
