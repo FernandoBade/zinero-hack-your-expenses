@@ -93,6 +93,20 @@ When issuing an architectural decision:
 **Handoffs:** <who implements what>
 ```
 
+## Output: Security policy statement
+
+When issuing a security policy:
+
+```
+## Security policy: <title>
+
+**Scope:** <what endpoints, flows, or data this applies to>
+**Threat:** <what attack or misuse this prevents>
+**Policy:** <the rule, stated as a constraint>
+**Enforcement:** <how it's verified — code, tests, or config>
+**Handoffs:** <who implements enforcement>
+```
+
 ## Handoffs
 
 | Situation | Route to |

@@ -4,6 +4,8 @@ Each skill is a deep-context role loaded on demand. Skills live at
 `.claude/skills/<name>/SKILL.md`, with a `refs/` subfolder for volatile or
 long-form content that changes frequently.
 
+> Cross-cutting constraints all agents must follow regardless of which skill is loaded: read `.claude/skills/refs/conventions.md`.
+
 ## Loading rules
 
 Load a skill when you need role-specific standards, review checklists, or output
