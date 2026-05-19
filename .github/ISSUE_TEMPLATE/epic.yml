@@ -1,14 +1,6 @@
 name: Epic
 description: Large initiative or roadmap objective composed of multiple Features and Tasks
 body:
-  - type: input
-    id: title
-    attributes:
-      label: Title
-      placeholder: Short, descriptive name for this epic
-    validations:
-      required: true
-
   - type: textarea
     id: context
     attributes:

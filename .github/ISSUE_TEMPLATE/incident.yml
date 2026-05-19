@@ -1,14 +1,6 @@
 name: Incident
 description: Production-level defect or operational failure after deployment
 body:
-  - type: input
-    id: title
-    attributes:
-      label: Title
-      placeholder: Short description of the incident
-    validations:
-      required: true
-
   - type: textarea
     id: context
     attributes:

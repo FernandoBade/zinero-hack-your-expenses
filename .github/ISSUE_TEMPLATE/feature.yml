@@ -1,14 +1,6 @@
 name: Feature
 description: Functional delivery or product capability that belongs to an Epic
 body:
-  - type: input
-    id: title
-    attributes:
-      label: Title
-      placeholder: Short, descriptive name for this feature
-    validations:
-      required: true
-
   - type: textarea
     id: problem
     attributes:

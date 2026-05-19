@@ -1,14 +1,6 @@
 name: Bug
 description: Development defect identified before production deployment
 body:
-  - type: input
-    id: title
-    attributes:
-      label: Title
-      placeholder: Short description of the defect
-    validations:
-      required: true
-
   - type: textarea
     id: context
     attributes:

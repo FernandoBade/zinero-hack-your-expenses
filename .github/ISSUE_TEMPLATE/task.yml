@@ -1,14 +1,6 @@
 name: Task
 description: Implementation work or technical execution inside a Feature
 body:
-  - type: input
-    id: title
-    attributes:
-      label: Title
-      placeholder: Short, descriptive name for this task
-    validations:
-      required: true
-
   - type: textarea
     id: context
     attributes:
