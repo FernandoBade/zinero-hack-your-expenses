@@ -46,9 +46,7 @@ export function createXController(deps: XControllerDependencies): XController {
 ```
 
 ### Store pattern
-- Custom listener-based stores — no Redux, MobX, or Zustand
-- Functions: `getX()`, `setX()`, `subscribeX()`, `unsubscribeX()`
-- No API calls inside stores; persists to `platform/storage/` when appropriate
+Custom listener-based stores (no Redux/MobX/Zustand). Functions: `getX()`, `setX()`, `subscribeX()`, `unsubscribeX()` — no API calls; persists to `platform/storage/` when appropriate.
 
 ## Layer responsibility
 

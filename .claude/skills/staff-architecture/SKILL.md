@@ -52,13 +52,11 @@ additions drift the contract layer toward application logic.
 - `shared/` imported correctly? (relative paths from backend, `@shared/*` alias from frontend)
 - Backend and frontend importing from each other? (forbidden — breaks build isolation)
 - New code placing application logic in `shared/`? (must not — contract layer only)
-- `zinero: file:..` in `frontend/package.json` — still unused?
 
 ### Backend architecture
 - `route → controller → service → repository` chain respected?
 - `answerAPI()` used consistently?
 - Authorization enforced on every endpoint accessing user-owned data?
-  - Known gap: `updateUser`, `deleteUser`, `getAccounts`, `getTransactions` — repeating this pattern is a critical policy violation
 - New validation going to domain-specific file, not `validateRequest.ts` monolith?
 - `TransactionService` still the only place mutating account/card balances?
 - `withTransaction()` used for every multi-table write?

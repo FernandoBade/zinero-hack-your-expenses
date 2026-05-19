@@ -56,12 +56,7 @@ const variantMap: Record<ButtonVariant, string> = {
 
 ## Component library
 
-```
-accordion, alert, auth-shell, bullets, button, card, checkbox, collapse,
-data-table, empty-state, error-state, fieldset, filter-bar, form, form-grid,
-icon, input (+ integer, money, number, phone), layout, loader, modal,
-page-container, pagination, password-input, select, status, table, toast, tooltip
-```
+Check `refs/state.md` for the current component library before proposing a new component — the list grows as the system evolves.
 
 ## Design token reality
 

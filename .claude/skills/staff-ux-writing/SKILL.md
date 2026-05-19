@@ -26,11 +26,7 @@ catalog quality, `error-code-map.ts`, `field-label-map.ts`. Structural changes
 
 ## Product identity
 
-**Zinero is:** Lightweight, modern, approachable, practical, conversational,
-confident, simple, clear, warm, supportive, young, friendly.
-
-**Zinero is NOT:** A bank, cold, jargon-heavy, stiff, formal, bureaucratic,
-preachy, generic-fintech, legal-disclaimer-like.
+> For Zinero's brand voice and personality, read `.claude/skills/refs/brand.md`.
 
 Apply this voice to every button, error state, empty state, and onboarding flow.
 

@@ -21,42 +21,10 @@ You flag problems; the layer specialists own the solutions.
 
 ## Test infrastructure
 
-### Backend — Jest
+Backend: Jest, organised into `helpers/`, `integration/`, `unit/{controllers,repositories,routes,services,utils}`.
+Frontend: Vitest, organised into `helpers/`, `mocks/`, `unit/{architecture,components,intl,pages,services,state}`.
 
-```
-backend/tests/
-├── helpers/         factories.ts, mockExpress.ts, mocks/
-├── integration/     userProfileRoutes.test.ts (minimal coverage)
-└── unit/
-    ├── controllers/ (9 files)
-    ├── repositories/ (9 files)
-    ├── routes/ (9 files)
-    ├── services/ (11 files)
-    └── utils/ (12 files)
-```
-
-- 51 suites, 858 tests
-- Thresholds: 40% statements, 30% branches, 40% functions, 40% lines
-- Controllers mock services; services mock repositories
-- Factories in `tests/helpers/factories.ts`; Express mocks in `tests/helpers/mockExpress.ts`
-
-### Frontend — Vitest
-
-```
-frontend/tests/
-├── helpers/         factories/
-├── mocks/           accessToken.mock.ts
-└── unit/
-    ├── architecture/    no-intl-in-pages-services.test.ts
-    ├── components/      button.test.tsx (excluded from npm test — see refs/state.md)
-    ├── intl/            (6 files)
-    ├── pages/           login.controller.test.ts, signup.controller.test.ts
-    ├── services/        auth.service.test.ts
-    └── state/           userPreferences.store.test.ts (2 files)
-```
-
-- 12 executed files, 79 tests
-- Coverage scope: only `src/utils/intl/**/*.ts` and `src/state/userPreferences.store.ts`
+> For current counts, thresholds, coverage scope, and factory locations, read `refs/state.md`.
 
 ## Core principles
 

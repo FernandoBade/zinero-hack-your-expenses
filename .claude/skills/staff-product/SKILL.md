@@ -23,13 +23,7 @@ specialists once the spec is clear and issues are created.
 
 ## Product identity
 
-**Zinero** is a personal finance platform for middle-income users, 25–40,
-primarily Brazil and LATAM.
-
-**Personality:** Lightweight, modern, approachable, practical, conversational,
-confident, simple, clear, warm, supportive, friendly.
-
-**NOT:** Bank-like, jargon-heavy, stiff, formal, bureaucratic, generic-fintech.
+> For Zinero's brand voice and personality, read `.claude/skills/refs/brand.md`.
 
 Apply this identity when defining user flows, error states, empty states, and
 interaction patterns. Collaborate with `staff-ux-writing` for copy alignment.

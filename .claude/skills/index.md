@@ -30,17 +30,7 @@ a handoff is actively needed.
 | `staff-ux-writing` | "How should this be worded?", "Translate this", i18n keys, error messages | Copy block, i18n key set, tone review |
 | `staff-qa` | "Is this worth testing?", "What edge cases am I missing?", test coverage review | Test plan, coverage assessment, testability report |
 
-## Skill paths
-
-```
-.claude/skills/staff-product/SKILL.md
-.claude/skills/staff-architecture/SKILL.md
-.claude/skills/staff-backend/SKILL.md
-.claude/skills/staff-frontend/SKILL.md
-.claude/skills/staff-design-system/SKILL.md
-.claude/skills/staff-ux-writing/SKILL.md
-.claude/skills/staff-qa/SKILL.md
-```
+Skill paths: `.claude/skills/<name>/SKILL.md`
 
 ## Handoff model
 

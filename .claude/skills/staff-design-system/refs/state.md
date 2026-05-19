@@ -4,6 +4,15 @@
 
 Last updated: 2026-05-19
 
+## Component library (current)
+
+```
+accordion, alert, auth-shell, bullets, button, card, checkbox, collapse,
+data-table, empty-state, error-state, fieldset, filter-bar, form, form-grid,
+icon, input (+ integer, money, number, phone), layout, loader, modal,
+page-container, pagination, password-input, select, status, table, toast, tooltip
+```
+
 ## Known risks
 
 | Risk | Location | Status |
